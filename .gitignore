@@ -29,3 +29,4 @@ frontend/*.tsbuildinfo
 frontend/tests/fixtures/generated/
 frontend/tests/fixtures/browser-generated/
 .env*
+task2/output/

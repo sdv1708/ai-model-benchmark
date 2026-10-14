@@ -4,6 +4,22 @@
 
 Welcome, and thanks for taking the time. This challenge has two independent tasks.
 
+## Task 2 full-benchmark reference analysis
+
+The [reference-analysis package](./task2/README.md) validates all supplied evaluation
+artifacts and reproduces six full LiveCodeBench/AA-LCR model scores without live
+inference. Run from the repository root with Python 3.12 and uv:
+
+```powershell
+cd task2
+uv sync --locked
+uv run benchmark-reference --data-root ../Evals --output-dir output/reference
+```
+
+See the [implementation and interview guide](./task2/INTERVIEW_GUIDE.md) and
+[issue #14 acceptance evidence](./docs/issue-14-evidence.md). The eventual pruner's
+evalscope integration is a later Task 2 deliverable.
+
 ## Task 1 deployment
 
 Task 1 is configured as one Vercel project with two services in the root
