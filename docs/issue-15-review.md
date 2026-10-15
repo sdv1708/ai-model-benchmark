@@ -43,3 +43,50 @@ spec regressions. Evalscope integration remains later project work.
 
 Final review: **Standards 0 unresolved; Spec 0 unresolved.** No outstanding worst
 finding within either axis. See [verification evidence](issue-15-evidence.md).
+
+## Substantial revision review
+
+The user then requested a more substantial implementation. Commit `2e29f9a`
+adds exact finite-pool confidence intervals, independent pair-transfer evaluation,
+optional threshold decisions with abstention, and extended audits and documentation.
+The same two axes independently reviewed `git diff main...HEAD`, focusing on
+`git diff d9ad8b2...HEAD` for this revision.
+
+### Standards
+
+No actionable findings. No documented-standard violations or material design smells
+were identified. Hypergeometric inversion uses inclusive tail comparisons and exact
+rational failure budgets; the strata/directional Bonferroni allocation is conservative.
+Census intervals collapse correctly, pair selection excludes both targets, and
+decision-summary denominators include abstentions.
+
+The reviewer independently enumerated **11,700 finite-population coverage cases**:
+population sizes 1–25, every sample size and population success count, at failure
+budgets 0.05 and 0.5. Every computed interval met nominal coverage. This additional
+review check is separate from the 102 automated tests.
+
+Source fingerprints retain LF normalization and input/output fingerprints remain
+byte-exact. The independent auditor's linear inversion deliberately differs from
+production binary search. Explicit score and pair orchestration is justified by
+their different holdout boundaries and results.
+
+**Unresolved standards findings: 0.**
+
+### Spec
+
+No missing/partial requirements, incorrect behavior, or material scope creep found.
+Both targets are removed before paired fitting. Confidence budgets are distributed
+across strata and directional discordances without requiring independence. Original
+selector, baseline, multi-ratio, reproducibility and auditability requirements remain
+satisfied; the additional work strengthens score/ordering fidelity.
+
+Claims remain qualified: exactness concerns finite-pool tail inversion under the
+stated sampling design; fixed hash priorities approximate that design; coverage is
+not simultaneous over a searched run panel. The guide separates reference-assisted
+ordering from pair transfer, discloses the single remaining reference, and reports
+abstention alongside decision errors.
+
+**Unresolved spec findings: 0.**
+
+Substantial-revision review: **Standards 0 unresolved; Spec 0 unresolved.** No
+outstanding worst finding in either axis.

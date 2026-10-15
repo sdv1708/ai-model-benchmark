@@ -67,6 +67,10 @@ independently audited, and compared byte-for-byte a second time.
 Separate standards and spec reviewers confirmed **zero unresolved findings** after
 the fixes; see the [two-axis review report](issue-15-review.md). That record identifies
 the initial review and the subsequent substantial-revision review separately.
+The substantial-revision review also found zero unresolved findings and independently
+checked 11,700 hypergeometric coverage cases (populations 1–25, all sample sizes and
+success counts, failure budgets .05/.5). This is additional review verification,
+separate from the 102-test suite.
 
 ## Measured comparison
 
