@@ -1,0 +1,94 @@
+{
+  "algorithm_version": "lcb-pruning-v1",
+  "allocation": "one per occupied stratum, then largest proportional deficit; lexical ties",
+  "baseline_policy": "comparison only; never candidates or production recommendations",
+  "benchmark": "live_code_bench_v5",
+  "estimator": "sum_h (N_h/N) * mean(selected grades in h); baselines use raw mean",
+  "features": "reference binary pass vectors only; held-out model removed before selection",
+  "implementation_sha256": {
+    "analysis.py": "56c01e9aa19a2b4e08d02a7beff8af9ed942fe3261e7462f1851ba1e60192241",
+    "experiments.py": "288c34421ea8880bfa886c389a55497d281c66daf961f4eee34e911b0b07065f",
+    "inputs.py": "c1390945936a00d31fc8b4e5b33b9c0ca5a6e3745724f42cb5d4c00d4ecba63d",
+    "models.py": "f222d4d994ef470dd3ebd6aefb44edb5f70e272f98b7ba38d37ecb8575265065",
+    "pruning.py": "030960a24d8c55cf562b14f0fdaa380754fd9f5ee4886aca93abdbf2e9d69f3a",
+    "pruning_cli.py": "d9b8f0728de211043675ad10e8d2e780cf83787c0f116f564f554dd8aab00e19",
+    "pruning_reporting.py": "2bc92340bae3512700f7b4cf8767c06c0cfe9c3e407d815ff97307aeb203d20d"
+  },
+  "inputs": [
+    {
+      "path": "Part 1/predictions/live_code_bench_v5__gpt-oss-120b.jsonl",
+      "sha256": "251ba80edb5df9500476f64c7440ecc6bff71060fbb107da23e1f5b8ac42f692"
+    },
+    {
+      "path": "Part 1/predictions/live_code_bench_v5__kimi-k2.5.jsonl",
+      "sha256": "5d63df790fd81d34033b3d27735f3025438c0a0ebb3374bbcb70b302ae19726f"
+    },
+    {
+      "path": "Part 1/predictions/live_code_bench_v5__minimax-m2.5.jsonl",
+      "sha256": "cdbd7b6fbd0e5f6d3d7fe028fef68cb2c6177bdf7c4245de9aa20b369099054f"
+    },
+    {
+      "path": "Part 1/reviews/live_code_bench_v5__gpt-oss-120b.jsonl",
+      "sha256": "d6fb5ffca93263a41a6912617776ccc0a6f9bf3a358c821d90769a2482d48002"
+    },
+    {
+      "path": "Part 1/reviews/live_code_bench_v5__kimi-k2.5.jsonl",
+      "sha256": "5913b4731678b76f747e1529fd37b1b688b45be5c5c9b98df624a1948e3341e5"
+    },
+    {
+      "path": "Part 1/reviews/live_code_bench_v5__minimax-m2.5.jsonl",
+      "sha256": "697eacb9b911e1d21ab24f57d145a7ac1b611cca3d443185bae58d887c251671"
+    }
+  ],
+  "keep_ratios": [
+    0.1,
+    0.2,
+    0.3,
+    0.5,
+    1.0
+  ],
+  "limitations": [
+    "Only three historical models; each fold fits on two. This is not proof for a fourth model.",
+    "Ordering uses the same subset within a fold, but includes two in-sample reference models.",
+    "Held-out scores alone measure transfer; no ranking combines scores from different subsets.",
+    "Seed dispersion measures selection sensitivity on fixed grades, not generation uncertainty.",
+    "No customer threshold, confidence guarantee, or production operating point is fitted.",
+    "Index correspondence across models is assumed from the supplied benchmark contract.",
+    "No semantic/topic coverage can be claimed: original prompts and coding metadata are absent.",
+    "This offline experiment does not satisfy the later evalscope integration requirement."
+  ],
+  "metric": "recorded binary pass; scale 0..1",
+  "ordering_policy": "common subset per fold; reference-assisted; ties within 1e-12",
+  "output_sha256": {
+    "fidelity.json": "484e458b450012c264206033a57d27924724b3101e384eeb480dd03dd8c10c7e",
+    "scores.json": "6248d389471f36cc246c1d1201181b226a5f35f363976a942edbaa5723bd04c6",
+    "selections.jsonl": "ad1722fc650cb7f0da6eaceba2b1453352c261237e9973abec6d510de0df8943",
+    "summary.csv": "77d0bbf8840429432cf35f96851b1ecd8dd2c52c011e053afe3fb2447b787f67"
+  },
+  "ratio_definition": "fraction retained; count = ceil(N * keep_ratio)",
+  "run_count": 1500,
+  "schema_version": 1,
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+  ],
+  "within_stratum": "ascending SHA256(lcb-pruning-v1:seed:index), without replacement"
+}

@@ -1,5 +1,6 @@
 """CLI tests: help, an end-to-end run on a synthetic inventory, and failure paths."""
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -64,6 +65,78 @@ def evals(tmp_path: Path) -> Path:
             root / "MMMU", f"{MMMU_MODEL}/mmmu_{subject}.jsonl", MMMU_MODEL, "acc", 30, named=False
         )
     return root
+
+
+def test_pruning_cli_reproduces_auditable_full_budget_results(evals: Path, tmp_path: Path) -> None:
+    from benchmark_reference.pruning_cli import main as pruning_main
+
+    for directory in ("pruned1", "pruned2"):
+        pruning_main(
+            [
+                "--data-root",
+                str(evals),
+                "--output-dir",
+                str(tmp_path / directory),
+                "--keep-ratios",
+                "1",
+                "--seeds",
+                "7",
+            ]
+        )
+    first, second = tmp_path / "pruned1", tmp_path / "pruned2"
+    for name in (
+        "scores.json",
+        "selections.jsonl",
+        "fidelity.json",
+        "summary.csv",
+        "manifest.json",
+    ):
+        assert (first / name).read_bytes() == (second / name).read_bytes()
+    report = json.loads((first / "fidelity.json").read_text(encoding="utf-8"))
+    assert len(report["runs"]) == 15  # 3 held-out models x (2 candidates + 3 baselines)
+    for run in report["runs"]:
+        assert run["held_out_absolute_error"] == 0
+        assert run["ordering"]["pair_agreement"] == 1
+        assert run["ordering"]["kendall_tau_b"] is None  # all model scores tie
+    selection = json.loads((first / "selections.jsonl").read_text(encoding="utf-8").splitlines()[0])
+    assert len(selection["samples"]) == 315
+    assert len({item["index"] for item in selection["samples"]}) == 315
+    assert selection["held_out_model"] not in selection["reference_models"]
+    manifest = json.loads((first / "manifest.json").read_text(encoding="utf-8"))
+    assert len(manifest["inputs"]) == 6
+    for name, digest in manifest["output_sha256"].items():
+        assert hashlib.sha256((first / name).read_bytes()).hexdigest() == digest
+    for source in manifest["inputs"]:
+        assert hashlib.sha256((evals / source["path"]).read_bytes()).hexdigest() == source["sha256"]
+
+
+@pytest.mark.parametrize("failure", ["grades", "ratio", "duplicate_seed", "budget", "destination"])
+def test_pruning_failure_preserves_prior_reports(
+    evals: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], failure: str
+) -> None:
+    from benchmark_reference.pruning_cli import main as pruning_main
+
+    output_dir = tmp_path / "pruning"
+    output_dir.mkdir()
+    sentinel = output_dir / "manifest.json"
+    sentinel.write_text("prior successful report", encoding="utf-8")
+    extra = ["--keep-ratios", "1", "--seeds", "0"]
+    if failure == "grades":
+        path = evals / "Part 1/reviews/live_code_bench_v5__kimi-k2.5.jsonl"
+        path.write_text(path.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+    elif failure == "ratio":
+        extra = ["--keep-ratios", "nan"]
+    elif failure == "duplicate_seed":
+        extra = ["--seeds", "0", "0"]
+    elif failure == "budget":
+        extra = ["--keep-ratios", "0.001"]
+    elif failure == "destination":
+        output_dir = evals
+    with pytest.raises(SystemExit) as exc:
+        pruning_main(["--data-root", str(evals), "--output-dir", str(output_dir), *extra])
+    assert exc.value.code == 2
+    assert "lcb-pruning:" in capsys.readouterr().err
+    assert sentinel.read_text(encoding="utf-8") == "prior successful report"
 
 
 def test_help_is_available(capsys: pytest.CaptureFixture[str]) -> None:
