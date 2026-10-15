@@ -5,9 +5,7 @@ import hashlib
 import io
 import json
 import math
-import os
 import statistics
-import tempfile
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import asdict
@@ -15,7 +13,8 @@ from itertools import combinations
 from pathlib import Path
 
 from benchmark_reference.experiments import ExperimentRun
-from benchmark_reference.models import AnalysisError, FilePair, SampleResult
+from benchmark_reference.models import FilePair, SampleResult
+from benchmark_reference.reporting import validate_output_location, write_atomic
 
 OUTPUT_NAMES = ("scores.json", "selections.jsonl", "fidelity.json", "summary.csv", "manifest.json")
 LIMITATIONS = [
@@ -28,15 +27,6 @@ LIMITATIONS = [
     "No semantic/topic coverage can be claimed: original prompts and coding metadata are absent.",
     "This offline experiment does not satisfy the later evalscope integration requirement.",
 ]
-
-
-def validate_destination(output_dir: Path, data_root: Path) -> None:
-    """Refuse directories or existing output symlinks pointing inside source data."""
-    root = data_root.resolve()
-    for destination in (output_dir, *(output_dir / name for name in OUTPUT_NAMES)):
-        resolved = destination.resolve()
-        if resolved == root or root in resolved.parents:
-            raise AnalysisError(f"Output path {destination} is inside the input data {data_root}")
 
 
 def _json(value: object) -> bytes:
@@ -123,7 +113,7 @@ def write_experiment(
     As in issue #14, atomic replacement is per file, not a multi-file transaction.
     One writer and unchanged source files are required; verify output hashes.
     """
-    validate_destination(output_dir, data_root)
+    validate_output_location(output_dir, data_root, output_names=OUTPUT_NAMES)
     root = data_root.resolve()
     sources = sorted({p for pair in pairs for p in (pair.predictions, pair.reviews)})
     inputs = [
@@ -195,12 +185,16 @@ def write_experiment(
         "seeds": sorted({run.seed for run in runs}),
         "run_count": len(runs),
         "inputs": inputs,
+        "implementation_hash_policy": "SHA256 of source bytes after CRLF-to-LF normalization",
         "implementation_sha256": {
-            name: _hash(code_root / name)
+            name: hashlib.sha256(
+                (code_root / name).read_bytes().replace(b"\r\n", b"\n")
+            ).hexdigest()
             for name in (
                 "models.py",
                 "inputs.py",
                 "analysis.py",
+                "reporting.py",
                 "pruning.py",
                 "experiments.py",
                 "pruning_cli.py",
@@ -219,12 +213,4 @@ def write_experiment(
     outputs["manifest.json"] = _json(manifest)
     output_dir.mkdir(parents=True, exist_ok=True)
     for name, data in outputs.items():
-        temporary: Path | None = None
-        try:
-            with tempfile.NamedTemporaryFile(dir=output_dir, prefix=f".{name}.", delete=False) as f:
-                temporary = Path(f.name)
-                f.write(data)
-            os.replace(temporary, output_dir / name)
-        finally:
-            if temporary is not None:
-                temporary.unlink(missing_ok=True)
+        write_atomic(output_dir / name, data)

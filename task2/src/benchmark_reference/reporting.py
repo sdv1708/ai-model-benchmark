@@ -53,16 +53,18 @@ def _sha256(path: Path) -> str:
 OUTPUT_FILES = ("samples.jsonl", "full_scores.json", "manifest.json")
 
 
-def validate_output_location(output_dir: Path, data_root: Path) -> None:
+def validate_output_location(
+    output_dir: Path, data_root: Path, *, output_names: Sequence[str] = OUTPUT_FILES
+) -> None:
     """Protect inputs even when a report's existing path is a symlink."""
     root, out = data_root.resolve(), output_dir.resolve()
-    for destination in (out, *(out / name for name in OUTPUT_FILES)):
+    for destination in (out, *(out / name for name in output_names)):
         resolved = destination.resolve()
         if resolved == root or root in resolved.parents:
             raise AnalysisError(f"Output path {destination} is inside the input data {data_root}")
 
 
-def _write_atomic(path: Path, data: bytes) -> None:
+def write_atomic(path: Path, data: bytes) -> None:
     """Replace a single file using a unique sibling temp file, with cleanup."""
     temporary: Path | None = None
     try:
@@ -216,8 +218,8 @@ def write_outputs(
 
     try:
         output_dir.mkdir(parents=True, exist_ok=True)
-        _write_atomic(output_dir / "samples.jsonl", samples_bytes)
-        _write_atomic(output_dir / "full_scores.json", scores_bytes)
-        _write_atomic(output_dir / "manifest.json", manifest_bytes)
+        write_atomic(output_dir / "samples.jsonl", samples_bytes)
+        write_atomic(output_dir / "full_scores.json", scores_bytes)
+        write_atomic(output_dir / "manifest.json", manifest_bytes)
     except OSError as exc:
         raise AnalysisError(f"Cannot write reports to {output_dir}: {exc.strerror or exc}") from exc

@@ -5,14 +5,16 @@
   "benchmark": "live_code_bench_v5",
   "estimator": "sum_h (N_h/N) * mean(selected grades in h); baselines use raw mean",
   "features": "reference binary pass vectors only; held-out model removed before selection",
+  "implementation_hash_policy": "SHA256 of source bytes after CRLF-to-LF normalization",
   "implementation_sha256": {
-    "analysis.py": "56c01e9aa19a2b4e08d02a7beff8af9ed942fe3261e7462f1851ba1e60192241",
+    "analysis.py": "ee4719c35d741b5ef70d45d14a52cb5bb09035c07edb3f9888fbdab1567d130a",
     "experiments.py": "288c34421ea8880bfa886c389a55497d281c66daf961f4eee34e911b0b07065f",
-    "inputs.py": "c1390945936a00d31fc8b4e5b33b9c0ca5a6e3745724f42cb5d4c00d4ecba63d",
-    "models.py": "f222d4d994ef470dd3ebd6aefb44edb5f70e272f98b7ba38d37ecb8575265065",
+    "inputs.py": "99f30cd92b443cad3aec9ceeb001b05f814816a14820e5b9861582c6942e7cf8",
+    "models.py": "4ba7662ea4244d50cb142112bd83976d6e2af8fdec2f591ade793d0ea84748e3",
     "pruning.py": "030960a24d8c55cf562b14f0fdaa380754fd9f5ee4886aca93abdbf2e9d69f3a",
-    "pruning_cli.py": "d9b8f0728de211043675ad10e8d2e780cf83787c0f116f564f554dd8aab00e19",
-    "pruning_reporting.py": "2bc92340bae3512700f7b4cf8767c06c0cfe9c3e407d815ff97307aeb203d20d"
+    "pruning_cli.py": "aa0e1d0b2d120473877a585e6c12beebc5272add10a51440dc00de26d499ef91",
+    "pruning_reporting.py": "4ebeb3d767634c1da2279c5e8c549076fe54d971983c3636cfe5227604836baf",
+    "reporting.py": "25658f0a8b9900d2747753e5e45b0d1b35ac119dc347abf41e6047d924a0c384"
   },
   "inputs": [
     {

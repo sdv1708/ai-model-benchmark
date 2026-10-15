@@ -47,6 +47,9 @@ Outputs are deterministic UTF-8 files:
 - `manifest.json`: raw input hashes, implementation hashes, configuration, policies,
   limitations, and hashes of the other four reports.
 
+Implementation hashes normalize CRLF to LF for equivalent Git checkouts; input
+and output hashes fingerprint exact bytes.
+
 Only the six coding files are parsed and hashed by this command; the supplied
 whole-tree file inventory must still match the reference pipeline's contract.
 AA-LCR and MMMU grades are not evaluated here. Reports cannot overwrite input data.

@@ -11,7 +11,7 @@ this session authorizes assistant implementation of this learner-labelled ticket
 | --- | --- |
 | Uniform random, easiest-only, hardest-only are comparisons only | Separate candidate/baseline APIs, explicit report roles, tests rejecting all three through the candidate API |
 | Evaluate candidates at several ratios | Two candidates x five retained fractions x twenty seeds x three held-out models; three baselines use the same protocol |
-| Unique, reproducible, auditable samples | No-replacement hash priorities; selected ID/group/count/weight records; six input hashes and seven implementation hashes; byte-identical reruns |
+| Unique, reproducible, auditable samples | No-replacement hash priorities; selected ID/group/count/weight records; six input hashes and eight implementation hashes; byte-identical reruns |
 | Score and ordering fidelity against full benchmark | Weighted estimates and raw means, held-out MAE/RMSE/bias/max/spread, common-subset pair agreement, tie-aware Kendall tau-b and exact order fraction |
 | Features remain defensible for unseen models | Only historical reference pass vectors; held-out model removed before fitting; target-grade perturbation test; no assistant-message features |
 
@@ -21,7 +21,7 @@ From `task2/`, with Python 3.12 and the locked environment:
 
 ```powershell
 uv sync --locked
-uv run pytest -q --basetemp=output/pytest-final-issue15
+uv run pytest -q --basetemp=output/pytest-final-reviewed
 uv run ruff check .
 uv run ruff format --check .
 uv run mypy
@@ -51,6 +51,13 @@ the documented workspace-local `--basetemp` resolved it. Dependency synchronizat
 used normal host cache access. This is verification on the existing Windows checkout,
 not a claim of a fresh-machine installation. No inference, regrading, or input edits
 were performed.
+
+The standards review identified source line-ending sensitivity and duplicated
+report-I/O safeguards. Source hashes now normalize CRLF to LF (raw data/report
+hashes remain exact), with a regression assertion. Both pipelines share the same
+destination validation and atomic replacement helpers. The complete 91-test suite
+passed again after these review changes, and the final reports were regenerated,
+independently audited, and compared byte-for-byte a second time.
 
 ## Measured comparison
 

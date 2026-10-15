@@ -108,6 +108,10 @@ def test_pruning_cli_reproduces_auditable_full_budget_results(evals: Path, tmp_p
         assert hashlib.sha256((first / name).read_bytes()).hexdigest() == digest
     for source in manifest["inputs"]:
         assert hashlib.sha256((evals / source["path"]).read_bytes()).hexdigest() == source["sha256"]
+    implementation = Path(__file__).parents[1] / "src/benchmark_reference"
+    for name, digest in manifest["implementation_sha256"].items():
+        canonical_source = (implementation / name).read_bytes().replace(b"\r\n", b"\n")
+        assert hashlib.sha256(canonical_source).hexdigest() == digest
 
 
 @pytest.mark.parametrize("failure", ["grades", "ratio", "duplicate_seed", "budget", "destination"])

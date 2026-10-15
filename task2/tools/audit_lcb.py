@@ -27,7 +27,8 @@ def main() -> None:
         assert hashlib.sha256((reports / name).read_bytes()).hexdigest() == digest
     code = Path(__file__).resolve().parents[1] / "src/benchmark_reference"
     for name, digest in manifest["implementation_sha256"].items():
-        assert hashlib.sha256((code / name).read_bytes()).hexdigest() == digest
+        canonical_source = (code / name).read_bytes().replace(b"\r\n", b"\n")
+        assert hashlib.sha256(canonical_source).hexdigest() == digest
 
     grades: dict[str, dict[int, float]] = {}
     for path in sorted((root / "Part 1/reviews").glob("live_code_bench_v5__*.jsonl")):

@@ -210,6 +210,8 @@ selection uniqueness, weight totals, all estimated means, and held-out MAE/maxim
 It is a verification tool, so run it with normal Python (without `-O`, which disables
 assertions). The machine-readable results include both input and implementation
 fingerprints. Byte-identical reruns are verified for all five artifacts.
+Source fingerprints normalize CRLF to LF so Git's line-ending settings do not
+change the implementation identity; data and report fingerprints use exact bytes.
 
 ## Interview questions to rehearse
 

@@ -8,7 +8,8 @@ from benchmark_reference.analysis import analyze_pair
 from benchmark_reference.experiments import DEFAULT_RATIOS, DEFAULT_SEEDS, evaluate_experiment
 from benchmark_reference.inputs import discover_pairs
 from benchmark_reference.models import AnalysisError
-from benchmark_reference.pruning_reporting import validate_destination, write_experiment
+from benchmark_reference.pruning_reporting import OUTPUT_NAMES, write_experiment
+from benchmark_reference.reporting import validate_output_location
 
 
 def main(argv: Sequence[str] | None = None) -> None:
@@ -31,7 +32,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     args = parser.parse_args(argv)
     try:
-        validate_destination(args.output_dir, args.data_root)
+        validate_output_location(args.output_dir, args.data_root, output_names=OUTPUT_NAMES)
         pairs = tuple(
             p for p in discover_pairs(args.data_root) if p.benchmark == "live_code_bench_v5"
         )
