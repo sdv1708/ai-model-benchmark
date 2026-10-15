@@ -10,6 +10,12 @@ This ticket implements and evaluates candidates. It does not choose a customer
 acceptance threshold, certify an operating point, or integrate into evalscope.
 The latter remains a separate hard requirement of the overall challenge.
 
+The substantial second revision adds exact finite-pool uncertainty, threshold
+abstention, and pair-transfer evaluation excluding *both* compared models from
+selection. There are now 3,000 evaluations per default run. These additions
+strengthen the evidence without treating more algorithms as a substitute for
+validating the existing ones.
+
 The full reference means are 241/315 = 76.51% for gpt-oss-120b, 198/315 = 62.86%
 for kimi-k2.5, and 195/315 = 61.90% for minimax-m2.5. The latter two differ by only
 3 tasks, or 0.952 percentage points. At half the benchmark, our candidates' average
@@ -43,6 +49,15 @@ coverage guarantee would not itself establish accuracy of the benchmark mean.
 supplies the tie-adjusted tau-b definition used by our small standard-library
 implementation. SciPy is not a runtime dependency. We test reversal and tie examples
 with known numerical answers.
+
+For uncertainty, the [R distribution reference](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/Hypergeometric.html)
+defines sampling without replacement and its hypergeometric probabilities. The
+[samplingbook implementation note](https://stat.ethz.ch/CRAN/web/packages/samplingbook/vignettes/Sprop-remarks.html)
+explains exact interval construction through tail inversion and the weakness of
+normal plug-in intervals near zero/one. We implement equal-tail inversion over
+integer population counts, followed by a union bound across strata. This is
+finite-population inference; a binomial model would ignore the without-replacement
+design and a Wald interval can falsely collapse after all-success/all-failure draws.
 
 ## Why these features are available for a future model
 
@@ -146,6 +161,77 @@ response strata make each reference grade constant within a stratum, reproducing
 reference means exactly. Never sell that as evidence of target generalization.
 We do not stitch held-out scores from different subsets into an ordinary leaderboard.
 
+## A stronger test: hold out both compared models
+
+The original common-subset ranking includes two fitted reference models. We now
+also hold out each model pair simultaneously, fit on the remaining reference pool,
+then evaluate both held-out models on a shared subset. A perturbation test changes
+both targets and checks that pair selection remains identical. With three shipped
+models this leaves one reference, so both candidates reduce to the same two strata.
+This is an honest limit on feature diversity, not two independent pieces of evidence.
+
+The pair protocol adds 3 pairs x 5 methods x 5 budgets x 20 seeds = 1,500 runs.
+Its primary point metric is error in the paired difference, not error in fitted
+reference scores. Ordering agreement is measured only between these two excluded
+models. It also reports interval coverage, width, decisive fraction and wrong-decisive
+fraction. A correct forced point ranking and a statistically decisive ranking are
+deliberately separate measurements.
+
+## Exact intervals and why abstention matters
+
+Within group h, observe x successes in n_h sampled tasks out of N_h total. For a
+hypothesized full-group success count K, X follows Hypergeometric(N_h,K,n_h).
+Retain feasible integer K values whose two tail probabilities are each at least
+alpha_h/2. Binary search locates the first/last retained counts; binomial
+coefficients and rational comparisons make the tail acceptance decisions exact.
+The failure budget is split across groups: alpha_h = alpha/H. Adding group lower
+and upper success counts and dividing by N gives a conservative full-score interval.
+No independence between group confidence events is required for the union bound.
+
+The endpoint convention matters for discrete data. For N=50,n=10,x=3 at 95%, our
+inclusive non-rejected counts are [5,31]. K=4 has an upper-tail probability of
+about .021754; K=32 has a lower-tail probability about .017635; both are rejected
+against .025. Some packages, including samplingbook's illustrated result, expand
+outward to [4,32]. Both are conservative conventions; we document ours rather than
+claiming identical package outputs. The independent auditor checks [5,31] using a
+linear scan instead of the production binary search.
+
+At N=100,n=50,x=0 our interval is [0,.05]. An observed zero-variance sample therefore
+does not imply that every unobserved task also fails. At a census the interval
+collapses to the exact known score. Tests exhaust all binary-grade placements on
+small finite populations, including stratification, and verify nominal coverage.
+Rational failure budgets also avoid rounding a very high confidence level to 100%
+when splitting the tail probability.
+
+"Exact" describes the finite hypergeometric inversion, conditional on simple
+random sampling without replacement inside groups. Fixed deterministic hash seeds
+approximate uniform priorities; observed coverage over twenty seeds does not prove
+the probability assumption. Intervals concern this fixed benchmark and fixed target
+grades, not future questions, generation randomness, or an unseen family of models.
+They are not simultaneous guarantees over searching the entire budget/method/seed
+curve. Easiest/hardest do not meet the probability-design assumptions and receive
+no interval below full retention; their null values are never counted as covered.
+
+For two held-out models, use the paired task outcomes directly. Define P_i=1 when
+A passes and B fails, and M_i=1 for the reverse. Then the mean score difference is
+mean(P)-mean(M). Both-pass and both-fail tasks cancel. Apply exact group intervals
+to these two directional discordance populations, sharing the failure budget over
+2H events; subtract [L_P,U_P] and [L_M,U_M] to get [L_P-U_M,U_P-L_M]. This uses no
+independence assumption between the models or discordance events. It is generally
+more informative than subtracting separate model-score intervals, but can remain
+conservative. In a tested N=100,n=50 example with identical observed model outcomes,
+the paired interval is [-.06,.06], rather than the much wider independent-score
+subtraction; it still permits disagreement on unobserved tasks.
+
+Thresholds are optional CLI inputs, not inferred customer requirements. A full
+mean >= threshold is GO. A lower confidence bound >= threshold supports GO; an
+upper bound < threshold supports NO GO; otherwise return inconclusive. Report
+decisive fraction together with false GO/NO GO fractions (all use the full run count
+as denominator), so abstaining on everything cannot masquerade as high accuracy.
+The CSV also reports the forced point-estimate decision agreement for comparison.
+For a fixed interval, all threshold decisions share its coverage event; searching
+for favorable methods or budgets is a separate multiple-comparison problem.
+
 ## What each metric means
 
 Held-out absolute error is |estimated mean - full mean|. MAE averages it over
@@ -167,6 +253,8 @@ Jaccard stability is |A intersection B| / |A union B|, averaged over seed pairs
 within the same fold. Different IDs need not mean different quality; stability
 and fidelity answer separate questions. These are descriptive seed measurements,
 not confidence intervals, generation variance, or a probability of future success.
+The new hypergeometric intervals are reported separately from this descriptive
+seed spread; they answer a different question under explicit sampling assumptions.
 
 ## Measured results
 
@@ -196,20 +284,45 @@ ordering remains weak. These are empirical comparisons, not statistical signific
 claims. We have not predeclared customer tolerances or proved a minimum sufficient
 subset. Three leave-one-out folds are a useful stress test, not a model population.
 
+The stricter pair-transfer study at half retention gives 86.7% point-order agreement
+and 1.99 pp error in paired differences for both candidates. Their paired nominal
+95% intervals cover the recorded truth in all 60 runs, but are decisive in only
+38.3%; no decisive error is observed. Uniform comparison has 80.0% agreement,
+1.89 pp difference error, and 66.7% decisiveness. Its intervals are narrower because
+the stratified union-bound construction pays for more simultaneous group events.
+The candidates are not uniformly superior on uncertainty or difference error.
+
+For score estimation at half retention, candidate interval coverage is 100% on the
+measured panel, with mean widths 17.37 pp (difficulty) and 19.69 pp (response).
+Uniform coverage is 98.3% with width 10.38 pp. These wide conservative intervals
+are not contradicted by 1.5–1.6 pp observed MAE: empirical average error and a
+model-free finite-population interval encode different levels of protection.
+
+At an illustrative 70% threshold, half-budget difficulty selection is decisive in
+13.3% of score runs; response selection is decisive in 0%. Both forced point
+decisions agree with the full grades in all runs, showing why an accurate retrospective
+point decision should not be confused with strong prospective evidence. This
+threshold was supplied for demonstration, not selected as a production criterion.
+
 ## Code map and replay
 
 `pruning.py` owns candidate/baseline selection. `experiments.py` owns held-out
 evaluation and ordering. `pruning_cli.py` joins the existing validated coding
 input pipeline to the experiment. `pruning_reporting.py` publishes audit artifacts.
+`uncertainty.py` owns count inversion and paired-discordance intervals; `transfer.py`
+owns pair exclusion; `study_metrics.py` summarizes decisions and independent pairs.
 The reference pipeline continues to support issue #14 unchanged.
 
 Run the commands in [README.md](README.md). `tools/audit_lcb.py` independently
 reads raw reviews and saved selections with the standard library; it imports none
 of the pipeline. It verifies input/output/implementation hashes, normalized grades,
 selection uniqueness, weight totals, all estimated means, and held-out MAE/maxima.
+It now reconstructs stratum membership from historical grades, verifies all exact
+score and paired intervals with independent linear inversion, and checks threshold
+classifications and pair-difference summaries.
 It is a verification tool, so run it with normal Python (without `-O`, which disables
 assertions). The machine-readable results include both input and implementation
-fingerprints. Byte-identical reruns are verified for all five artifacts.
+fingerprints. Byte-identical reruns are verified for all eight artifacts.
 Source fingerprints normalize CRLF to LF so Git's line-ending settings do not
 change the implementation identity; data and report fingerprints use exact bytes.
 
@@ -232,7 +345,16 @@ change the implementation identity; data and report fingerprints use exact bytes
 7. **What would you change with more evidence?** Add independently verified problem
    IDs/prompts and semantic/topic features, a broader historical model panel, and
    genuinely untouched models. Define score/decision tolerances before choosing a
-   budget, quantify design uncertainty, and use full evaluation for ambiguous cases.
+   budget, validate uncertainty calibration on untouched models, and use full
+   evaluation for ambiguous cases.
 8. **Is this ready inside evalscope?** This ticket is the offline candidate study.
    The later adapter must pin upstream, preserve ID correspondence, freeze reference
    features, support the chosen scoring weights, and validate its real CLI behavior.
+9. **Why isn't 100% empirical interval coverage a guarantee?** Only twenty fixed
+   seeds and three target folds are observed; the theoretical statement is
+   conditional on the sampling design and fixed grades. Wide bounds can cover
+   everything while giving few useful decisions. Always report width and abstention.
+10. **Why test pairs with only one reference?** That is the strongest available
+    exclusion protocol for ranking with three models. It removes the optimism of
+    scoring a model used to construct its own strata, while exposing the limited
+    historical evidence instead of hiding it.

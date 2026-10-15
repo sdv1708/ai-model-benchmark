@@ -1,6 +1,7 @@
 """Public selector contracts: coverage, reproducibility and strict reference-only fitting."""
 
 import math
+from itertools import combinations
 
 import pytest
 
@@ -118,3 +119,131 @@ def test_ordering_reports_reversals_and_created_ties() -> None:
     assert created_tie.subset_only_ties == 1
     assert created_tie.pair_agreement == pytest.approx(2 / 3)
     assert created_tie.kendall_tau_b == pytest.approx(math.sqrt(2 / 3))
+
+
+def test_unsampled_tasks_keep_uncertainty_even_when_every_observed_grade_is_zero() -> None:
+    scores = {
+        "a": dict.fromkeys(range(100), 1.0),
+        "b": dict.fromkeys(range(100), 0.0),
+        "target": dict.fromkeys(range(100), 0.0),
+    }
+    run = next(
+        run
+        for run in evaluate_experiment(scores, keep_ratios=(0.5,), seeds=(0,))
+        if run.held_out_model == "target" and run.strategy == "response_stratified"
+    )
+    interval = run.score_intervals["target"]
+    assert interval is not None
+    # Exact hypergeometric inversion: 5/100 still permits observing zero in 50
+    # with probability >= .025, while 6/100 does not. A Wald interval collapses.
+    assert (interval.lower, interval.upper, interval.confidence) == (0, 0.05, 0.95)
+
+
+def test_pair_transfer_excludes_both_compared_models_before_selection() -> None:
+    from benchmark_reference.transfer import evaluate_pair_transfer
+
+    scores = {
+        "reference": dict.fromkeys(range(8), 1.0),
+        "a": dict.fromkeys(range(8), 1.0),
+        "b": dict.fromkeys(range(8), 0.0),
+    }
+    first = evaluate_pair_transfer(scores, keep_ratios=(0.75,), seeds=(0,))
+    scores["a"] = dict.fromkeys(range(8), 0.0)
+    scores["b"] = dict.fromkeys(range(8), 1.0)
+    second = evaluate_pair_transfer(scores, keep_ratios=(0.75,), seeds=(0,))
+    for before, after in zip(first, second, strict=True):
+        if before.models == ("a", "b"):
+            assert before.selection == after.selection
+            assert before.reference_models == ("reference",)
+            assert before.estimated_difference == 1
+            assert after.estimated_difference == -1
+            if before.difference_interval is not None:
+                assert before.difference_interval.lower > 0
+                assert after.difference_interval is not None
+                assert after.difference_interval.upper < 0
+
+
+def test_pair_intervals_measure_discordance_rather_than_individual_score_spread() -> None:
+    from benchmark_reference.transfer import evaluate_pair_transfer
+
+    scores = {
+        "reference": dict.fromkeys(range(100), 1.0),
+        "a": {i: float(i % 2) for i in range(100)},
+        "b": {i: float(i % 2) for i in range(100)},
+    }
+    run = next(
+        run
+        for run in evaluate_pair_transfer(scores, keep_ratios=(0.5,), seeds=(0,))
+        if run.models == ("a", "b") and run.strategy == "response_stratified"
+    )
+    assert run.difference_interval is not None
+    # No sampled discordances in either direction. Bonferroni allocates .025
+    # failure to each directional population count: at most 6/100 apiece.
+    assert (run.difference_interval.lower, run.difference_interval.upper) == (-0.06, 0.06)
+
+
+def test_pairwise_failure_budget_does_not_round_to_zero_at_high_confidence() -> None:
+    from benchmark_reference.transfer import evaluate_pair_transfer
+
+    confidence = math.nextafter(1.0, 0.0)
+    scores = {
+        "reference": dict.fromkeys(range(8), 1.0),
+        "a": dict.fromkeys(range(8), 1.0),
+        "b": dict.fromkeys(range(8), 0.0),
+    }
+    run = next(
+        run
+        for run in evaluate_pair_transfer(
+            scores,
+            keep_ratios=(0.75,),
+            seeds=(0,),
+            confidence=confidence,
+        )
+        if run.models == ("a", "b") and run.strategy == "response_stratified"
+    )
+    assert run.difference_interval is not None
+    assert run.difference_interval.confidence == confidence
+    assert run.difference_interval.lower <= 1 <= run.difference_interval.upper
+
+
+def test_census_pair_interval_recovers_the_exact_net_success_difference() -> None:
+    from benchmark_reference.transfer import evaluate_pair_transfer
+
+    scores = {
+        "reference": dict.fromkeys(range(315), 1.0),
+        "a": {i: float(i < 3) for i in range(315)},
+        "b": {i: float(i == 3) for i in range(315)},
+    }
+    run = next(
+        run
+        for run in evaluate_pair_transfer(scores, keep_ratios=(1,), seeds=(0,))
+        if run.models == ("a", "b") and run.strategy == "response_stratified"
+    )
+    assert run.difference_interval is not None
+    assert run.difference_interval.lower == run.difference_interval.upper == run.full_difference
+
+
+@pytest.mark.parametrize("stratified", [False, True])
+def test_reported_intervals_cover_every_small_population_of_binary_grades(stratified: bool) -> None:
+    # Exhaust all placements of K successful tasks. For a fixed symmetric sampling
+    # design this is equivalent to exhausting possible draws from a fixed K/N pool.
+    # The truth and coverage probabilities come from combinatorial enumeration,
+    # rather than reimplementing the interval algorithm.
+    for successes in range(7):
+        covered = total = 0
+        for success_ids in combinations(range(6), successes):
+            scores = {
+                "a": {i: float(i < 3) if stratified else 1.0 for i in range(6)},
+                "b": dict.fromkeys(range(6), 0.0),
+                "target": {i: float(i in success_ids) for i in range(6)},
+            }
+            run = next(
+                run
+                for run in evaluate_experiment(scores, keep_ratios=(2 / 3,), seeds=(0,))
+                if run.held_out_model == "target" and run.strategy == "response_stratified"
+            )
+            interval = run.score_intervals["target"]
+            assert interval is not None
+            covered += interval.lower <= successes / 6 <= interval.upper
+            total += 1
+        assert covered / total >= 0.95

@@ -87,8 +87,11 @@ def test_pruning_cli_reproduces_auditable_full_budget_results(evals: Path, tmp_p
     for name in (
         "scores.json",
         "selections.jsonl",
+        "pair_selections.jsonl",
         "fidelity.json",
         "summary.csv",
+        "pair_summary.csv",
+        "decisions.csv",
         "manifest.json",
     ):
         assert (first / name).read_bytes() == (second / name).read_bytes()
@@ -114,7 +117,67 @@ def test_pruning_cli_reproduces_auditable_full_budget_results(evals: Path, tmp_p
         assert hashlib.sha256(canonical_source).hexdigest() == digest
 
 
-@pytest.mark.parametrize("failure", ["grades", "ratio", "duplicate_seed", "budget", "destination"])
+def test_pruning_cli_reports_uncertainty_transfer_and_threshold_abstentions(
+    evals: Path,
+    tmp_path: Path,
+) -> None:
+    from benchmark_reference.pruning_cli import main as pruning_main
+
+    output = tmp_path / "uncertainty"
+    pruning_main(
+        [
+            "--data-root",
+            str(evals),
+            "--output-dir",
+            str(output),
+            "--keep-ratios",
+            "0.5",
+            "1",
+            "--seeds",
+            "0",
+            "--confidence",
+            "0.95",
+            "--thresholds",
+            "0.5",
+            "0.6",
+        ]
+    )
+    report = json.loads((output / "fidelity.json").read_text(encoding="utf-8"))
+    partial = next(
+        run
+        for run in report["runs"]
+        if run["strategy"] == "response_stratified" and run["keep_ratio"] == 0.5
+    )
+    assert partial["score_intervals"][partial["held_out_model"]]["lower"] < 0.5
+    assert partial["score_intervals"][partial["held_out_model"]]["upper"] > 0.5
+    assert partial["threshold_decisions"][0]["decision"] == "inconclusive"
+    census = next(
+        run
+        for run in report["runs"]
+        if run["strategy"] == "response_stratified" and run["keep_ratio"] == 1
+    )
+    assert [decision["decision"] for decision in census["threshold_decisions"]] == ["go", "no_go"]
+    assert len(report["pair_transfer_runs"]) == 30
+    for run in report["pair_transfer_runs"]:
+        assert not set(run["models"]) & set(run["reference_models"])
+        if run["keep_ratio"] == 1:
+            assert run["estimated_difference"] == run["full_difference"] == 0
+            assert run["conclusion"] == "tie"
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        "grades",
+        "ratio",
+        "duplicate_seed",
+        "budget",
+        "destination",
+        "confidence",
+        "threshold",
+        "duplicate_threshold",
+    ],
+)
 def test_pruning_failure_preserves_prior_reports(
     evals: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], failure: str
 ) -> None:
@@ -136,6 +199,12 @@ def test_pruning_failure_preserves_prior_reports(
         extra = ["--keep-ratios", "0.001"]
     elif failure == "destination":
         output_dir = evals
+    elif failure == "confidence":
+        extra = ["--confidence", "1"]
+    elif failure == "threshold":
+        extra = ["--thresholds", "nan"]
+    elif failure == "duplicate_threshold":
+        extra = ["--thresholds", "0.5", "0.5"]
     with pytest.raises(SystemExit) as exc:
         pruning_main(["--data-root", str(evals), "--output-dir", str(output_dir), *extra])
     assert exc.value.code == 2

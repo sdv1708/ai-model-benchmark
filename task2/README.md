@@ -28,24 +28,47 @@ uv run python tools/audit_lcb.py --data-root ../Evals --reports output/lcb-pruni
 
 The module form is `uv run python -m benchmark_reference.pruning_cli ...`.
 Default retention fractions are **0.1, 0.2, 0.3, 0.5, 1.0** (32/63/95/158/315 tasks),
-with seeds **0..19** and three leave-one-model-out folds: **1,500 runs** total.
+with seeds **0..19**: **1,500 leave-one-model-out score runs plus 1,500
+leave-two-models-out pair-transfer runs**, 3,000 evaluations total.
 `--keep-ratios 0.2 0.5 --seeds 0 1 2` narrows an exploratory run. The ratio is the
 fraction **retained**, with `ceil(N * ratio)` tasks. It is not the fraction removed.
 Budgets too small to cover every occupied stratum fail rather than silently losing
 coverage. Duplicate ratios/seeds and invalid grades/configuration also fail with
 exit code 2 before publication.
 
+`--confidence 0.95` sets nominal design coverage. To demonstrate threshold decisions:
+
+```powershell
+uv run lcb-pruning --data-root ../Evals --output-dir output/lcb-study-v2 --thresholds 0.6 0.7 0.8
+uv run python tools/audit_lcb.py --data-root ../Evals --reports output/lcb-study-v2
+```
+
+Thresholds are optional and illustrative here, not invented customer requirements.
+An interval wholly above the threshold gives GO, wholly below gives NO GO;
+overlap gives **inconclusive**. Equality meets the threshold. Fixed-budget intervals
+invert hypergeometric tails with exact integer comparisons and Bonferroni across
+strata. They measure uncertainty about the fixed supplied pool under uniform
+within-stratum sampling, not generation randomness or future task distributions.
+Fixed hash priorities approximate the probability sampling assumption. Coverage is
+not simultaneous across a search over methods/budgets/seeds. Easiest/hardest have
+no design intervals below full retention. See the guide for discrete endpoints.
+
 Outputs are deterministic UTF-8 files:
 
 - `scores.json`: 945 validated coding grades with source paths and line numbers.
 - `selections.jsonl`: each fold/method/ratio/seed, reference models, selected unique
   indices, stratum sizes, selected counts, and population weights.
+- `pair_selections.jsonl`: separately auditable selections excluding both compared models.
 - `fidelity.json`: full scores, weighted estimates, raw subset means, held-out error,
-  tie-aware pair agreement and Kendall tau-b, plus fold and pooled summaries.
+  exact score intervals, threshold decisions, tie-aware ordering, and pair-transfer results.
 - `summary.csv`: held-out MAE/RMSE/bias/worst error, raw-mean MAE, ordering fidelity,
   error spread and mean pairwise Jaccard overlap across seeds within each fold.
+- `pair_summary.csv`: independently held-out pair differences, ordering, interval
+  coverage/width, decisive and wrong-decisive fractions.
+- `decisions.csv`: threshold decision agreement, false GO/NO GO and decisive fractions;
+  header only when no thresholds are supplied.
 - `manifest.json`: raw input hashes, implementation hashes, configuration, policies,
-  limitations, and hashes of the other four reports.
+  limitations, and hashes of the other seven reports (schema version 2).
 
 Implementation hashes normalize CRLF to LF for equivalent Git checkouts; input
 and output hashes fingerprint exact bytes.
@@ -54,7 +77,7 @@ Only the six coding files are parsed and hashed by this command; the supplied
 whole-tree file inventory must still match the reference pipeline's contract.
 AA-LCR and MMMU grades are not evaluated here. Reports cannot overwrite input data.
 Each file is replaced atomically; the manifest is last. Verify hashes and exit status
-because publication is not a transaction across all five files. Keep inputs static
+because publication is not a transaction across all eight files. Keep inputs static
 and use one writer per output directory. Seeds are repeatable hash priorities;
 the subsets at different budgets are not guaranteed to be nested.
 
@@ -64,6 +87,16 @@ ordering is preserved in **43.3% / 63.3%** of the respective runs. Ranking inclu
 two in-sample reference models on the same subset; only held-out error tests model
 transfer. These experiments do **not** establish a sufficient production pruning
 ratio or guarantee a future model's score.
+
+The stricter pair-transfer protocol excludes both compared models and leaves only
+one reference. At half retention, both candidates preserve pair order in **86.7%**
+of runs, while only **38.3%** of their nominal 95% paired intervals give a decisive
+ordering. No decisive error was observed on this panel. Common successes/failures
+cancel; bounds apply directly to the two discordance directions. With one reference,
+the two candidates have identical strata, so these are not independent wins.
+Uniform comparison gives 80.0% order agreement but narrower intervals and more
+decisive results; it remains a forbidden production strategy. This exposes the
+coverage/precision trade-off rather than claiming every metric improved.
 
 See the [research and interview guide](ISSUE_15_GUIDE.md),
 [acceptance evidence](../docs/issue-15-evidence.md), and checked-in

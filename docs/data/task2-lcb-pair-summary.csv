@@ -1,0 +1,101 @@
+strategy,role,keep_ratio,pair,selected_count,run_count,difference_mae,pair_order_agreement,interval_count,interval_coverage,mean_interval_width,decisive_fraction,wrong_decisive_fraction
+difficulty_stratified,candidate,0.1,__all__,32,60,0.06403924162257496,0.7833333333333333,60,1,0.7548677248677249,0.0,0.0
+difficulty_stratified,candidate,0.1,gpt-oss-120b / kimi-k2.5,32,20,0.06345238095238095,0.95,20,1,0.8038095238095238,0.0,0.0
+difficulty_stratified,candidate,0.1,gpt-oss-120b / minimax-m2.5,32,20,0.06687301587301588,1,20,1,0.7749206349206349,0.0,0.0
+difficulty_stratified,candidate,0.1,kimi-k2.5 / minimax-m2.5,32,20,0.061792328042328044,0.4,20,1,0.6858730158730159,0.0,0.0
+difficulty_stratified,candidate,0.2,__all__,63,60,0.03920269726247987,0.8166666666666667,60,1,0.5040740740740741,0.0,0.0
+difficulty_stratified,candidate,0.2,gpt-oss-120b / kimi-k2.5,63,20,0.03126984126984127,1,20,1,0.5515873015873016,0.0,0.0
+difficulty_stratified,candidate,0.2,gpt-oss-120b / minimax-m2.5,63,20,0.04157832988267771,1,20,1,0.5047619047619047,0.0,0.0
+difficulty_stratified,candidate,0.2,kimi-k2.5 / minimax-m2.5,63,20,0.04475992063492064,0.45,20,1,0.4558730158730159,0.0,0.0
+difficulty_stratified,candidate,0.3,__all__,95,60,0.03128528247707436,0.8,60,1,0.37941798941798943,0.0,0.0
+difficulty_stratified,candidate,0.3,gpt-oss-120b / kimi-k2.5,95,20,0.03256837951753206,1,20,1,0.4114285714285714,0.0,0.0
+difficulty_stratified,candidate,0.3,gpt-oss-120b / minimax-m2.5,95,20,0.026494331065759637,1,20,1,0.3788888888888889,0.0,0.0
+difficulty_stratified,candidate,0.3,kimi-k2.5 / minimax-m2.5,95,20,0.034793136847931366,0.4,20,1,0.34793650793650793,0.0,0.0
+difficulty_stratified,candidate,0.5,__all__,158,60,0.019923451785657378,0.8666666666666667,60,1,0.24264550264550264,0.38333333333333336,0.0
+difficulty_stratified,candidate,0.5,gpt-oss-120b / kimi-k2.5,158,20,0.018639455782312925,1,20,1,0.2665079365079365,0.45,0.0
+difficulty_stratified,candidate,0.5,gpt-oss-120b / minimax-m2.5,158,20,0.019951573849878935,1,20,1,0.2373015873015873,0.7,0.0
+difficulty_stratified,candidate,0.5,kimi-k2.5 / minimax-m2.5,158,20,0.02117932572478027,0.6,20,1,0.22412698412698412,0.0,0.0
+difficulty_stratified,candidate,1.0,__all__,315,60,0.0,1,60,1,0.0,1.0,0.0
+difficulty_stratified,candidate,1.0,gpt-oss-120b / kimi-k2.5,315,20,0.0,1,20,1,0.0,1.0,0.0
+difficulty_stratified,candidate,1.0,gpt-oss-120b / minimax-m2.5,315,20,0.0,1,20,1,0.0,1.0,0.0
+difficulty_stratified,candidate,1.0,kimi-k2.5 / minimax-m2.5,315,20,0.0,1,20,1,0.0,1.0,0.0
+easiest_only,comparison_baseline,0.1,__all__,32,60,0.10357969576719576,0.38333333333333336,0,,,0.0,0.0
+easiest_only,comparison_baseline,0.1,gpt-oss-120b / kimi-k2.5,32,20,0.1036954365079365,0.55,0,,,0.0,0.0
+easiest_only,comparison_baseline,0.1,gpt-oss-120b / minimax-m2.5,32,20,0.14915674603174603,0.35,0,,,0.0,0.0
+easiest_only,comparison_baseline,0.1,kimi-k2.5 / minimax-m2.5,32,20,0.05788690476190476,0.25,0,,,0.0,0.0
+easiest_only,comparison_baseline,0.2,__all__,63,60,0.0935978835978836,0.5166666666666667,0,,,0.0,0.0
+easiest_only,comparison_baseline,0.2,gpt-oss-120b / kimi-k2.5,63,20,0.0911111111111111,0.8,0,,,0.0,0.0
+easiest_only,comparison_baseline,0.2,gpt-oss-120b / minimax-m2.5,63,20,0.13015873015873017,0.5,0,,,0.0,0.0
+easiest_only,comparison_baseline,0.2,kimi-k2.5 / minimax-m2.5,63,20,0.05952380952380952,0.25,0,,,0.0,0.0
+easiest_only,comparison_baseline,0.3,__all__,95,60,0.08629351155666945,0.6,0,,,0.0,0.0
+easiest_only,comparison_baseline,0.3,gpt-oss-120b / kimi-k2.5,95,20,0.0833500417710944,0.9,0,,,0.0,0.0
+easiest_only,comparison_baseline,0.3,gpt-oss-120b / minimax-m2.5,95,20,0.1270843776106934,0.65,0,,,0.0,0.0
+easiest_only,comparison_baseline,0.3,kimi-k2.5 / minimax-m2.5,95,20,0.04844611528822055,0.25,0,,,0.0,0.0
+easiest_only,comparison_baseline,0.5,__all__,158,60,0.08005391467416784,0.6833333333333333,0,,,0.0,0.0
+easiest_only,comparison_baseline,0.5,gpt-oss-120b / kimi-k2.5,158,20,0.09062186055856941,1,0,,,0.0,0.0
+easiest_only,comparison_baseline,0.5,gpt-oss-120b / minimax-m2.5,158,20,0.11944946755073338,0.95,0,,,0.0,0.0
+easiest_only,comparison_baseline,0.5,kimi-k2.5 / minimax-m2.5,158,20,0.030090415913200726,0.1,0,,,0.0,0.0
+easiest_only,comparison_baseline,1.0,__all__,315,60,0.0,1,60,1,0.0,1.0,0.0
+easiest_only,comparison_baseline,1.0,gpt-oss-120b / kimi-k2.5,315,20,0.0,1,20,1,0.0,1.0,0.0
+easiest_only,comparison_baseline,1.0,gpt-oss-120b / minimax-m2.5,315,20,0.0,1,20,1,0.0,1.0,0.0
+easiest_only,comparison_baseline,1.0,kimi-k2.5 / minimax-m2.5,315,20,0.0,1,20,1,0.0,1.0,0.0
+hardest_only,comparison_baseline,0.1,__all__,32,60,0.14596560846560847,0.9333333333333333,0,,,0.0,0.0
+hardest_only,comparison_baseline,0.1,gpt-oss-120b / kimi-k2.5,32,20,0.16464285714285715,1,0,,,0.0,0.0
+hardest_only,comparison_baseline,0.1,gpt-oss-120b / minimax-m2.5,32,20,0.18990575396825396,1,0,,,0.0,0.0
+hardest_only,comparison_baseline,0.1,kimi-k2.5 / minimax-m2.5,32,20,0.08334821428571429,0.8,0,,,0.0,0.0
+hardest_only,comparison_baseline,0.2,__all__,63,60,0.13253968253968254,1,0,,,0.0,0.0
+hardest_only,comparison_baseline,0.2,gpt-oss-120b / kimi-k2.5,63,20,0.14365079365079364,1,0,,,0.0,0.0
+hardest_only,comparison_baseline,0.2,gpt-oss-120b / minimax-m2.5,63,20,0.18809523809523807,1,0,,,0.0,0.0
+hardest_only,comparison_baseline,0.2,kimi-k2.5 / minimax-m2.5,63,20,0.06587301587301587,1,0,,,0.0,0.0
+hardest_only,comparison_baseline,0.3,__all__,95,60,0.1322946254525202,1,0,,,0.0,0.0
+hardest_only,comparison_baseline,0.3,gpt-oss-120b / kimi-k2.5,95,20,0.15138680033416876,1,0,,,0.0,0.0
+hardest_only,comparison_baseline,0.3,gpt-oss-120b / minimax-m2.5,95,20,0.1929156223893066,1,0,,,0.0,0.0
+hardest_only,comparison_baseline,0.3,kimi-k2.5 / minimax-m2.5,95,20,0.05258145363408521,1,0,,,0.0,0.0
+hardest_only,comparison_baseline,0.5,__all__,158,60,0.07797099993302525,0.9166666666666666,0,,,0.0,0.0
+hardest_only,comparison_baseline,0.5,gpt-oss-120b / kimi-k2.5,158,20,0.09640345589712679,1,0,,,0.0,0.0
+hardest_only,comparison_baseline,0.5,gpt-oss-120b / minimax-m2.5,158,20,0.1144112919429375,1,0,,,0.0,0.0
+hardest_only,comparison_baseline,0.5,kimi-k2.5 / minimax-m2.5,158,20,0.023098251959011454,0.75,0,,,0.0,0.0
+hardest_only,comparison_baseline,1.0,__all__,315,60,0.0,1,60,1,0.0,1.0,0.0
+hardest_only,comparison_baseline,1.0,gpt-oss-120b / kimi-k2.5,315,20,0.0,1,20,1,0.0,1.0,0.0
+hardest_only,comparison_baseline,1.0,gpt-oss-120b / minimax-m2.5,315,20,0.0,1,20,1,0.0,1.0,0.0
+hardest_only,comparison_baseline,1.0,kimi-k2.5 / minimax-m2.5,315,20,0.0,1,20,1,0.0,1.0,0.0
+response_stratified,candidate,0.1,__all__,32,60,0.06403924162257496,0.7833333333333333,60,1,0.7548677248677249,0.0,0.0
+response_stratified,candidate,0.1,gpt-oss-120b / kimi-k2.5,32,20,0.06345238095238095,0.95,20,1,0.8038095238095238,0.0,0.0
+response_stratified,candidate,0.1,gpt-oss-120b / minimax-m2.5,32,20,0.06687301587301588,1,20,1,0.7749206349206349,0.0,0.0
+response_stratified,candidate,0.1,kimi-k2.5 / minimax-m2.5,32,20,0.061792328042328044,0.4,20,1,0.6858730158730159,0.0,0.0
+response_stratified,candidate,0.2,__all__,63,60,0.03920269726247987,0.8166666666666667,60,1,0.5040740740740741,0.0,0.0
+response_stratified,candidate,0.2,gpt-oss-120b / kimi-k2.5,63,20,0.03126984126984127,1,20,1,0.5515873015873016,0.0,0.0
+response_stratified,candidate,0.2,gpt-oss-120b / minimax-m2.5,63,20,0.04157832988267771,1,20,1,0.5047619047619047,0.0,0.0
+response_stratified,candidate,0.2,kimi-k2.5 / minimax-m2.5,63,20,0.04475992063492064,0.45,20,1,0.4558730158730159,0.0,0.0
+response_stratified,candidate,0.3,__all__,95,60,0.03128528247707436,0.8,60,1,0.37941798941798943,0.0,0.0
+response_stratified,candidate,0.3,gpt-oss-120b / kimi-k2.5,95,20,0.03256837951753206,1,20,1,0.4114285714285714,0.0,0.0
+response_stratified,candidate,0.3,gpt-oss-120b / minimax-m2.5,95,20,0.026494331065759637,1,20,1,0.3788888888888889,0.0,0.0
+response_stratified,candidate,0.3,kimi-k2.5 / minimax-m2.5,95,20,0.034793136847931366,0.4,20,1,0.34793650793650793,0.0,0.0
+response_stratified,candidate,0.5,__all__,158,60,0.019923451785657378,0.8666666666666667,60,1,0.24264550264550264,0.38333333333333336,0.0
+response_stratified,candidate,0.5,gpt-oss-120b / kimi-k2.5,158,20,0.018639455782312925,1,20,1,0.2665079365079365,0.45,0.0
+response_stratified,candidate,0.5,gpt-oss-120b / minimax-m2.5,158,20,0.019951573849878935,1,20,1,0.2373015873015873,0.7,0.0
+response_stratified,candidate,0.5,kimi-k2.5 / minimax-m2.5,158,20,0.02117932572478027,0.6,20,1,0.22412698412698412,0.0,0.0
+response_stratified,candidate,1.0,__all__,315,60,0.0,1,60,1,0.0,1.0,0.0
+response_stratified,candidate,1.0,gpt-oss-120b / kimi-k2.5,315,20,0.0,1,20,1,0.0,1.0,0.0
+response_stratified,candidate,1.0,gpt-oss-120b / minimax-m2.5,315,20,0.0,1,20,1,0.0,1.0,0.0
+response_stratified,candidate,1.0,kimi-k2.5 / minimax-m2.5,315,20,0.0,1,20,1,0.0,1.0,0.0
+uniform_random,comparison_baseline,0.1,__all__,32,60,0.06936177248677249,0.7333333333333333,60,1,0.49074074074074076,0.05,0.0
+uniform_random,comparison_baseline,0.1,gpt-oss-120b / kimi-k2.5,32,20,0.071875,0.9,20,1,0.5304761904761904,0.05,0.0
+uniform_random,comparison_baseline,0.1,gpt-oss-120b / minimax-m2.5,32,20,0.0724156746031746,0.95,20,1,0.5015873015873016,0.1,0.0
+uniform_random,comparison_baseline,0.1,kimi-k2.5 / minimax-m2.5,32,20,0.06379464285714286,0.35,20,1,0.44015873015873014,0.0,0.0
+uniform_random,comparison_baseline,0.2,__all__,63,60,0.03978835978835979,0.7833333333333333,60,1,0.33724867724867724,0.11666666666666667,0.0
+uniform_random,comparison_baseline,0.2,gpt-oss-120b / kimi-k2.5,63,20,0.034444444444444444,1,20,1,0.36682539682539683,0.2,0.0
+uniform_random,comparison_baseline,0.2,gpt-oss-120b / minimax-m2.5,63,20,0.0392063492063492,1,20,1,0.3415873015873016,0.15,0.0
+uniform_random,comparison_baseline,0.2,kimi-k2.5 / minimax-m2.5,63,20,0.045714285714285714,0.35,20,1,0.30333333333333334,0.0,0.0
+uniform_random,comparison_baseline,0.3,__all__,95,60,0.03135616819827346,0.8,60,1,0.251005291005291,0.26666666666666666,0.0
+uniform_random,comparison_baseline,0.3,gpt-oss-120b / kimi-k2.5,95,20,0.033091060985797824,1,20,1,0.2704761904761905,0.35,0.0
+uniform_random,comparison_baseline,0.3,gpt-oss-120b / minimax-m2.5,95,20,0.024335839598997492,1,20,1,0.25317460317460316,0.45,0.0
+uniform_random,comparison_baseline,0.3,kimi-k2.5 / minimax-m2.5,95,20,0.03664160401002506,0.4,20,1,0.22936507936507938,0.0,0.0
+uniform_random,comparison_baseline,0.5,__all__,158,60,0.018917688031612086,0.8,60,1,0.1619047619047619,0.6666666666666666,0.0
+uniform_random,comparison_baseline,0.5,gpt-oss-120b / kimi-k2.5,158,20,0.01700221016676713,1,20,1,0.17507936507936508,1.0,0.0
+uniform_random,comparison_baseline,0.5,gpt-oss-120b / minimax-m2.5,158,20,0.01885573638738196,1,20,1,0.1622222222222222,1.0,0.0
+uniform_random,comparison_baseline,0.5,kimi-k2.5 / minimax-m2.5,158,20,0.020895117540687163,0.4,20,1,0.1484126984126984,0.0,0.0
+uniform_random,comparison_baseline,1.0,__all__,315,60,0.0,1,60,1,0.0,1.0,0.0
+uniform_random,comparison_baseline,1.0,gpt-oss-120b / kimi-k2.5,315,20,0.0,1,20,1,0.0,1.0,0.0
+uniform_random,comparison_baseline,1.0,gpt-oss-120b / minimax-m2.5,315,20,0.0,1,20,1,0.0,1.0,0.0
+uniform_random,comparison_baseline,1.0,kimi-k2.5 / minimax-m2.5,315,20,0.0,1,20,1,0.0,1.0,0.0

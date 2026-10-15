@@ -14,6 +14,7 @@ from benchmark_reference.pruning import (
     select_baseline,
     select_samples,
 )
+from benchmark_reference.uncertainty import ConfidenceInterval, score_interval, validate_confidence
 
 DEFAULT_RATIOS = (0.1, 0.2, 0.3, 0.5, 1.0)
 DEFAULT_SEEDS = tuple(range(20))
@@ -92,6 +93,7 @@ class ExperimentRun:
     estimates: dict[str, float]
     raw_subset_means: dict[str, float]
     ordering: OrderingFidelity
+    score_intervals: dict[str, ConfidenceInterval | None]
 
 
 def evaluate_experiment(
@@ -99,6 +101,7 @@ def evaluate_experiment(
     *,
     keep_ratios: Sequence[float] = DEFAULT_RATIOS,
     seeds: Sequence[int] = DEFAULT_SEEDS,
+    confidence: float = 0.95,
 ) -> tuple[ExperimentRun, ...]:
     """Evaluate all candidates and explicitly marked trivial comparisons.
 
@@ -107,6 +110,7 @@ def evaluate_experiment(
     All models are scored on that fold's common subset, but its two reference-model
     scores are in-sample diagnostics. Only the held-out score is a transfer test.
     """
+    validate_confidence(confidence)
     if len(scores) < 3:
         raise AnalysisError("Leave-one-model-out evaluation requires at least three models")
     if not keep_ratios or len(set(keep_ratios)) != len(keep_ratios):
@@ -149,6 +153,17 @@ def evaluate_experiment(
                             estimates,
                             raw,
                             ordering_fidelity(full, estimates),
+                            {
+                                model: score_interval(
+                                    selection,
+                                    {item.index: values[item.index] for item in selection},
+                                    confidence=confidence,
+                                )
+                                if strategy not in ("easiest_only", "hardest_only")
+                                or len(selection) == population_count
+                                else None
+                                for model, values in sorted(scores.items())
+                            },
                         )
                     )
     return tuple(runs)
