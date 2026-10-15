@@ -58,6 +58,8 @@ hashes remain exact), with a regression assertion. Both pipelines share the same
 destination validation and atomic replacement helpers. The complete 91-test suite
 passed again after these review changes, and the final reports were regenerated,
 independently audited, and compared byte-for-byte a second time.
+Separate standards and spec reviewers confirmed **zero unresolved findings** after
+the fixes; see the [two-axis review report](issue-15-review.md).
 
 ## Measured comparison
 
