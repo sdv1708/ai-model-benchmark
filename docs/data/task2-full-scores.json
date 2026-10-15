@@ -1,0 +1,59 @@
+{
+  "scale": "0..1",
+  "summaries": [
+    {
+      "benchmark": "aa_lcr",
+      "mean_score": 0.48,
+      "metric": "acc",
+      "model": "gpt-oss-120b",
+      "sample_count": 100,
+      "score_sum": 48.0,
+      "subset": "default"
+    },
+    {
+      "benchmark": "aa_lcr",
+      "mean_score": 0.66,
+      "metric": "acc",
+      "model": "kimi-k2.5",
+      "sample_count": 100,
+      "score_sum": 66.0,
+      "subset": "default"
+    },
+    {
+      "benchmark": "aa_lcr",
+      "mean_score": 0.64,
+      "metric": "acc",
+      "model": "minimax-m2.5",
+      "sample_count": 100,
+      "score_sum": 64.0,
+      "subset": "default"
+    },
+    {
+      "benchmark": "live_code_bench_v5",
+      "mean_score": 0.765079365079365,
+      "metric": "pass",
+      "model": "gpt-oss-120b",
+      "sample_count": 315,
+      "score_sum": 241.0,
+      "subset": "default"
+    },
+    {
+      "benchmark": "live_code_bench_v5",
+      "mean_score": 0.6285714285714286,
+      "metric": "pass",
+      "model": "kimi-k2.5",
+      "sample_count": 315,
+      "score_sum": 198.0,
+      "subset": "default"
+    },
+    {
+      "benchmark": "live_code_bench_v5",
+      "mean_score": 0.6190476190476191,
+      "metric": "pass",
+      "model": "minimax-m2.5",
+      "sample_count": 315,
+      "score_sum": 195.0,
+      "subset": "default"
+    }
+  ]
+}
