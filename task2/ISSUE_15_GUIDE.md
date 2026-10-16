@@ -38,7 +38,8 @@ results concern its own benchmarks and estimation methods. We borrow the questio
 not its claimed accuracy: we do not reproduce its learned IRT estimator, train a
 latent ability model, or assume its compression results transfer to these 315 tasks.
 
-[Wei, Iyer, and Bilmes (ICML 2015)](https://proceedings.mlr.press/v37/wei15.html)
+[Wei, Iyer, and Bilmes (ICML 2015)](
+https://proceedings.mlr.press/v37/wei15.html)
 provide representative-selection prior art using submodularity. We considered
 representative/diversity objectives but did not implement a facility-location or
 embedding selector. Here two historical models provide at most four binary behavior
