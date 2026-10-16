@@ -20,6 +20,12 @@ See the [implementation and interview guide](./task2/INTERVIEW_GUIDE.md) and
 [issue #14 acceptance evidence](./docs/issue-14-evidence.md). The eventual pruner's
 evalscope integration is a later Task 2 deliverable.
 
+Issue #15 adds [LiveCodeBench pruning experiments](./task2/ISSUE_15_GUIDE.md): two
+reference-only stratified candidates, three comparison baselines, exact finite-pool
+uncertainty, threshold abstention, and 3,000 score/pair-transfer evaluations. From `task2/`, run
+`uv run lcb-pruning --data-root ../Evals --output-dir output/lcb-pruning`.
+See [measured fidelity and acceptance evidence](./docs/issue-15-evidence.md).
+
 ## Task 1 deployment
 
 Task 1 is configured as one Vercel project with two services in the root
