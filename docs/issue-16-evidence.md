@@ -96,3 +96,6 @@ transaction. Keep inputs fixed and use one writer per destination.
 
 This ticket evaluates AA-LCR candidates offline. The project's later pinned
 evalscope integration and final customer operating-point decision remain separate.
+
+The implementation skill's [two-axis review](issue-16-review.md) has no unresolved
+standards or spec findings after the candidate-registration fix.
