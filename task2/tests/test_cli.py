@@ -67,6 +67,74 @@ def evals(tmp_path: Path) -> Path:
     return root
 
 
+def test_long_context_cli_publishes_reproducible_fidelity_metadata_and_noise(
+    evals: Path, tmp_path: Path
+) -> None:
+    from benchmark_reference.long_context_cli import main as long_context_main
+
+    for path in (evals / "Part 1" / "predictions").glob("aa_lcr*.jsonl"):
+        rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+        for row in rows:
+            row["metadata"] = {
+                "question": f"Question {row['index']}",
+                "input_tokens": 1000 + row["index"],
+                "data_source_urls": f"https://example.com/{row['index'] // 5}",
+            }
+        path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+    for name in ("long1", "long2"):
+        long_context_main(
+            [
+                "--data-root",
+                str(evals),
+                "--output-dir",
+                str(tmp_path / name),
+                "--keep-ratios",
+                "0.1",
+                "1",
+                "--seeds",
+                "0",
+                "--flip-counts",
+                "0",
+                "1",
+            ]
+        )
+    output = tmp_path / "long1"
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["benchmark"] == "aa_lcr"
+    assert manifest["run_count"] == manifest["pair_transfer_run_count"] == 30
+    for name, digest in manifest["output_sha256"].items():
+        assert hashlib.sha256((output / name).read_bytes()).hexdigest() == digest
+        assert (output / name).read_bytes() == (tmp_path / "long2" / name).read_bytes()
+    assert (output / "manifest.json").read_bytes() == (
+        tmp_path / "long2/manifest.json"
+    ).read_bytes()
+    noise = json.loads((output / "judge_noise.json").read_text())
+    assert noise["estimated_judge_flip_rate"] is None
+    assert noise["answers_with_repeat_reviews"] == 0
+    assert noise["recorded_grade_count"] == 300
+    report = json.loads((output / "fidelity.json").read_text())
+    for run in report["runs"]:
+        if run["keep_ratio"] == 1:
+            assert run["held_out_absolute_error"] == 0
+            assert run["ordering"]["pair_agreement"] == 1
+
+
+def test_long_context_cli_rejects_missing_metadata_without_replacing_reports(
+    evals: Path, tmp_path: Path
+) -> None:
+    from benchmark_reference.long_context_cli import main as long_context_main
+
+    output = tmp_path / "previous"
+    output.mkdir()
+    sentinel = output / "manifest.json"
+    sentinel.write_text("previous successful report")
+    with pytest.raises(SystemExit) as error:
+        long_context_main(["--data-root", str(evals), "--output-dir", str(output)])
+    assert error.value.code == 2
+    assert sentinel.read_text() == "previous successful report"
+    assert list(output.iterdir()) == [sentinel]
+
+
 def test_pruning_cli_reproduces_auditable_full_budget_results(evals: Path, tmp_path: Path) -> None:
     from benchmark_reference.pruning_cli import main as pruning_main
 

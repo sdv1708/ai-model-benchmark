@@ -10,6 +10,7 @@ import math
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Protocol
 
 from benchmark_reference.models import AnalysisError
 
@@ -27,6 +28,12 @@ class SelectedSample:
     stratum: str
     population_count: int
     selected_count: int
+
+
+class CandidateSelector(Protocol):
+    def __call__(
+        self, references: ReferenceScores, *, strategy: str, keep_ratio: float, seed: int
+    ) -> tuple[SelectedSample, ...]: ...
 
 
 def _validate(references: ReferenceScores, keep_ratio: float, seed: int) -> tuple[list[int], int]:
@@ -89,6 +96,29 @@ def select_samples(
             else "pattern:" + "".join(map(str, pattern))
         )
         groups[key].append(index)
+    return select_strata(groups, budget=budget, seed=seed)
+
+
+def select_strata(
+    groups: Mapping[str, list[int]], *, budget: int, seed: int
+) -> tuple[SelectedSample, ...]:
+    """Allocate a covered stratified sample with full-population mean weights.
+
+    Callers supply a disjoint, nonempty partition and a valid integer budget.
+    Reuse the established hash design so LCB selections remain byte-identical.
+    """
+    ids = [index for members in groups.values() for index in members]
+    if (
+        not ids
+        or any(not members for members in groups.values())
+        or len(set(ids)) != len(ids)
+        or isinstance(budget, bool)
+        or not isinstance(budget, int)
+        or not 0 < budget <= len(ids)
+        or isinstance(seed, bool)
+        or not isinstance(seed, int)
+    ):
+        raise AnalysisError("Invalid strata, budget, or seed")
     if budget < len(groups):
         raise AnalysisError(f"Budget {budget} cannot cover {len(groups)} occupied strata")
     allocation = dict.fromkeys(sorted(groups), 1)

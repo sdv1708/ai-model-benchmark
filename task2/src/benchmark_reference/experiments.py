@@ -9,6 +9,7 @@ from benchmark_reference.models import AnalysisError
 from benchmark_reference.pruning import (
     BASELINES,
     CANDIDATES,
+    CandidateSelector,
     ReferenceScores,
     SelectedSample,
     select_baseline,
@@ -102,6 +103,8 @@ def evaluate_experiment(
     keep_ratios: Sequence[float] = DEFAULT_RATIOS,
     seeds: Sequence[int] = DEFAULT_SEEDS,
     confidence: float = 0.95,
+    candidate_strategies: tuple[str, ...] = CANDIDATES,
+    candidate_selector: CandidateSelector = select_samples,
 ) -> tuple[ExperimentRun, ...]:
     """Evaluate all candidates and explicitly marked trivial comparisons.
 
@@ -126,8 +129,8 @@ def evaluate_experiment(
     runs = []
     for held_out in sorted(scores):
         references = {model: values for model, values in scores.items() if model != held_out}
-        for strategy in (*CANDIDATES, *BASELINES):
-            selector = select_samples if strategy in CANDIDATES else select_baseline
+        for strategy in (*candidate_strategies, *BASELINES):
+            selector = candidate_selector if strategy in candidate_strategies else select_baseline
             for ratio in sorted(keep_ratios):
                 for seed in sorted(seeds):
                     selection = selector(references, strategy=strategy, keep_ratio=ratio, seed=seed)
@@ -142,7 +145,9 @@ def evaluate_experiment(
                     runs.append(
                         ExperimentRun(
                             strategy,
-                            "candidate" if strategy in CANDIDATES else "comparison_baseline",
+                            "candidate"
+                            if strategy in candidate_strategies
+                            else "comparison_baseline",
                             ratio,
                             seed,
                             held_out,

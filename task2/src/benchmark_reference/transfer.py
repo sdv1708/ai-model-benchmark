@@ -11,6 +11,7 @@ from benchmark_reference.models import AnalysisError
 from benchmark_reference.pruning import (
     BASELINES,
     CANDIDATES,
+    CandidateSelector,
     ReferenceScores,
     SelectedSample,
     select_baseline,
@@ -48,6 +49,8 @@ def evaluate_pair_transfer(
     keep_ratios: Sequence[float] = DEFAULT_RATIOS,
     seeds: Sequence[int] = DEFAULT_SEEDS,
     confidence: float = 0.95,
+    candidate_strategies: tuple[str, ...] = CANDIDATES,
+    candidate_selector: CandidateSelector = select_samples,
 ) -> tuple[PairTransferRun, ...]:
     """Hold out both compared models, then score their paired common subset.
 
@@ -70,8 +73,8 @@ def evaluate_pair_transfer(
     runs = []
     for a, b in combinations(sorted(scores), 2):
         references = {model: values for model, values in scores.items() if model not in (a, b)}
-        for strategy in (*CANDIDATES, *BASELINES):
-            selector = select_samples if strategy in CANDIDATES else select_baseline
+        for strategy in (*candidate_strategies, *BASELINES):
+            selector = candidate_selector if strategy in candidate_strategies else select_baseline
             for ratio in sorted(keep_ratios):
                 for seed in sorted(seeds):
                     selection = selector(references, strategy=strategy, keep_ratio=ratio, seed=seed)
@@ -106,7 +109,9 @@ def evaluate_pair_transfer(
                     runs.append(
                         PairTransferRun(
                             strategy,
-                            "candidate" if strategy in CANDIDATES else "comparison_baseline",
+                            "candidate"
+                            if strategy in candidate_strategies
+                            else "comparison_baseline",
                             ratio,
                             seed,
                             (a, b),

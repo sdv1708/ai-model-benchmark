@@ -1,0 +1,101 @@
+{
+  "algorithm_version": "aa-lcr-pruning-v1",
+  "allocation": "one per occupied stratum, then largest proportional deficit; lexical ties",
+  "analysis_version": "aa-lcr-study-v1",
+  "baseline_policy": "comparison only; never candidates or production recommendations",
+  "benchmark": "aa_lcr",
+  "confidence": 0.95,
+  "estimator": "sum_h (N_h/N) * mean(selected grades in h); baselines use raw mean",
+  "features": "Benchmark metadata input_tokens and canonical source-URL counts; empirical midrank thirds. Metadata-only candidate crosses length and document count; historical candidate crosses length and reference pass count. Target grades and model usage excluded before fitting.",
+  "implementation_hash_policy": "SHA256 of source bytes after CRLF-to-LF normalization",
+  "implementation_sha256": {
+    "analysis.py": "ee4719c35d741b5ef70d45d14a52cb5bb09035c07edb3f9888fbdab1567d130a",
+    "experiments.py": "9f2d4ccbddaa1795b911b7306fb3e3c4b5419cd9907f3c27f0db3f358e096102",
+    "inputs.py": "99f30cd92b443cad3aec9ceeb001b05f814816a14820e5b9861582c6942e7cf8",
+    "judge_noise.py": "8f65ab84810dd087c0bca31ef4421dfdec263417a0cae438aaf876db2c9c4f41",
+    "long_context.py": "e9877a193358233d633d05329213ad1593fd14677c629fc6e82370a255df357c",
+    "long_context_cli.py": "5a2c0c984bbd42dc93db61cb226c2720b7a37f3dc6cfc21029359cd23404b724",
+    "long_context_reporting.py": "1b6ca43b51528ac774dc2e27fd6fb7c3b8aa3d67f82f19a5a66b718f7666ad4d",
+    "models.py": "4ba7662ea4244d50cb142112bd83976d6e2af8fdec2f591ade793d0ea84748e3",
+    "pruning.py": "662669e87d004feddd07e2d7a2104516f5218fc358dbb9098590dbaf23946b4c",
+    "pruning_cli.py": "a38a4ed406a9b043b09037fb2c82cce244048503f39a583ea28f0b25f3f9426f",
+    "pruning_reporting.py": "8add97ec76fc9f2daa58f81080e7411f6cf5922aa366530a3320b77327f638ba",
+    "reporting.py": "25658f0a8b9900d2747753e5e45b0d1b35ac119dc347abf41e6047d924a0c384",
+    "study_metrics.py": "433ba957859c79cfe213b0ae3174de8d4bf1db9ad987f78f55d700a20a932530",
+    "transfer.py": "227722d0749bef54625642104cc7567df76cf0ad11a6a5d9b485e224fa5419f5",
+    "uncertainty.py": "9bb0723a7e4803ce05e850af2ab3ee5e4d70416b3ec31657efc7c0d7d10ccd43"
+  },
+  "inputs": [
+    {
+      "path": "Part 1/predictions/aa_lcr__gpt-oss-120b.jsonl",
+      "sha256": "034b57ded68f19e5d7837008dc5149eafa7529939ec513c1f1e873290dd1c1f9"
+    },
+    {
+      "path": "Part 1/predictions/aa_lcr__kimi-k2.5.jsonl",
+      "sha256": "32bda99ec08f13633c06e6c51c88248316cf81c4f7f095163d33f18961a595b9"
+    },
+    {
+      "path": "Part 1/predictions/aa_lcr__minimax-m2.5.jsonl",
+      "sha256": "1ab5aa0b351731c22d4e5a84a22e93d5f0edc2c1f947aea51285a8773d1c4c35"
+    },
+    {
+      "path": "Part 1/reviews/aa_lcr__gpt-oss-120b.jsonl",
+      "sha256": "48bbf552c15031126616a6a3c3759c81d8b948e8520e2d4bc25e496e2d33d94f"
+    },
+    {
+      "path": "Part 1/reviews/aa_lcr__kimi-k2.5.jsonl",
+      "sha256": "b9b78dfdc58bbe5aa72248a960698d25e9474dd163f5d67abf6edceb6bf60f0b"
+    },
+    {
+      "path": "Part 1/reviews/aa_lcr__minimax-m2.5.jsonl",
+      "sha256": "ba543c9d91f23c758ce0449ece4af6720a24478a42c69b2d818a6b0273e12a32"
+    }
+  ],
+  "interval_policy": "equal-tail hypergeometric inversion with exact integer tail comparisons; Bonferroni across strata and both directional discordances for paired differences; no intervals for deterministic top-k except at census",
+  "keep_ratios": [0.1, 0.2, 0.3, 0.5, 1.0],
+  "limitations": [
+    "Only three historical models; each fold fits on two. This is not proof for a fourth model.",
+    "Ordering uses the same subset within a fold, but includes two in-sample reference models.",
+    "Held-out scores alone measure transfer; no ranking combines scores from different subsets.",
+    "Seed dispersion measures selection sensitivity on fixed grades, not generation uncertainty.",
+    "No customer threshold or production operating point is fitted; thresholds are user inputs.",
+    "Exact intervals assume uniform within-stratum sampling; fixed hash priorities approximate it.",
+    "Intervals concern fixed grades, not future tasks, generation noise, or unseen model families.",
+    "Coverage is per fixed run, not simultaneous over methods, ratios, seeds, or searches.",
+    "Pair transfer excludes both compared models; only one reference remains in this panel.",
+    "Easiest/hardest comparisons have no intervals except when the entire pool is observed.",
+    "Index correspondence across models is assumed from the supplied benchmark contract.",
+    "This offline experiment does not satisfy the later evalscope integration requirement.",
+    "Questions and URLs are available, but these candidates do not establish semantic/topic coverage.",
+    "Length uses shared benchmark input_tokens, not model-dependent model_output.usage.",
+    "Repeated document sets create dependence for future-task inference; design intervals concern only this fixed pool.",
+    "Document-count and length coverage do not guarantee coverage of all source sets at small budgets.",
+    "Only one judge review per answer; judge noise and systematic judge bias are not identifiable.",
+    "Judge flip budgets are conditional sensitivity assumptions, not estimated noise rates or confidence intervals.",
+    "Sampling intervals collapse at census, but unmeasured judge uncertainty does not.",
+    "Input-token totals are a cost proxy; latency, output tokens, cache reuse and judge cost are not measured."
+  ],
+  "metric": "recorded LLM-judge binary acc; scale 0..1",
+  "ordering_policy": "common subset per fold; reference-assisted; ties within 1e-12",
+  "output_sha256": {
+    "coverage.csv": "6d8e19d1102b955a3c219759a932ee66932a88e901cbd00d78d7f4287f7d9c31",
+    "decisions.csv": "55a16631e3e17d2042e3efee61ced4b72ae9f28e2d14afb1ae4b42eef09f5a31",
+    "features.json": "456d41f487b0d9ab3f1578a31f7cc1abefa7a7e02f508b11e78283097593b341",
+    "fidelity.json": "449cc7a64b9ba0bbc89a16a08c3022a1611dcda02127d7f6ce6ce012c0235835",
+    "judge_noise.json": "cda02845130cb191b387206372d6adec38a0cb5ae6bd220bae917831bf5ea7ad",
+    "pair_selections.jsonl": "481fe379f58d0d46d563eb06ef06bd7acde1a3fdc52c408ddc82ccffb17b8680",
+    "pair_summary.csv": "4c3ee201bd2e3e0c3970c89209855de5264e59bac4fbf7bccd9fb663311ada2a",
+    "scores.json": "12d7e6f91001aee7de3652d846cdf45abadfcb29088ce2de147f7e9e736c6d5f",
+    "selections.jsonl": "465cbbc480f12d9724bb3bcdaea35a80f90fc3502b02501d74ff6966d5dd2d49",
+    "summary.csv": "316d317d0f639d472f6f8fd602c2bbc326de2ee8e0afdf699007b9ac44d7b15c"
+  },
+  "pair_transfer_run_count": 1500,
+  "ratio_definition": "fraction retained; count = ceil(N * keep_ratio)",
+  "run_count": 1500,
+  "schema_version": 2,
+  "seeds": [
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19
+  ],
+  "thresholds": [],
+  "within_stratum": "ascending SHA256(lcb-pruning-v1:seed:index), without replacement"
+}

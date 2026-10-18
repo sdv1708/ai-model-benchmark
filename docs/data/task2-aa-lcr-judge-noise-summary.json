@@ -1,0 +1,55 @@
+{
+  "answers_with_repeat_reviews": 0,
+  "distinct_model_answers": 300,
+  "estimated_judge_flip_rate": null,
+  "estimated_judge_variance": null,
+  "extract_policy": "All full-report fields except the per-run sensitivity array; regenerate with aa-lcr-pruning.",
+  "flip_counts": [0, 1, 2, 5, 10],
+  "full_pair_tipping": [
+    {
+      "minimum_total_flips_to_break_tie": null,
+      "minimum_total_flips_to_reverse": 19,
+      "minimum_total_flips_to_tie": 18,
+      "models": ["gpt-oss-120b", "kimi-k2.5"],
+      "signed_success_count_gap": -18
+    },
+    {
+      "minimum_total_flips_to_break_tie": null,
+      "minimum_total_flips_to_reverse": 17,
+      "minimum_total_flips_to_tie": 16,
+      "models": ["gpt-oss-120b", "minimax-m2.5"],
+      "signed_success_count_gap": -16
+    },
+    {
+      "minimum_total_flips_to_break_tie": null,
+      "minimum_total_flips_to_reverse": 3,
+      "minimum_total_flips_to_tie": 2,
+      "models": ["kimi-k2.5", "minimax-m2.5"],
+      "signed_success_count_gap": 2
+    }
+  ],
+  "interpretation": [
+    "One review per fixed answer cannot identify judge nondeterminism or bias.",
+    "Seed variation and design intervals condition on stored grades, not judge reruns.",
+    "Cross-model disagreements mix capability, generation and grading; not judge replicates.",
+    "Flip budgets are hypothetical upper bounds, not measured or probabilistic flip rates.",
+    "Sensitivity holds reference features and selection fixed; reference-label refitting is unmeasured.",
+    "Design-plus-flip bounds widen finite-pool intervals by b/N for a fixed latent grade table.",
+    "They retain design coverage only conditional on at most b errors, not judge correctness.",
+    "At census sampling uncertainty vanishes; judge uncertainty remains unidentified."
+  ],
+  "judge_metadata_inventory": [
+    {
+      "count": 300,
+      "metadata": {
+        "judge_strategy": "auto",
+        "model": "qwen-3-235b-a22b-instruct-2507",
+        "source": "llm_judge"
+      }
+    }
+  ],
+  "recorded_grade_count": 300,
+  "repeat_judging_plan": "Freeze prompts, answers, rubric and judge version. Rejudge every answer at least 3 times with independent calls, retaining every grade, seed and configuration. Report within-answer disagreement, per-model repeat-score variation and paired rank changes; resample document sets and judge replicates separately. Use human adjudication to assess systematic bias.",
+  "reviews_per_answer": 1,
+  "source_report_sha256": "cda02845130cb191b387206372d6adec38a0cb5ae6bd220bae917831bf5ea7ad"
+}

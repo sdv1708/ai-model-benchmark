@@ -7,8 +7,8 @@ import json
 import math
 import statistics
 from collections import defaultdict
-from collections.abc import Sequence
-from dataclasses import asdict
+from collections.abc import Mapping, Sequence
+from dataclasses import asdict, dataclass
 from itertools import combinations
 from pathlib import Path
 
@@ -47,6 +47,22 @@ LIMITATIONS = [
     "No semantic/topic coverage can be claimed: original prompts and coding metadata are absent.",
     "This offline experiment does not satisfy the later evalscope integration requirement.",
 ]
+
+
+@dataclass(frozen=True, slots=True)
+class ReportProfile:
+    """Benchmark-specific claims and provenance for the shared study schema."""
+
+    benchmark: str = "live_code_bench_v5"
+    algorithm_version: str = "lcb-pruning-v1"
+    analysis_version: str = "lcb-study-v2"
+    metric: str = "recorded binary pass; scale 0..1"
+    features: str = "reference binary pass vectors only; held-out model removed before selection"
+    limitations: tuple[str, ...] = tuple(LIMITATIONS)
+    extra_implementation: tuple[str, ...] = ()
+
+
+DEFAULT_PROFILE = ReportProfile()
 
 
 def _json(value: object) -> bytes:
@@ -160,13 +176,18 @@ def write_experiment(
     pair_runs: Sequence[PairTransferRun],
     confidence: float,
     thresholds: Sequence[float],
+    profile: ReportProfile = DEFAULT_PROFILE,
+    extra_reports: Mapping[str, bytes] | None = None,
 ) -> None:
     """Serialize completely before publishing; hash outputs and publish manifest last.
 
     As in issue #14, atomic replacement is per file, not a multi-file transaction.
     One writer and unchanged source files are required; verify output hashes.
     """
-    validate_output_location(output_dir, data_root, output_names=OUTPUT_NAMES)
+    extras = dict(extra_reports or {})
+    if any(name in OUTPUT_NAMES or Path(name).name != name for name in extras):
+        raise ValueError("Extra reports require unique flat filenames")
+    validate_output_location(output_dir, data_root, output_names=(*OUTPUT_NAMES, *extras))
     root = data_root.resolve()
     sources = sorted({p for pair in pairs for p in (pair.predictions, pair.reviews)})
     inputs = [
@@ -257,7 +278,7 @@ def write_experiment(
                 "pair_transfer_runs": pair_records,
                 "pair_transfer_summary": pair_summary,
                 "decision_summary": decisions,
-                "limitations": LIMITATIONS,
+                "limitations": profile.limitations,
             }
         ),
         "summary.csv": _csv(summary),
@@ -277,13 +298,14 @@ def write_experiment(
             ),
         ),
     }
+    outputs.update(extras)
     code_root = Path(__file__).parent
     manifest = {
         "schema_version": 2,
-        "algorithm_version": "lcb-pruning-v1",
-        "analysis_version": "lcb-study-v2",
-        "benchmark": "live_code_bench_v5",
-        "metric": "recorded binary pass; scale 0..1",
+        "algorithm_version": profile.algorithm_version,
+        "analysis_version": profile.analysis_version,
+        "benchmark": profile.benchmark,
+        "metric": profile.metric,
         "keep_ratios": sorted({run.keep_ratio for run in runs}),
         "ratio_definition": "fraction retained; count = ceil(N * keep_ratio)",
         "seeds": sorted({run.seed for run in runs}),
@@ -314,15 +336,16 @@ def write_experiment(
                 "uncertainty.py",
                 "transfer.py",
                 "study_metrics.py",
+                *profile.extra_implementation,
             )
         },
-        "features": "reference binary pass vectors only; held-out model removed before selection",
+        "features": profile.features,
         "allocation": "one per occupied stratum, then largest proportional deficit; lexical ties",
         "within_stratum": "ascending SHA256(lcb-pruning-v1:seed:index), without replacement",
         "estimator": "sum_h (N_h/N) * mean(selected grades in h); baselines use raw mean",
         "baseline_policy": "comparison only; never candidates or production recommendations",
         "ordering_policy": "common subset per fold; reference-assisted; ties within 1e-12",
-        "limitations": LIMITATIONS,
+        "limitations": profile.limitations,
         "output_sha256": {name: hashlib.sha256(data).hexdigest() for name, data in outputs.items()},
     }
     outputs["manifest.json"] = _json(manifest)
