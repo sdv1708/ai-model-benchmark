@@ -219,3 +219,19 @@ def test_flip_bounds_match_exhaustive_changes_of_an_unequal_weight_subset() -> N
         assert flip_envelope(selection, grades, flip_count=budget) == pytest.approx(
             (min(estimates), max(estimates))
         )
+
+
+@pytest.mark.parametrize("names", [(), ("uniform_random",), ("custom", "custom"), ("",)])
+def test_evaluators_reject_invalid_candidate_registration(names: tuple[str, ...]) -> None:
+    from benchmark_reference.pruning import select_baseline
+
+    scores = {model: {0: 0.0, 1: 1.0} for model in ("a", "b", "c")}
+    for evaluate in (evaluate_experiment, evaluate_pair_transfer):
+        with pytest.raises(AnalysisError, match="Candidate strategies"):
+            evaluate(
+                scores,
+                keep_ratios=(1,),
+                seeds=(0,),
+                candidate_strategies=names,
+                candidate_selector=select_baseline,
+            )

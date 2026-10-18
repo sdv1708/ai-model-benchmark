@@ -7,7 +7,6 @@ from itertools import combinations
 
 from benchmark_reference.models import AnalysisError
 from benchmark_reference.pruning import (
-    BASELINES,
     CANDIDATES,
     CandidateSelector,
     ReferenceScores,
@@ -15,6 +14,7 @@ from benchmark_reference.pruning import (
     select_baseline,
     select_samples,
 )
+from benchmark_reference.strategies import study_strategies
 from benchmark_reference.uncertainty import ConfidenceInterval, score_interval, validate_confidence
 
 DEFAULT_RATIOS = (0.1, 0.2, 0.3, 0.5, 1.0)
@@ -114,6 +114,7 @@ def evaluate_experiment(
     scores are in-sample diagnostics. Only the held-out score is a transfer test.
     """
     validate_confidence(confidence)
+    methods = study_strategies(candidate_strategies, candidate_selector)
     if len(scores) < 3:
         raise AnalysisError("Leave-one-model-out evaluation requires at least three models")
     if not keep_ratios or len(set(keep_ratios)) != len(keep_ratios):
@@ -129,11 +130,13 @@ def evaluate_experiment(
     runs = []
     for held_out in sorted(scores):
         references = {model: values for model, values in scores.items() if model != held_out}
-        for strategy in (*candidate_strategies, *BASELINES):
-            selector = candidate_selector if strategy in candidate_strategies else select_baseline
+        for method in methods:
+            strategy = method.name
             for ratio in sorted(keep_ratios):
                 for seed in sorted(seeds):
-                    selection = selector(references, strategy=strategy, keep_ratio=ratio, seed=seed)
+                    selection = method.selector(
+                        references, strategy=strategy, keep_ratio=ratio, seed=seed
+                    )
                     estimates = {
                         model: math.fsum(item.weight * values[item.index] for item in selection)
                         for model, values in sorted(scores.items())
@@ -145,9 +148,7 @@ def evaluate_experiment(
                     runs.append(
                         ExperimentRun(
                             strategy,
-                            "candidate"
-                            if strategy in candidate_strategies
-                            else "comparison_baseline",
+                            method.role,
                             ratio,
                             seed,
                             held_out,

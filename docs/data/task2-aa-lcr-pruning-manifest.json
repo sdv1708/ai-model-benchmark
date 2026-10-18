@@ -10,7 +10,7 @@
   "implementation_hash_policy": "SHA256 of source bytes after CRLF-to-LF normalization",
   "implementation_sha256": {
     "analysis.py": "ee4719c35d741b5ef70d45d14a52cb5bb09035c07edb3f9888fbdab1567d130a",
-    "experiments.py": "9f2d4ccbddaa1795b911b7306fb3e3c4b5419cd9907f3c27f0db3f358e096102",
+    "experiments.py": "9fb9a47db37e61bdaf6404cd87437c31680e27c0af0cf1da66309235d5fb430a",
     "inputs.py": "99f30cd92b443cad3aec9ceeb001b05f814816a14820e5b9861582c6942e7cf8",
     "judge_noise.py": "8f65ab84810dd087c0bca31ef4421dfdec263417a0cae438aaf876db2c9c4f41",
     "long_context.py": "e9877a193358233d633d05329213ad1593fd14677c629fc6e82370a255df357c",
@@ -19,10 +19,11 @@
     "models.py": "4ba7662ea4244d50cb142112bd83976d6e2af8fdec2f591ade793d0ea84748e3",
     "pruning.py": "662669e87d004feddd07e2d7a2104516f5218fc358dbb9098590dbaf23946b4c",
     "pruning_cli.py": "a38a4ed406a9b043b09037fb2c82cce244048503f39a583ea28f0b25f3f9426f",
-    "pruning_reporting.py": "8add97ec76fc9f2daa58f81080e7411f6cf5922aa366530a3320b77327f638ba",
+    "pruning_reporting.py": "55f97df083793fabb6257f54d27904bdb9c37a0f7c19d091dfcbf72ac28a6d94",
     "reporting.py": "25658f0a8b9900d2747753e5e45b0d1b35ac119dc347abf41e6047d924a0c384",
+    "strategies.py": "b5c0584d4ea5550f8db047b091003651b3480b31a52a1942e589acac3297eea5",
     "study_metrics.py": "433ba957859c79cfe213b0ae3174de8d4bf1db9ad987f78f55d700a20a932530",
-    "transfer.py": "227722d0749bef54625642104cc7567df76cf0ad11a6a5d9b485e224fa5419f5",
+    "transfer.py": "4eb18af65f0b3513c9f10797a3ba7023efa891f0bc152b108a9ec1faba6f7d33",
     "uncertainty.py": "9bb0723a7e4803ce05e850af2ab3ee5e4d70416b3ec31657efc7c0d7d10ccd43"
   },
   "inputs": [

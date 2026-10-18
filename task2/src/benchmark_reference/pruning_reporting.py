@@ -336,6 +336,7 @@ def write_experiment(
                 "uncertainty.py",
                 "transfer.py",
                 "study_metrics.py",
+                "strategies.py",
                 *profile.extra_implementation,
             )
         },

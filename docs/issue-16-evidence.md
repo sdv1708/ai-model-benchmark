@@ -58,12 +58,12 @@ python -m ruff format --check .
 python -m mypy
 ```
 
-Results: **115 tests passed**, lint and format checks passed, strict mypy passed
-for **24 source files**. Existing reference and coding-pruning regressions pass.
+Results: **119 tests passed**, lint and format checks passed, strict mypy passed
+for **25 source files**. Existing reference and coding-pruning regressions pass.
 No tests are skipped or expected failures. Synthetic tests cover leakage prevention,
 seed/order determinism, coverage weights, forbidden candidates, metadata conflicts,
 insufficient budgets, census recovery, exhaustive unequal-weight flip envelopes,
-report hashes/reproducibility, and preservation of old reports on metadata failure.
+report hashes/reproducibility, candidate-registration validation, and preservation of old reports on metadata failure.
 
 `uv run --locked aa-lcr-pruning --help` successfully rebuilt the editable package
 and verified its new console entry point. Sandbox temporary/cache permissions
@@ -76,6 +76,10 @@ scores, reconstructed metadata groups/weights, weighted estimates, every score
 and paired interval, and full-pair flip tipping counts. It imports no production
 analysis code; interval bounds use the LCB auditor's independent linear inversion.
 It does not certify semantic validity of the source metadata or true judge accuracy.
+
+Two complete default runs produced byte-identical copies of all eleven reports, including
+the manifest, in different output directories. All reported fidelity numbers remained
+unchanged after the review fix.
 
 A second CLI run at retention 0.5/1, seeds 0/1/2, and illustrative thresholds
 0.5/0.6/0.7 completed another 180 evaluations and exercised decision reporting.

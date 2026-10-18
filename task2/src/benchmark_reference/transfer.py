@@ -9,7 +9,6 @@ from typing import Literal
 from benchmark_reference.experiments import DEFAULT_RATIOS, DEFAULT_SEEDS, ordering_fidelity
 from benchmark_reference.models import AnalysisError
 from benchmark_reference.pruning import (
-    BASELINES,
     CANDIDATES,
     CandidateSelector,
     ReferenceScores,
@@ -17,6 +16,7 @@ from benchmark_reference.pruning import (
     select_baseline,
     select_samples,
 )
+from benchmark_reference.strategies import study_strategies
 from benchmark_reference.uncertainty import (
     ConfidenceInterval,
     paired_difference_interval,
@@ -61,6 +61,7 @@ def evaluate_pair_transfer(
     feature panel rather than counting fitted reference scores as transfer evidence.
     """
     validate_confidence(confidence)
+    methods = study_strategies(candidate_strategies, candidate_selector)
     if len(scores) < 3:
         raise AnalysisError("Pair transfer requires at least three models")
     if not keep_ratios or len(set(keep_ratios)) != len(keep_ratios):
@@ -73,11 +74,13 @@ def evaluate_pair_transfer(
     runs = []
     for a, b in combinations(sorted(scores), 2):
         references = {model: values for model, values in scores.items() if model not in (a, b)}
-        for strategy in (*candidate_strategies, *BASELINES):
-            selector = candidate_selector if strategy in candidate_strategies else select_baseline
+        for method in methods:
+            strategy = method.name
             for ratio in sorted(keep_ratios):
                 for seed in sorted(seeds):
-                    selection = selector(references, strategy=strategy, keep_ratio=ratio, seed=seed)
+                    selection = method.selector(
+                        references, strategy=strategy, keep_ratio=ratio, seed=seed
+                    )
                     estimates = {
                         model: math.fsum(
                             item.weight * scores[model][item.index] for item in selection
@@ -109,9 +112,7 @@ def evaluate_pair_transfer(
                     runs.append(
                         PairTransferRun(
                             strategy,
-                            "candidate"
-                            if strategy in candidate_strategies
-                            else "comparison_baseline",
+                            method.role,
                             ratio,
                             seed,
                             (a, b),
