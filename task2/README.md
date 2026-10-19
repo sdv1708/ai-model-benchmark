@@ -1,5 +1,24 @@
 # Task 2 full-benchmark reference analysis
 
+## Part A operating points (issue #17)
+
+[The complete #14–#17 walkthrough](ISSUE_17_GUIDE.md) connects input validation,
+selection, weighting, held-out evaluation, judge uncertainty and decision policy.
+Run both benchmarks against one explicitly retrospective illustrative policy:
+
+```powershell
+uv sync --locked
+uv run part-a-operating-points --data-root ../Evals --output-dir output/operating-points --lcb-thresholds 0.7 --aa-lcr-thresholds 0.6
+uv run python tools/audit_operating_points.py --reports output/operating-points
+```
+
+Run from `task2/`. Thresholds are examples, not inferred customer requirements.
+The guide includes independent raw-data audit commands. The five-size, twenty-seed
+replay retains **315 coding / 100 AA-LCR questions** as full-reference fallbacks:
+no smaller tested candidate passes every gate. Census does not remove unmeasured
+judge uncertainty. No production compression is certified.
+See [acceptance evidence](../docs/issue-17-evidence.md).
+
 [Issue #14](https://github.com/sdv1708/ai-model-quality-challenge/issues/14) validates
 all 56 supplied JSONL files, joins 28 prediction/review pairs, normalizes 1,905 scored
 records, and calculates six Part A reference scores. The scaffold is implemented.
