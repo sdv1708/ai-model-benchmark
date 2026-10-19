@@ -103,6 +103,33 @@ See the [research and interview guide](ISSUE_15_GUIDE.md),
 [complete summaries](../docs/data/task2-lcb-pruning-summary.csv). Full audit artifacts
 are regenerated locally rather than committing 25 MB of selected-index records.
 
+## AA-LCR candidates and judge sensitivity (issue #16)
+
+For a hands-on introduction, open the [eight-question learning walkthrough](learning/benchmark-walkthrough.html)
+and follow the [study order and exercises](learning/README.md). It uses synthetic
+data to explain offline replay, weighting and hypothetical judge changes.
+
+Two metadata-aware candidates cover input length plus document count or historical
+reference difficulty. The study runs the same five retention levels and twenty
+seeds, with 1,500 score runs and 1,500 independently held-out pair runs. From `task2/`:
+
+```powershell
+uv sync --locked
+uv run aa-lcr-pruning --data-root ../Evals --output-dir output/aa-lcr-pruning
+uv run python tools/audit_aa_lcr.py --data-root ../Evals --reports output/aa-lcr-pruning
+```
+
+At half retention, pooled held-out score MAE is 2.90 / 3.27 percentage points,
+and pair ordering agrees in 88.3% / 90.0% of runs. Wide design intervals remain
+inconclusive for all half-retention candidate pair comparisons. There is only one
+recorded judge review per answer: judge variance is unidentified. Hypothetical
+label-flip sensitivity is reported separately, with `--flip-counts 0 1 2 5 10`;
+these counts are assumptions, not measured error rates. Two changed judgments can
+tie the closest full-score pair; three can reverse it. No production pruning level
+is certified. See the [simple-to-technical guide](ISSUE_16_GUIDE.md),
+[acceptance evidence](../docs/issue-16-evidence.md), and
+[checked-in summaries](../docs/data/task2-aa-lcr-pruning-summary.csv).
+
 ## Setup and commands
 
 Use Python 3.12 and uv. From the repository root:

@@ -26,6 +26,12 @@ uncertainty, threshold abstention, and 3,000 score/pair-transfer evaluations. Fr
 `uv run lcb-pruning --data-root ../Evals --output-dir output/lcb-pruning`.
 See [measured fidelity and acceptance evidence](./docs/issue-15-evidence.md).
 
+Issue #16 adds [AA-LCR long-context pruning and judge-noise analysis](./task2/ISSUE_16_GUIDE.md):
+metadata-aware candidates, five retention levels, independent model-pair checks,
+and explicit separation of subset uncertainty from unidentifiable judge randomness.
+From `task2/`, run `uv run aa-lcr-pruning --data-root ../Evals --output-dir output/aa-lcr-pruning`.
+See [measured results and acceptance evidence](./docs/issue-16-evidence.md).
+
 ## Task 1 deployment
 
 Task 1 is configured as one Vercel project with two services in the root
