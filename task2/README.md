@@ -105,6 +105,10 @@ are regenerated locally rather than committing 25 MB of selected-index records.
 
 ## AA-LCR candidates and judge sensitivity (issue #16)
 
+For a hands-on introduction, open the [eight-question learning walkthrough](learning/benchmark-walkthrough.html)
+and follow the [study order and exercises](learning/README.md). It uses synthetic
+data to explain offline replay, weighting and hypothetical judge changes.
+
 Two metadata-aware candidates cover input length plus document count or historical
 reference difficulty. The study runs the same five retention levels and twenty
 seeds, with 1,500 score runs and 1,500 independently held-out pair runs. From `task2/`:
