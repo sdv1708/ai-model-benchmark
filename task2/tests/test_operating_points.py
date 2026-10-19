@@ -105,3 +105,23 @@ def test_no_supported_point_is_distinct_from_selecting_a_comparison_baseline() -
         thresholds=(0.75,),
     )
     assert report["selected"] is None
+
+
+@pytest.mark.parametrize("missing", ["score", "pair"])
+def test_partial_missing_uncertainty_fails_instead_of_excluding_the_missing_run(
+    missing: str,
+) -> None:
+    scores = {m: dict.fromkeys(range(8), 1.0) for m in ("a", "b", "c")}
+    runs = evaluate_experiment(scores, keep_ratios=(1,), seeds=tuple(range(20)))
+    pairs = evaluate_pair_transfer(scores, keep_ratios=(1,), seeds=tuple(range(20)))
+    if missing == "score":
+        runs = (replace(runs[0], score_intervals={**runs[0].score_intervals, "a": None}), *runs[1:])
+        required_failure = "min_score_interval_coverage"
+    else:
+        pairs = (replace(pairs[0], difference_interval=None, conclusion="inconclusive"), *pairs[1:])
+        required_failure = "min_pair_interval_coverage"
+    report = compare_operating_points(runs, pairs, thresholds=(0.75,))
+    broken = next(p for p in report["points"] if p["strategy"] == "difficulty_stratified")
+    assert required_failure in broken["failed_gates"]
+    assert report["selected"] is not None
+    assert report["selected"]["strategy"] == "response_stratified"

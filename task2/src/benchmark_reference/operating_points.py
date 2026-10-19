@@ -180,16 +180,20 @@ def compare_operating_points(
             and r["keep_ratio"] == ratio
             and r["held_out_model"] != "__all__"
         ]
+        # Legacy summaries deliberately describe available bounds. Policy gates
+        # require bounds for EVERY run, so partial missingness must not be hidden.
+        score_bounds = scores if all(r["interval_count"] == r["run_count"] for r in scores) else []
+        pair_bounds = pairs if all(r["interval_count"] == r["run_count"] for r in pairs) else []
         metrics = {
             "worst_fold_mae": _extreme(scores, "held_out_mae"),
             "max_absolute_error": _extreme(scores, "held_out_max_absolute_error"),
             "max_seed_score_std": _extreme(scores, "held_out_error_std"),
-            "max_mean_score_interval_width": _extreme(scores, "mean_interval_width"),
+            "max_mean_score_interval_width": _extreme(score_bounds, "mean_interval_width"),
             "min_score_interval_coverage": _extreme(
-                scores, "held_out_interval_coverage", minimum=True
+                score_bounds, "held_out_interval_coverage", minimum=True
             ),
             "min_pair_order_agreement": _extreme(pairs, "pair_order_agreement", minimum=True),
-            "min_pair_interval_coverage": _extreme(pairs, "interval_coverage", minimum=True),
+            "min_pair_interval_coverage": _extreme(pair_bounds, "interval_coverage", minimum=True),
             "min_pair_decisive_fraction": _extreme(pairs, "decisive_fraction", minimum=True),
             "max_wrong_pair_fraction": _extreme(pairs, "wrong_decisive_fraction"),
             "min_threshold_point_agreement": _extreme(

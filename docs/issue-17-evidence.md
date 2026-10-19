@@ -85,5 +85,9 @@ Additional synthetic regressions cover a smaller passing exploratory point,
 incomplete pair evidence, no supported point and failure before replacing prior
 reports. Tests use known artificial grades, not shipped data as expected truth.
 
-Final suite, independent-audit and reproduction results are recorded after review
-in [the review record](issue-17-review.md).
+Final validation: **129 tests pass**, Ruff lint/format and strict mypy pass,
+all three independent auditors pass, and all **22 reports reproduce byte-identically**
+across console-entry and module-entry runs in different directories. Review found
+and resolved a partially missing interval edge case, covered by two additional
+red-to-green regressions. **Standards 0 unresolved; Spec 0 unresolved.** See
+[the review record](issue-17-review.md) for the separate reports and exact counts.
