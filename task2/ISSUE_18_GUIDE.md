@@ -120,17 +120,17 @@ parent directory where you want the checkout:
 ```powershell
 git clone --branch feature/issue-18-evalscope-baseline https://github.com/sdv1708/evalscope-pruning.git
 cd evalscope-pruning
-# Read task2/evalscope-baseline.json in the challenge repository first.
-# Check out its extension_commit for the exact reviewed implementation.
+# This is the extension_commit in task2/evalscope-baseline.json:
+git checkout --detach 152d811484e0c3ad3d9329af9befb73e961d8872
 uv venv --python 3.12
-uv pip install --python .venv/Scripts/python.exe -e .
+uv pip install --python .venv/Scripts/python.exe -r requirements/pruning-baseline.txt
+uv pip install --python .venv/Scripts/python.exe --no-deps -e .
 .venv/Scripts/python.exe -m evalscope.cli.cli benchmark-info pruning_smoke
 .venv/Scripts/python.exe -m evalscope.cli.cli eval --model pruning-smoke-mock --eval-type mock_llm --datasets pruning_smoke --work-dir outputs/pruning-smoke
 ```
 
 The CLI defaults and supplied JSON configuration select one question per group,
-use the mock
-model, and writes ordinary EvalScope result directories beneath
+use the mock model, and write ordinary EvalScope result directories beneath
 `outputs/pruning-smoke/`. No model API key, GPU, or benchmark download is required
 for the smoke run. Initial package installation does require internet access.
 To run the editable JSON task configuration through the same framework:
