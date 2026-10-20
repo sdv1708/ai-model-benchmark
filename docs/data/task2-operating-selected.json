@@ -1,0 +1,136 @@
+{
+  "benchmarks": {
+    "aa_lcr": {
+      "limitations": [
+        "Retrospective illustrative policy, not a customer requirement or independent preregistration.",
+        "Three models are a stress-test panel, not a random sample of future model families.",
+        "Choosing methods/ratios on these folds reuses evaluation evidence; validate on fresh models.",
+        "Intervals cover fixed recorded grades per run, not simultaneously after method/ratio search.",
+        "Hash sampling approximates uniform sampling within fixed strata.",
+        "Seed dispersion and Jaccard describe selection sensitivity, not independent model evidence.",
+        "Reference-assisted whole-panel ordering is diagnostic and never a selection gate.",
+        "AA-LCR judge variation is unmeasured; census removes sampling error, not judge error.",
+        "No operating point here certifies deployment or supplies a calibrated unseen-model guarantee.",
+        "Smallest means among tested candidate sizes only; baselines are never eligible."
+      ],
+      "selected": {
+        "failed_gates": [],
+        "keep_ratio": 1.0,
+        "metrics": {
+          "max_absolute_error": 0.0,
+          "max_false_threshold_fraction": 0.0,
+          "max_mean_score_interval_width": 0.0,
+          "max_seed_score_std": 0.0,
+          "max_wrong_pair_fraction": 0.0,
+          "min_pair_decisive_fraction": 1.0,
+          "min_pair_interval_coverage": 1.0,
+          "min_pair_order_agreement": 1.0,
+          "min_score_interval_coverage": 1.0,
+          "min_threshold_decisive_fraction": 1.0,
+          "min_threshold_point_agreement": 1.0,
+          "worst_fold_mae": 0.0
+        },
+        "realized_keep_ratio": 1.0,
+        "role": "candidate",
+        "selected_count": 100,
+        "status": "full_reference_fallback",
+        "strategy": "length_difficulty_stratified"
+      }
+    },
+    "live_code_bench_v5": {
+      "limitations": [
+        "Retrospective illustrative policy, not a customer requirement or independent preregistration.",
+        "Three models are a stress-test panel, not a random sample of future model families.",
+        "Choosing methods/ratios on these folds reuses evaluation evidence; validate on fresh models.",
+        "Intervals cover fixed recorded grades per run, not simultaneously after method/ratio search.",
+        "Hash sampling approximates uniform sampling within fixed strata.",
+        "Seed dispersion and Jaccard describe selection sensitivity, not independent model evidence.",
+        "Reference-assisted whole-panel ordering is diagnostic and never a selection gate.",
+        "AA-LCR judge variation is unmeasured; census removes sampling error, not judge error.",
+        "No operating point here certifies deployment or supplies a calibrated unseen-model guarantee.",
+        "Smallest means among tested candidate sizes only; baselines are never eligible."
+      ],
+      "selected": {
+        "failed_gates": [],
+        "keep_ratio": 1.0,
+        "metrics": {
+          "max_absolute_error": 0.0,
+          "max_false_threshold_fraction": 0.0,
+          "max_mean_score_interval_width": 0.0,
+          "max_seed_score_std": 0.0,
+          "max_wrong_pair_fraction": 0.0,
+          "min_pair_decisive_fraction": 1.0,
+          "min_pair_interval_coverage": 1.0,
+          "min_pair_order_agreement": 1.0,
+          "min_score_interval_coverage": 1.0,
+          "min_threshold_decisive_fraction": 1.0,
+          "min_threshold_point_agreement": 1.0,
+          "worst_fold_mae": 0.0
+        },
+        "realized_keep_ratio": 1.0,
+        "role": "candidate",
+        "selected_count": 315,
+        "status": "full_reference_fallback",
+        "strategy": "difficulty_stratified"
+      }
+    }
+  },
+  "extract_of": "operating_points.json",
+  "plan": {
+    "confidence": 0.95,
+    "keep_ratios": [
+      0.1,
+      0.2,
+      0.3,
+      0.5,
+      1.0
+    ],
+    "policy": {
+      "max_absolute_error": 0.08,
+      "max_false_threshold_fraction": 0.0,
+      "max_mean_score_interval_width": 0.2,
+      "max_seed_score_std": 0.03,
+      "max_wrong_pair_fraction": 0.0,
+      "min_pair_decisive_fraction": 0.8,
+      "min_pair_interval_coverage": 0.95,
+      "min_pair_order_agreement": 0.95,
+      "min_score_interval_coverage": 0.95,
+      "min_threshold_decisive_fraction": 0.8,
+      "min_threshold_point_agreement": 0.95,
+      "worst_fold_mae": 0.03
+    },
+    "production_certified": false,
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+    ],
+    "thresholds": {
+      "aa_lcr": [
+        0.6
+      ],
+      "live_code_bench_v5": [
+        0.7
+      ]
+    },
+    "version": "part-a-operating-policy-v1"
+  },
+  "source_sha256": "1a9e308d6e65dcc7f74ca4863aec32cae61b41f266c8f549d75eef076972e338"
+}

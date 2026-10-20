@@ -67,6 +67,85 @@ def evals(tmp_path: Path) -> Path:
     return root
 
 
+def test_operating_points_cli_compares_both_benchmarks_and_fingerprints_policy(
+    evals: Path, tmp_path: Path
+) -> None:
+    from benchmark_reference.operating_cli import main as operating_main
+
+    for path in (evals / "Part 1" / "predictions").glob("aa_lcr*.jsonl"):
+        rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+        for row in rows:
+            row["metadata"] = {
+                "question": f"Question {row['index']}",
+                "input_tokens": 1000 + row["index"],
+                "data_source_urls": f"https://example.com/{row['index'] // 5}",
+            }
+        path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+    output = tmp_path / "operating"
+    operating_main(
+        [
+            "--data-root",
+            str(evals),
+            "--output-dir",
+            str(output),
+            "--lcb-thresholds",
+            "0.7",
+            "--aa-lcr-thresholds",
+            "0.6",
+            "--keep-ratios",
+            "0.5",
+            "1",
+            "--seeds",
+            "0",
+            "1",
+        ]
+    )
+    report = json.loads((output / "operating_points.json").read_text())
+    assert set(report["benchmarks"]) == {"live_code_bench_v5", "aa_lcr"}
+    for benchmark, comparison in report["benchmarks"].items():
+        assert comparison["selected"]["status"] == "full_reference_fallback"
+        assert len(comparison["points"]) == 10
+        study = json.loads((output / benchmark / "manifest.json").read_text())
+        assert study["thresholds"] == comparison["thresholds"]
+    manifest = json.loads((output / "manifest.json").read_text())
+    for name, digest in manifest["output_sha256"].items():
+        assert hashlib.sha256((output / name).read_bytes()).hexdigest() == digest
+    assert manifest["policy"]["min_pair_order_agreement"] == 0.95
+    assert manifest["production_certified"] is False
+
+
+def test_operating_cli_validates_both_benchmarks_before_replacing_previous_reports(
+    evals: Path, tmp_path: Path
+) -> None:
+    from benchmark_reference.operating_cli import main as operating_main
+
+    # Fixture deliberately lacks AA-LCR metadata; coding is valid.
+    output = tmp_path / "previous"
+    output.mkdir()
+    (output / "manifest.json").write_text("last successful manifest")
+    with pytest.raises(SystemExit) as exc:
+        operating_main(
+            [
+                "--data-root",
+                str(evals),
+                "--output-dir",
+                str(output),
+                "--lcb-thresholds",
+                "0.7",
+                "--aa-lcr-thresholds",
+                "0.6",
+                "--keep-ratios",
+                "1",
+                "--seeds",
+                "0",
+                "1",
+            ]
+        )
+    assert exc.value.code == 2
+    assert (output / "manifest.json").read_text() == "last successful manifest"
+    assert not (output / "live_code_bench_v5").exists()
+
+
 def test_long_context_cli_publishes_reproducible_fidelity_metadata_and_noise(
     evals: Path, tmp_path: Path
 ) -> None:

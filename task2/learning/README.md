@@ -27,12 +27,12 @@ full candidate methods, confidence intervals, or model-holdout protocols.
 
 ## Study the tickets in this order
 
-| Ticket                                                                 | Question it answers                                                    | Reading                                                   |
-| ---------------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------- |
-| [#14](https://github.com/sdv1708/ai-model-quality-challenge/issues/14) | Where do trustworthy full scores come from?                            | [Reference guide](../INTERVIEW_GUIDE.md)                  |
-| [#15](https://github.com/sdv1708/ai-model-quality-challenge/issues/15) | How do selection, weights and held-out evaluation work?                | [Coding-pruning guide](../ISSUE_15_GUIDE.md)              |
-| [#16](https://github.com/sdv1708/ai-model-quality-challenge/issues/16) | How do long-context metadata and judge uncertainty change the problem? | [AA-LCR guide](../ISSUE_16_GUIDE.md)                      |
-| [#17](https://github.com/sdv1708/ai-model-quality-challenge/issues/17) | What evidence justifies a particular subset size?                      | Define acceptable errors and examine the fidelity curves. |
+| Ticket                                                                 | Question it answers                                                    | Reading                                                                |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| [#14](https://github.com/sdv1708/ai-model-quality-challenge/issues/14) | Where do trustworthy full scores come from?                            | [Reference guide](../INTERVIEW_GUIDE.md)                               |
+| [#15](https://github.com/sdv1708/ai-model-quality-challenge/issues/15) | How do selection, weights and held-out evaluation work?                | [Coding-pruning guide](../ISSUE_15_GUIDE.md)                           |
+| [#16](https://github.com/sdv1708/ai-model-quality-challenge/issues/16) | How do long-context metadata and judge uncertainty change the problem? | [AA-LCR guide](../ISSUE_16_GUIDE.md)                                   |
+| [#17](https://github.com/sdv1708/ai-model-quality-challenge/issues/17) | What evidence justifies a particular subset size?                      | [Complete walkthrough and operating-point guide](../ISSUE_17_GUIDE.md) |
 
 Then study [#18](https://github.com/sdv1708/ai-model-quality-challenge/issues/18)
 for the evalscope baseline,

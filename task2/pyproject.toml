@@ -10,6 +10,7 @@ dependencies = []
 benchmark-reference = "benchmark_reference.cli:main"
 lcb-pruning = "benchmark_reference.pruning_cli:main"
 aa-lcr-pruning = "benchmark_reference.long_context_cli:main"
+part-a-operating-points = "benchmark_reference.operating_cli:main"
 
 [dependency-groups]
 dev = ["pytest>=8.3,<10", "ruff>=0.11,<1", "mypy>=1.15,<2"]

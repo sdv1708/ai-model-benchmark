@@ -6,6 +6,12 @@ Welcome, and thanks for taking the time. This challenge has two independent task
 
 ## Task 2 full-benchmark reference analysis
 
+Read the [complete Task 2 issues #14–#17 walkthrough](./task2/ISSUE_17_GUIDE.md)
+for worked examples and the shared operating-point policy. Its conservative
+illustrative requirements retain the full recorded references: no smaller tested
+candidate meets every score, ranking and decision gate. See
+[issue #17 evidence](./docs/issue-17-evidence.md) for reproduction and limitations.
+
 The [reference-analysis package](./task2/README.md) validates all supplied evaluation
 artifacts and reproduces six full LiveCodeBench/AA-LCR model scores without live
 inference. Run from the repository root with Python 3.12 and uv:
