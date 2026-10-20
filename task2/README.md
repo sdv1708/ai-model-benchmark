@@ -1,5 +1,15 @@
 # Task 2 full-benchmark reference analysis
 
+## Native EvalScope baseline (issue #18)
+
+The [private EvalScope-derived repository](https://github.com/sdv1708/evalscope-pruning)
+now contains a registered `pruning_smoke` benchmark, with an exact upstream base
+and implementation commit recorded in [evalscope-baseline.json](evalscope-baseline.json).
+Read the [beginner walkthrough](ISSUE_18_GUIDE.md) and
+[acceptance evidence](../docs/issue-18-evidence.md). This is the native integration
+foundation; production coding/AA-LCR adapters and run comparison remain in
+issues #19–#21. The analysis commands below retain their existing behavior.
+
 ## Part A operating points (issue #17)
 
 [The complete #14–#17 walkthrough](ISSUE_17_GUIDE.md) connects input validation,
@@ -25,9 +35,9 @@ records, and calculates six Part A reference scores. The scaffold is implemented
 Read [INTERVIEW_GUIDE.md](INTERVIEW_GUIDE.md) for architecture, concepts, and trade-offs,
 and [acceptance evidence](../docs/issue-14-evidence.md) for the recorded verification.
 
-This package analyzes the supplied offline evidence. The eventual pruning code
-must live inside the pinned evalscope fork in later issues; this scaffold does
-not satisfy that separate integration requirement.
+This package analyzes the supplied offline evidence. Framework integration lives
+in the separate pinned EvalScope-derived repository introduced in issue #18;
+the analysis package itself is not the benchmark runtime.
 
 ## LiveCodeBench candidate experiments (issue #15)
 

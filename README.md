@@ -23,8 +23,11 @@ uv run benchmark-reference --data-root ../Evals --output-dir output/reference
 ```
 
 See the [implementation and interview guide](./task2/INTERVIEW_GUIDE.md) and
-[issue #14 acceptance evidence](./docs/issue-14-evidence.md). The eventual pruner's
-evalscope integration is a later Task 2 deliverable.
+[issue #14 acceptance evidence](./docs/issue-14-evidence.md). The
+[native EvalScope baseline](./task2/ISSUE_18_GUIDE.md) is now established in a
+private derived repository, with a registered synthetic smoke benchmark and
+[pinned source versions](./task2/evalscope-baseline.json). Production benchmark
+adapters remain later Task 2 deliverables.
 
 Issue #15 adds [LiveCodeBench pruning experiments](./task2/ISSUE_15_GUIDE.md): two
 reference-only stratified candidates, three comparison baselines, exact finite-pool
