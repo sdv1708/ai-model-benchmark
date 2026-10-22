@@ -6,7 +6,7 @@
   "baseline_extension_commit": "152d811484e0c3ad3d9329af9befb73e961d8872",
   "development_repository": "https://github.com/sdv1708/evalscope-pruning",
   "development_branch": "feature/issue-19-livecodebench-pruner",
-  "extension_commit": "5abe86e313cfc94fde9e74aff8652df25063d9d9",
+  "extension_commit": "140be3393160915f9720b7becf58663a3d99940e",
   "registered_benchmark": "live_code_bench_pruned",
   "extension_seam": "LiveCodeBenchAdapter.load_subset",
   "default_strategy": "difficulty_stratified",

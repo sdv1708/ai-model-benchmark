@@ -7,7 +7,7 @@ this learner-labelled ticket. The detailed explanation is in
 
 ## Provenance and placement
 
-Both private repositories were updated from main before creating
+Both repository checkouts were updated from main before creating
 `feature/issue-19-livecodebench-pruner`. Challenge main was
 `5a73f6bac224d7f5743b77f3b38f61060a7c66c7`. Native private main was still the
 upstream pin; its issue #18 baseline commit was fast-forwarded into the new
@@ -24,7 +24,7 @@ records the exact implementation and source pins plus reference-panel hash.
 | `live_code_bench_pruned` available through CLI | Generated lazy registry index; `benchmark-info`; real CLI evaluation writes native predictions/reviews/JSON/HTML |
 | Documented strategy and ratio arguments | Native `extra_params` contract, strict typed validation, two historical candidates, ratio `(0,1]` |
 | Selected IDs match validated analysis | 1,200 independent native registry/loader parity cases; exact IDs/strata/allocations/weights and historical weighted estimates match |
-| Framework tests for valid and invalid configuration | 31 feature tests, including eight invalid ratios, forbidden baselines, malformed panels, incomplete populations, exclusion, repeats and genuine CLI/HTTP paths |
+| Framework tests for valid and invalid configuration | 32 feature tests, including eight invalid ratios, forbidden baselines, malformed panels, incomplete populations, string/object target exclusion, repeats and genuine CLI/HTTP paths |
 | Upstream conventions | LiveCodeBench inheritance, Pydantic contracts, `load_subset` seam, generated index/docs, Ruff/Mypy/import contracts and feature hooks |
 
 ## Measured checks
@@ -33,7 +33,7 @@ records the exact implementation and source pins plus reference-panel hash.
 | --- | --- |
 | Offline baseline before implementation | Challenge: **129 passed**; native relevant baseline: **75 passed** |
 | Final complete Task 2 suite | **129 passed**, plus Ruff check/format and strict Mypy |
-| Final relevant native suite plus required upstream CI-lite | **122 passed**, including all 31 feature tests |
+| Final relevant native suite plus required upstream CI-lite | **123 passed**, including all 32 feature tests |
 | Native type check and Ruff | Passed |
 | Architecture import contracts | **5 kept, 0 broken** |
 | Upstream hooks on feature files | Passed; nonapplicable YAML/requirements hooks skipped |
@@ -75,11 +75,28 @@ research settings, not new GO/NO GO or savings certification. We retain original
 LiveCodeBench grading and report ordinary subset metrics separately from the
 population-weighted average-attempt estimate.
 
-No model key or paid inference was used. The actual OpenAI-compatible transport
+No paid benchmark inference was used. The actual OpenAI-compatible transport
 was tested on loopback; external provider behavior and Docker sandbox execution
 remain unmeasured here. The native guide includes a credential-free checked-in
 configuration and the environment-variable-based live command. AA-LCR and saved-run
 comparison remain issues #20 and #21.
+
+The user authorized an OpenAI key for Chinese documentation: two translation calls
+were made through upstream translation/document APIs. Temporary ignored credential
+storage was removed. The required statistics pass was attempted; a user reference
+panel is necessary to define a population, so the generator's erroneous empty
+zero-row cache was withheld. The generated description corrects the generic
+`limit` templates and supplies a runnable offline example.
+
+Review also caught target-grade leakage for a `ModelAPI` object with a custom
+display ID. The adapter now resolves its underlying `model_name`; a red-green
+regression and the final 123-test suite cover the fix. Both review axes have no
+remaining actionable findings after evidence refresh.
+
+GitHub visibility inspection found the native repository private and the challenge
+repository currently public. The challenge branch remains local; no new reference
+artifacts were published there. The panel is pinned to LF via `.gitattributes`,
+so its SHA-256 remains stable on Windows checkouts with autocrlf enabled.
 
 ## Primary research sources
 

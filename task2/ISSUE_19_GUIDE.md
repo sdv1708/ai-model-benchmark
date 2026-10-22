@@ -198,10 +198,15 @@ The recorded full scores reproduced by historical replay remain:
 | Kimi-K2.5 | 198 / 315 | 62.86% |
 | MiniMax-M2.5 | 195 / 315 | 61.90% |
 
-A new endpoint can produce different answers. No paid inference, fresh-model
-quality claim or new compression certification is included in this ticket.
+A new endpoint can produce different answers. No paid benchmark inference,
+fresh-model quality claim or new compression certification is included here.
 Live provider behavior, Docker integration and actual latency/billing still need
 a real run. Issue #20 adds AA-LCR integration; issue #21 adds saved-run comparison.
+
+The only paid calls in this ticket translated the generated benchmark documentation
+into Chinese with the user-authorized OpenAI key. They did not evaluate a model's
+coding capability. The final native suite has 123 passing tests, including a
+regression for model objects whose underlying name differs from their display ID.
 
 ## Practice explaining the work
 
