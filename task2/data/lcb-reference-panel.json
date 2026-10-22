@@ -1,0 +1,2854 @@
+{
+  "provenance": {
+    "benchmark": "live_code_bench_v5",
+    "cross_model_identity": "supplied shared index; original problem IDs are absent",
+    "identity_method": "question text recovered from recorded GPT-OSS Harmony prompt tokens",
+    "source_sha256": {
+      "Part 1/predictions/live_code_bench_v5__gpt-oss-120b.jsonl": "251ba80edb5df9500476f64c7440ecc6bff71060fbb107da23e1f5b8ac42f692",
+      "Part 1/predictions/live_code_bench_v5__kimi-k2.5.jsonl": "5d63df790fd81d34033b3d27735f3025438c0a0ebb3374bbcb70b302ae19726f",
+      "Part 1/predictions/live_code_bench_v5__minimax-m2.5.jsonl": "cdbd7b6fbd0e5f6d3d7fe028fef68cb2c6177bdf7c4245de9aa20b369099054f",
+      "Part 1/reviews/live_code_bench_v5__gpt-oss-120b.jsonl": "d6fb5ffca93263a41a6912617776ccc0a6f9bf3a358c821d90769a2482d48002",
+      "Part 1/reviews/live_code_bench_v5__kimi-k2.5.jsonl": "5913b4731678b76f747e1529fd37b1b688b45be5c5c9b98df624a1948e3341e5",
+      "Part 1/reviews/live_code_bench_v5__minimax-m2.5.jsonl": "697eacb9b911e1d21ab24f57d145a7ac1b611cca3d443185bae58d887c251671"
+    },
+    "tokenizer": "tiktoken 0.14.0 / o200k_harmony"
+  },
+  "schema_version": 1,
+  "tasks": [
+    {
+      "index": 0,
+      "question_sha256": "acfbc374fbd66192c0d647624b6b899f080c17926d50072ad24efe270182e1a9",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 1,
+      "question_sha256": "d83043ebba07350da4ae970a8d08139ec06106ac99a065c7e85d4a506130e522",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 2,
+      "question_sha256": "53387c675477236687846357c4bfe6221e30982f7fdd9b253fd0a53440eef0ee",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 3,
+      "question_sha256": "a5c26aab5cb47e0e15e6120e8f413064bfba81623860d7a760875a9bbd5ec1d8",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 4,
+      "question_sha256": "426a0db2b7e5c6e7653f1effe7a28ceb87ad0bdf6df2a72206ec9a1e03e07744",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 5,
+      "question_sha256": "7aaab32d399a8de90e4a6ca03aa04016eba5a3409212cec973e6e6a8b2670a60",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 6,
+      "question_sha256": "e4143fd98f245480c264064bcbed29eb21d6828363807f0861f55ee4a8438f0c",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 7,
+      "question_sha256": "2235e4565ad90ab35c43ffffc906005801239319ebdab691eb3219866d48f890",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 8,
+      "question_sha256": "b5076bc7e1dbb3493d10641efbc9b95472fc2f3860eb5e320cee3f9235b2f1e7",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 9,
+      "question_sha256": "714027807e8a28854876b02be54e9680d106ee74e2d666746d0c767b295f119a",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 10,
+      "question_sha256": "a849a69f425e944b32c58f91acfa609f081e7184c3bbed44458fff4ebfd0380f",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 11,
+      "question_sha256": "5358908cad5844217154c156c7728578d016e6698f534a9cecfe8d56c5faa8e3",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 12,
+      "question_sha256": "ac0aed85c71dc6cefa408cc64071688088018475993f6dda862bcee2629e938f",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 13,
+      "question_sha256": "b3c7c79fb59754bfce6bccd1cd40c3db43554ec2b139b7e009433d6bf3cda1e7",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 14,
+      "question_sha256": "8e8661fdef38a98dcfcdd092e83cb4683af41eac73cacaffd46bd4c00dcf1d23",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 15,
+      "question_sha256": "a956f0a566f18339627c5cb4a6fddcd2293f0db339301fd5e3c293f411ab9f91",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 16,
+      "question_sha256": "75c934021c8610b96aaef60118155ec8cccf9a8a57ff0df0c1e49b9a6ff4a735",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 17,
+      "question_sha256": "18468089cbfb10ed00a8546481bacf2a3c5d1c0abcff7b5691c3569106eee714",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 18,
+      "question_sha256": "a4cd360d5bde2b4a25849a1b72c52e95287b8cd6bbd9f1fa3d98ed61990ba720",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 19,
+      "question_sha256": "7dbbef3af18029e61f77bc30cb6f537ba00b9f30eccdc3fe9e41b054e64d7819",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 20,
+      "question_sha256": "6a080dd96c78f5302968d5203e6ce62e08712293ca4f07646be276a3c9abe0e4",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 21,
+      "question_sha256": "88828c17f000ab8b236f6efa0526f4d96d07cf3cafa187ba18f8ca552b2ec543",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 22,
+      "question_sha256": "8acaa491cb58ae66115bbf9f57fe2365ebc931ac1b76835eb3109f769927c108",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 23,
+      "question_sha256": "53f69cd8a3c173b6383bb03f2dcd78bbfbecc2b4d0d457ec44959882e47d1403",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 24,
+      "question_sha256": "20505c04f3c22f9b317433720d50cc537f576ae93de373ea4213a8e7572a14de",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 25,
+      "question_sha256": "e1b8ea5a649cba01b50417751cc49ba74a2ca308303374ae3ba95383285ecf4c",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 26,
+      "question_sha256": "9907bd770f97227eae7d93c7dcd28e5a67ab65d08542a8d39186098c9d8cfd9a",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 27,
+      "question_sha256": "dbac804181b6429e8ebca8d670b2df02201d0da610e4ffd2f771551b052f490e",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 28,
+      "question_sha256": "4857352067fae3f2e20d850f171fda0f477e88dc1a7db9c49633543cb1542bb1",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 29,
+      "question_sha256": "9284d3e4c408e111f831c7fa74bf1400303e7597b3b4aa75d3f26d0a12900b6e",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 30,
+      "question_sha256": "801f93590d64152b4bd4dd8530d969018b738d284f5418310d61681d7e8c0ea6",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 31,
+      "question_sha256": "f805acb303a5902b7b039dff5d07a03f1f1e616e650e1a2b1ea186c8630f2965",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 32,
+      "question_sha256": "fa6383b24bc9509ff1d961de8591cf16b1152f104f9b983531e11fbe6f2a00f3",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 33,
+      "question_sha256": "b0067f6987f6bc8ebe82909a356f258f32908f9fcae6b5f464c85589638da0a4",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 34,
+      "question_sha256": "6b7859c5c404c081a9ee1dd84deed94a4af05e656a60b18133421eae9fc5e8e4",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 35,
+      "question_sha256": "5aac9075cb676df1b0b8cfe899fd0a0b2a03a72f92651087ac933fb0fa0d4b19",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 36,
+      "question_sha256": "d021b36f0d4c6f7e739beeb77a5dd22d41e54aee0084a7162ad72958adf0a26a",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 37,
+      "question_sha256": "819fda5ac4571113e5262975718cd57fbd15d26eb7520af07283d1172e23f2ec",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 38,
+      "question_sha256": "a985e78b6efc92d73cb48313158e328d44c0b21e0d4bd2ac0a9e845e896d6d0b",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 39,
+      "question_sha256": "71ea9ce93f5cf91c33f259768dc2eaacecf5e7834f5326c36e378bbaa0adba67",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 40,
+      "question_sha256": "b4b46bb94e6985bed294b8543e382d06e0712c643e0f10920d4a8758e3e7e9bf",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 41,
+      "question_sha256": "9accea1723baf1082dce22f79798e5b701e86c9f7c0be497ab7f0f2d9f214510",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 42,
+      "question_sha256": "af1cf80cd33d00543931bd8cb10ced9f6bdba75b27177e229a18a66251dd05c2",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 43,
+      "question_sha256": "876359e1c58c07d55331bd59c7d9494fbfa0d3838a3bd27317641d957aeaf74c",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 44,
+      "question_sha256": "c91e6f7d95913958aa0c7dd7c59dd3043ce7c1ff1c2048af18e6a17b1c58bce6",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 45,
+      "question_sha256": "6b05c5f2de235f2347300eb1dbe5f5119d9d95faf6eac330c527767ed621b28c",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 46,
+      "question_sha256": "f8c525462c80a0914b21a446a8aaf29a67586c3677975177a4c1ddafe51d6be7",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 47,
+      "question_sha256": "2323c73333156c307642c81217048de84a185f8df54fced0e32556ebf9a2163d",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 48,
+      "question_sha256": "7fbc9f1683654161bdfe92b302671883563b5a90c7d7d1f03cde104674e318d4",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 49,
+      "question_sha256": "6813938477d799a7dd7ab796e12652f1e68c9cadf4b9aa1e9098613135afcb8c",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 50,
+      "question_sha256": "6e287c6e374ef031acd0ee5261cfa71aa53252da829f05e53411b84d21978ebf",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 51,
+      "question_sha256": "3036232e05e84204ffae3ac3c24d70fe040cfb5b83cbc92c0f94a9d476e3d038",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 52,
+      "question_sha256": "3ae3442d13b92bfab34bc728cb9c9c66e5a8753d7dc9437dda9a22159eb023e2",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 53,
+      "question_sha256": "94bf07a7218a27567bd19331160984f083977ed518f0c96d137c214aec7528a8",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 54,
+      "question_sha256": "f2c3aaa0d75ee64ded0a9fbf3cddd90c2bafe60957cf53b25f278bcfa148bc26",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 55,
+      "question_sha256": "bcacf7a02e0777fa85e17cedf319930b31dc9c88719b6644371e2c6733ae3bea",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 56,
+      "question_sha256": "86b331782a45dc5aaa4cba63a67cbad8c570e90a27366ec39fab90d228f3f101",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 57,
+      "question_sha256": "ae1c476dabdb43295ceffb58d83328c49adb54461a9df3b62a1f98f810a7b996",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 58,
+      "question_sha256": "334e321a657a12918b7a92ad647fa03e3a353a621caa4f6e298ad7b3d055b48b",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 59,
+      "question_sha256": "125ab50b0cea2adc6a55d21d58a86a05ad159e11e0f2627ac4ca2dce18a9111c",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 60,
+      "question_sha256": "27389b802cbe2f653f1000bee893a273ceae16ff2163d457e247a5f82e2b064b",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 61,
+      "question_sha256": "d5f8339178937b7c1cc6febe4f256a220aadf8e8bff8204a03715e584d22e2ac",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 62,
+      "question_sha256": "113819342b952508078333d8ebbaa5ff5b9285eb96cc5242e604f63a1955c448",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 63,
+      "question_sha256": "2935d452d3e89e72365a9809bfec875868a2381cdd3011b7a45b677ed94d0dd0",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 64,
+      "question_sha256": "eadb95e23774babdf27dfa0d75dfcfd588e2b2aaaa389bffc66c384d56af7ccc",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 65,
+      "question_sha256": "53d2a30fac8df345f7b0b0244418259bf1062e412577673b0b4de8f422e20e96",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 66,
+      "question_sha256": "3df8de7b5eb48575724defb2b7952aa5fb0ea582ed204f74fa67231ba28b9db2",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 67,
+      "question_sha256": "f1db121f2c9047e1cacb74ee1fdc323660fd146d660e3906e3654f077ddb40b6",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 68,
+      "question_sha256": "a4536ddf4334821724282c74eefdce1a8bf775f106d0acfe7d8c2035cc9af64c",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 69,
+      "question_sha256": "0a678f740f4591a3b6ea8348bd8ce8269253465cae5ca84e613c1c9867a32532",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 70,
+      "question_sha256": "78fa91e5d1914ba0e85674c1e0ea87b08f732f05ac257e300df97dad696f23dc",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 71,
+      "question_sha256": "857f4561d028fd5020f112c636710fe9a46604e5033b1332ba9e892b48a5c1ea",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 72,
+      "question_sha256": "5cc3cef13619d52ff3addffd0f9f9df5d701d76e2019f4b443d79f1c357c9937",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 73,
+      "question_sha256": "919c17dc35ff591b1563016e75a3137c064f67f58d729ea30e5f02f039dadaed",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 74,
+      "question_sha256": "86387aa2c0c6b2f13fac8944dcdd88de2e228d6a58f044bf28fd8b00779de7c5",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 75,
+      "question_sha256": "0bfb44cd5fe3520861e395792e92b486a91434107d1b6948a101ae8f42c6c94b",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 76,
+      "question_sha256": "9cdba27f42c8cfbcc4a9e865c3be35f42ee3c2bd252cda9b27fe608fd14a6172",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 77,
+      "question_sha256": "00ff49c1cfdc1881244901a105c8224628b584fa92d1f58addc84353468a65a4",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 78,
+      "question_sha256": "28a30a88db024272d2c02443929e5c500567c7a2c40fc5792ffade06376e9436",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 79,
+      "question_sha256": "16453f5f47b4ae69b3ba25df7f3a845a23a5efbe4ed33de2957b4dc51cb3d507",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 80,
+      "question_sha256": "df25bde9b8638fffeb7415933dcb9a84983550816f1ce298a08cb80755a61bae",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 81,
+      "question_sha256": "bbd1ecc9d386a0229719572697811e9ef699bd494c5e2a8741e1bf66d235b859",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 82,
+      "question_sha256": "31a72c1edd88085bf4441d86e4ed0a9eb96570c154f6341ff1920f1091fc6783",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 83,
+      "question_sha256": "21180a6c9027df48c551ae647613d8a00da7eb3a522128fba4a7b51fb8fd7b2a",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 84,
+      "question_sha256": "66e70495db4777351bb8af49f41c188d572e230be7e4ed5d0aed877ba7fcf0f2",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 85,
+      "question_sha256": "8f6835ffd25d55f4e5750da380888e0081f05793c5baf68c5476056c872d0df4",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 86,
+      "question_sha256": "dba3498f7cf8200484fdf8898cc25efb284308725fe20ac7ffbfc8575970be11",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 87,
+      "question_sha256": "ee3de9964eb366034f7695d4f32758525fdedb19bad16cdc20b65d58af32ee9f",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 88,
+      "question_sha256": "e9998c925f8b58e3cbb45c890a85b4a6008bc591a4edbd3fecd4901a313b9f5a",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 89,
+      "question_sha256": "74caa4d6ca2b82f0ee4d498aee37629c0727bcf19e80bae54e771009f910fa17",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 90,
+      "question_sha256": "cad9a7be20254421c1365c73c6bc941d320cf44b2c36de3379e01aa3eaf4188a",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 91,
+      "question_sha256": "d7fc184b28975aff755779c0f0d0c6fb8ac2e22a286b7c5bcb84a60b65f57d9e",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 92,
+      "question_sha256": "4cc9c967f5a0cc7baa04573e957f6c6b9871a1919255c9cbce5336db70cad4ac",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 93,
+      "question_sha256": "bbc97da55c853d4e6c6985ee22aca407f738ef5436763ec7c962c8a192907738",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 94,
+      "question_sha256": "e26c0356d7fc4e5c761bc286d5617023b87fdc25de891b06b98029cdb13aaf8e",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 95,
+      "question_sha256": "889c85600b77cbf48e70c1a3d93abf582b64381481c4c0a0a2617edfd3763a0a",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 96,
+      "question_sha256": "9921e53164ca00d768b6ccee75292cb35d1db88e80c7cc14e09f2364d1eeb085",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 97,
+      "question_sha256": "45b6e29a09872f3b5ad3b64d9bb1ff990e64ed74202687958b87cae6b997f992",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 98,
+      "question_sha256": "7fa15420fe54afbc3ce164f695dbc3aec521a85603859e076d470743fe02fa1b",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 99,
+      "question_sha256": "2666a3ef98ddd620ad642856797223dae924208440b6ca05a3a2345758753175",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 100,
+      "question_sha256": "ddae8abd22a5a9a7f4858e2649f8d6802914e695e6b492dacd35c70a65274ffc",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 101,
+      "question_sha256": "a6cd5d8f7cfd09ac7112fe198c4682762333d6c00982818ccdf62a7154690b47",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 102,
+      "question_sha256": "75eba8bb0a0b8dc745cf993c391943343f820cd0d11afeb85cbf02e192975beb",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 103,
+      "question_sha256": "f624a88d2a8c3aae956d8fba6a8347e2e965594e835d7b4d1205256380a5e1af",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 104,
+      "question_sha256": "72b80afa16fbd9251daa669b9311e78499e1bf0233f51b30c7b56d52323b2f4a",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 105,
+      "question_sha256": "b848cded0221d95bbd3fba31e84a63a23f9da33fd343ab338d6375c19a5aca42",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 106,
+      "question_sha256": "0c15034aa6d730d1804101e5a449413480355f0e14f151d9e1100cd0767b2266",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 107,
+      "question_sha256": "1de509bad6bf42909ab88024583ee539d63696937eab54f6bc81e170158aed35",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 108,
+      "question_sha256": "51281d4cd77b7cd9a4b974eb115c7bad39a1516036e2773616af6eef32831faf",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 109,
+      "question_sha256": "155a7920715e618198c9c9324c01b2b09c154dd71cf5a14575941bc20c99104e",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 110,
+      "question_sha256": "38a8ce2d0770100cf440620e3f973a4f66a35c6ebfe49761d461cd220f3a3750",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 111,
+      "question_sha256": "df6cce293154efe39fffeaba4df190931aa87bfeae03a25e8e5389185fd48d55",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 112,
+      "question_sha256": "34f14db3691c24b9a715e73090773263f13a03f2451bd5bc46de7f4e88e5f366",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 113,
+      "question_sha256": "caff215941ddc79bdb31d34cb0b02b6af1b6cb1c4afd3d8177e40aface693402",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 114,
+      "question_sha256": "a85c5e08853407a86492f3798370384abfa5278058e5b9d034ecd86adeae75c4",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 115,
+      "question_sha256": "18a19ba8129e33f9ac186d4a298bda26b3fb9eb908bee4e87af7b559cfebc543",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 116,
+      "question_sha256": "f10a2f915cc4dd8ed9dffbedaba4308fb96f95651b345e4abad55ee9d26d1757",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 117,
+      "question_sha256": "ecfa18dd69bdddbea83a762785bbe727473f12b0719b994f83a73d7741bc4f7c",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 118,
+      "question_sha256": "fbc7a208d1cb367f94f5f7bc1d05570c1a88582971778bbaf853a71267dda202",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 119,
+      "question_sha256": "560a0b0ff01043096cf2569241e83c764b72362772b71a47da437ba3b21edf9a",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 120,
+      "question_sha256": "3ab9f88a9cc3dd03a97e2ca29a3050a42e41aabd2692388f825f051dae0fa5a0",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 121,
+      "question_sha256": "ab852d199eeed03862f307305c899101ea8dc2343a9f59d0829cefe0bb39fdf8",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 122,
+      "question_sha256": "8edd1c5a035b634cad54a33caab53bca565a621c32dc20570b89c5de23708694",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 123,
+      "question_sha256": "ff1f70a649c511d8009d9d9a9c800d1023026d28b5e23d20525de53e16aebd05",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 124,
+      "question_sha256": "b597c681bb95c057a0bd450c3d6b022749312cef5127e0c7189fe6e2871f9a84",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 125,
+      "question_sha256": "2c202501c2d53d29fe14c128a95382a098e25f3667d2e083267b676f8928a5c4",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 126,
+      "question_sha256": "d58e5905a75387733e5c0f7d9dfa50e50a6852c056e443d26ae5502b8f07e107",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 127,
+      "question_sha256": "8f17f9b84a07bc1e2ab3bc8f4ac1eca76c1cf6b7e3e5052e5b047dd553e0379e",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 128,
+      "question_sha256": "3d8f261750ca3712de72c0ea2648dc8e1ae16ddda99cd42d7dd92638bec178e8",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 129,
+      "question_sha256": "c8643f12ec3d6e621b0dbbba0b21fc12add8b401b67e599379717861c58e65b0",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 130,
+      "question_sha256": "8d986f85d8481ad2a8ffec0f7b07bced021e36d41ab68fbd19762187b741a619",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 131,
+      "question_sha256": "b9c6942a637deba74247bdd45bd32dd40fe83493b8ed8c38fedbaeb989bcf2c5",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 132,
+      "question_sha256": "03a60312438407787f3b2d7ce7a5a1311f92eec8a17ba5b51aa80130b9760597",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 133,
+      "question_sha256": "02bbdaa6aa5f1c1c3c534cc4f226a4be056bca4167f30494b203c4efb24a688b",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 134,
+      "question_sha256": "c02fea56c00532101beaec95b1925645396ad31664c7cb22bbf550be7bc1927e",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 135,
+      "question_sha256": "ed3842ac92465fd7b65609ff534a81f4342141c5837393fe2963f6b561ce04ba",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 136,
+      "question_sha256": "1fcfd3928f83e6f1c5b16072dbaa912afb23f26fee5627a89f1e0e2de91d44fd",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 137,
+      "question_sha256": "d0c60273d4ab94da8a25cc917e9a6dedbd435b4fd3187a453da1f9758aa95948",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 138,
+      "question_sha256": "e0b677515c97775d531936a793d8ff7f0b155f4955b6b9f5cd43e186d5b8ca0c",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 139,
+      "question_sha256": "c4563f83c0270318ec9e6c9c694cbc4d703ace8b5e9d21bc7a7647c801f3665d",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 140,
+      "question_sha256": "100cc417bf384fb12db03378ee5c7ccbbdd8693693a6df3503cf58e730bcefd8",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 141,
+      "question_sha256": "7e68425f40b23d7bd4e20236bf5916e8a9c464c691a3ba033212e3dc4d55b50a",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 142,
+      "question_sha256": "52d3070297f31a3b678816cf7cb21a120cf7d786e3aef81b530f30c9a3277a02",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 143,
+      "question_sha256": "8e22f82fc18b335a71e2ce9f198fc634a4ecae666b26d6279c4b957b8ea8178c",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 144,
+      "question_sha256": "2d46b33b91fc75b17ab28199313d973f883a9070d7e4b6a5ea4d2dbb42196174",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 145,
+      "question_sha256": "390b4f8d200c5097839921f1f43618a6e5d74205c4682467f07e346827974554",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 146,
+      "question_sha256": "646f23f083eb158339cce5209c058f30fbef015675f8c226797dc5fff062499b",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 147,
+      "question_sha256": "bbc4a672b812317c529ff786a87ed69ff99de172f732932ece5d9bd3205640cc",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 148,
+      "question_sha256": "33ed6a6fe82da1d4c2774a1da5aca9783670ffe2deb23b623918a2c58cf11824",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 149,
+      "question_sha256": "81bb04f0c66211d60118bcad578015f22f05320f31b824b16abfe33e01ea6bdd",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 150,
+      "question_sha256": "d540cacf7113147a13e3a4e6e445dbea2e662cdb3aab27781ad8c42c1dd1c6fc",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 151,
+      "question_sha256": "cdc002ec4d0b18219079fb9a5bfb809a7dd984052d1358efc7baaaf073de196f",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 152,
+      "question_sha256": "797362a5ad5e29fb019012d08ece571ec342de3c3b062389c72ae99da606971e",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 153,
+      "question_sha256": "e49a07320bafc498aa80e3ae47cbd23588e4045e23b2d29fd664b316d1cf92df",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 154,
+      "question_sha256": "92701d2d54d7a9cb2e8449d96e36b8261ee9caa98c516bbbf67666051445b056",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 155,
+      "question_sha256": "9a5bee2a8633cf20ecd97e3a69ebeb218e3a94330bb4db859119937e486bb061",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 156,
+      "question_sha256": "29efa86024abee84347c2d7b8df3d3e92487defe98f3e73c43159d8b76a8c76a",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 157,
+      "question_sha256": "161575a95cc82a43c1592ca90bd97f2c1f78976fdad19904418e4e6a73c05640",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 158,
+      "question_sha256": "29c2810b06010f2cfce9750c3315abdbb96eff3421d532290e4a90805f8bd5a4",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 159,
+      "question_sha256": "72763821afd8d0a11cc62e540564b6c9cf3acf723f9fb218f146f03292954530",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 160,
+      "question_sha256": "6cb369c71718f604eff721f2a96a574a66267a5e2443236e05b7a05a78fc615e",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 161,
+      "question_sha256": "d60059868edf42ac5c42846be40e93b6be509939402ae728a28c365003c5b7a7",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 162,
+      "question_sha256": "768fe6dea8738a0e1b5b63c9b1e32e70fcfe6c25a7e7fcaac6cbc87230a68ccf",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 163,
+      "question_sha256": "8db846aaa26c1acafd97e2283203485850e57077d4b7d8c8384c0bff5bbff172",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 164,
+      "question_sha256": "06ac9709031d30c1015d9ddbf3ce3294547cae053516a0ef173bd4528d6c670f",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 165,
+      "question_sha256": "001f02761a3c741875a1e08ad1e3f36e13faa82759d572503246df344a86db0b",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 166,
+      "question_sha256": "4432e1cd11272e2e9e087b5719b8fe8e8bef41688b61b75d587e7eb84e0418a8",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 167,
+      "question_sha256": "db504288cdc1f69752fe4930b9748567bc2dd2fc17be3921a6f23e1d44f4b78a",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 168,
+      "question_sha256": "e0f1e31bb68ce0234f2de00eddbfed40f23c95b6a2d60305979247bbdf22f0df",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 169,
+      "question_sha256": "3dde3327a88a1e0885fab319dc0d7192d9fd027ef8bc339839e5b35c948e212e",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 170,
+      "question_sha256": "f8e786fe9a7bfdf3a1aefbacebbabe54fe494e04626a4017e7c0d94d6eda70fa",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 171,
+      "question_sha256": "7cc5b2c543b01e449f6eb1710420d79375f27282e1b74a62706d291d9db5401b",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 172,
+      "question_sha256": "049a4eb94a8c287c93f65a9c01fe9b1bafa8fc8aef4fbda95849441c8235b8ac",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 173,
+      "question_sha256": "a4ba1529465979a16d74adde999c9d9f225324f4e90e8913fbb11163673e0174",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 174,
+      "question_sha256": "f93e8463b6287987d5e44db95cba64bfa522f4e1457e5b00b112931e7536a04b",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 175,
+      "question_sha256": "e9e3aeea5a0c659eb27ebfb09cbdbb4c6f65f4cb3849b9934034e4fdb25ec541",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 176,
+      "question_sha256": "615991c5494e0d4f0ee2f2cc549237b18ee74bc4cbfd56edc0189cdb9cf96d35",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 177,
+      "question_sha256": "667db1ccb5111df59d94bb2748d08a6d6a172a5bba30c0f3e64d3048f70793eb",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 178,
+      "question_sha256": "5bcebfc2a989230f895e8594c2c828febb0b852e16dcccaacb2b7399da8c554a",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 179,
+      "question_sha256": "3362d7bba1a89cc3fe1426607ef86b1d8c0229dd12b2fbd0a88d410014493378",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 180,
+      "question_sha256": "6847ad3b51c6b3d96f87b4c0c420e63e020037f14a4deeb458c0add94d5de647",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 181,
+      "question_sha256": "3766a9d0be7666e84648afcebe5f1b79ef094fe770777b1862a825234c2ffdf9",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 182,
+      "question_sha256": "48912aeceaf5877f297712813768aac573477ab0d7264da6ea40fe08eebfef52",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 183,
+      "question_sha256": "f729891e441834088165d863a0da2107dd883c9e01ed19800eaf9452aa8b8dbf",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 184,
+      "question_sha256": "3816e740cb93443c6f161b36e690e7eea1c662c60f34508a9011df5946fd2d73",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 185,
+      "question_sha256": "1a44e911260cb16ebeb25287ef4888a22c8181a0fbea4874c58b5276dc5e8e9e",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 186,
+      "question_sha256": "b980cb97378a10a49a41acfac511459c15a7b00a1ab42a433b94254264125b0e",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 187,
+      "question_sha256": "39c160aea2f80fb68eec157e810aa7334603bb1a25f204c75afa0845ba293251",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 188,
+      "question_sha256": "3078ece647dfb5cca96af018a7299499165769ec7d0020c5369b620fa5e13b45",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 189,
+      "question_sha256": "e769063c76715635a2620441c51f9d07e61587607c04cc6810d6979e29fefc1b",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 190,
+      "question_sha256": "e7f10c20c099b4eeb5bb62ce6b1b64c4811a29c363076111e88a8db766f219a8",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 191,
+      "question_sha256": "8834011268f177bb53abd186e2de7d3b32b6afa45f07410b22d1fb2bbd8e4457",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 192,
+      "question_sha256": "6e57ce7a4df9568c8fe56965f65a412223417493cb80c21da60b341f76c8aa7a",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 193,
+      "question_sha256": "602590fbefa91817190296cfc0685d970b20fab298c3464d60db7a1c63205522",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 194,
+      "question_sha256": "4352cb0545d655f308bc44335204d5f365ea371361722dbf97209370ee0dfb88",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 195,
+      "question_sha256": "b249e5743362c9ab57ecd078fd5d34ab87d7dd5829a91e8bc342678ea8cc6579",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 196,
+      "question_sha256": "6d9006a0fd1183ab6771a5d06b5d8173fa82e9cb4f07d1447a4c5e6ccc08cf7b",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 197,
+      "question_sha256": "127882849f6ba36beb348fe206ec6bb3ce32d2aac9155efee3f1ece11b3fa9d0",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 198,
+      "question_sha256": "d131f07b89f57317619216f800d439dfc68074077ce448b86044b5c90aca7c36",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 199,
+      "question_sha256": "d3226620c913e32d647f40be47b8b375cdfe6d1ca55c099305de335262fc49b5",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 200,
+      "question_sha256": "e9a6f34d8ec6b6776c27778a7ef99c00d2d22ee6baf4528bc7584b6839ed4f43",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 201,
+      "question_sha256": "87489fc645ea8715761053ace90bbfe421437f5e02d96cb0bab68bcfaf0eef09",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 202,
+      "question_sha256": "70465a0ffa8bda8dc8326b956b734d756103e459b6d4db9393da9ec5713a2694",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 203,
+      "question_sha256": "22b2e214b02c00307cc5fe89256f02c17b7a3c4c26084570bca16f5c360ba61e",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 204,
+      "question_sha256": "adeb747b36d31039df38423f042a89897f3913a33f231f46ded2bad33e9d9627",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 205,
+      "question_sha256": "df82ffbd8f2cdee03309b62dd788f94c670aeed180238a9f5d7f8b57cc70c710",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 206,
+      "question_sha256": "ea3286665856cb46249c4c833a1940bc2bde6315ec1a484be3d8a526d3a78b5d",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 207,
+      "question_sha256": "eab1007d49a29b983dd341396d2dcaeec60c3b182e49880b59e7dc30fc640c77",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 208,
+      "question_sha256": "97cf76c073acaaee170c2c70048f41cbfe5e86192215991fd2b8f15993e92a7f",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 209,
+      "question_sha256": "9bef8c2f47dc3d58f0233c355f60136f56232097ddd43f1d051fbc719ccc9af6",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 210,
+      "question_sha256": "1ea445608a5d37cdb893842c6279f93a39553056f52c1625b287689282b1dff9",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 211,
+      "question_sha256": "7c9688cfa0a54233719748585e1b8856d33688b31b2f57fed17353be6585f9d8",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 212,
+      "question_sha256": "679fd0fe46baf7f907f920f2350eb5cc96e175866283e41a409729263e42b943",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 213,
+      "question_sha256": "beeef362e90b31cf05b49638ddc267a484db4660a7dcd7665b7310d44d6f1387",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 214,
+      "question_sha256": "5d9cfdeb06cdc8c82394910c9293beb9e039aecfca0883f9abfb5f1a27e06f26",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 215,
+      "question_sha256": "8c525d94ba2a94dad8656aaf74a81ee76e911f86af9429982cb9497e421f6d74",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 216,
+      "question_sha256": "87ce807477d0bc59b14ade84a1e4a2d73ec5b2625599ace027c1f6e2a97c356a",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 217,
+      "question_sha256": "6a2dd33148167bef5fd757150465c307cc2190066f49365be1a5273da93a45f1",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 218,
+      "question_sha256": "fe58954fb5ad116c0f3fd9ca214ec251665c4b4b42e786b29db8371279236c74",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 219,
+      "question_sha256": "5581444ea8db3d8cdb8d6e76dcf6c08e31a3bc8bd5a04c91713190a9755f36eb",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 220,
+      "question_sha256": "59e9315530a038dfbd915efc20b87e5d7a867230555eafffe82895ba7745c7e9",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 221,
+      "question_sha256": "67502f69baab4c79e652d1981250b6d9fdaf936b8bdb1ebf0e3ab5fc5cd2a198",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 222,
+      "question_sha256": "43ef29c35775f31d9758d40bc63937a24a359f9f5342836a7966ff9551add3ab",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 223,
+      "question_sha256": "bc8142f554e98d5a924c35c1701ee3fa8eaeb7522c8cc0b6256b4e0df831c786",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 224,
+      "question_sha256": "2b7309a14133a9b200604a1ab2a9a47d3ae48631c051cdfe84a702dd10898abd",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 225,
+      "question_sha256": "0e81c9eeba247bf22c7c0d124dae59585953082f83e77c85ca0e9af577de0ccd",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 226,
+      "question_sha256": "5ceba222a0a872fec1784d45f85512e77c4abcbabe0c7e4d09dbb9e7eedc277a",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 227,
+      "question_sha256": "0d97840c4168c321866fda7c169a658259fdff9d7c5e9ad415a0db422b57104d",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 228,
+      "question_sha256": "44f115eda617a1e20b080d9160b02ca219bd89269ac5b91f5ef3f9b60cc41009",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 229,
+      "question_sha256": "17ccd0bbfd4f5e2ff9b17aea0f93162886f6b66f35a30fb67b33391c766b44f3",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 230,
+      "question_sha256": "4cedcff464ee8b733194dfe165056ac194971fcb47c2c1b3d678bddd41c91d63",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 231,
+      "question_sha256": "b46c95b1c0779f23a1009234e4cbe5c19deaf9d9b114d8b83bdb56f68facb044",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 232,
+      "question_sha256": "e41ad58b6fb6e6f73f6a6b1ee55fe460e33480903940ef2b1cf718339142d537",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 233,
+      "question_sha256": "b8c2774102c04ab24579d27d966e39e34c846d4220d0aed7cade3f2d289d9af4",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 234,
+      "question_sha256": "17d0faa7a0db1d86c2f34da80317aac4cb305396c3b0b7605c66c0798896d8d0",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 235,
+      "question_sha256": "2c64c4163bf883e1dc4ff7d4b806f9b8de77f368f62285e1f512b59aaea45d9a",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 236,
+      "question_sha256": "d6089bd4c46a99e13d2dba412371232b3c66724883a0cba1dcfe16845c98ca81",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 237,
+      "question_sha256": "b4609f98cadd7e3b987b1a521ab3c21c6105c678683b21e08ba7f5957a457e40",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 238,
+      "question_sha256": "d916958bc580c7afecdcec086ea32c6546a3f65de4c537a1f35cc9ad79a244c2",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 239,
+      "question_sha256": "eb3112117168332c68519a02739f40f441986f244fc61ea8399585342449de9a",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 240,
+      "question_sha256": "a3b176a531afd1834327eb5e273c5c190fa4323fbb66712e9a43fcb5a8e33296",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 241,
+      "question_sha256": "c60a2625cbbd223179b23c5d11cee75e435f68b47cf0990df2b2898a5c858d51",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 242,
+      "question_sha256": "aea318e0379dadb2e1db669fffccfa3d3312a1b910df095249ab638d45627f68",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 243,
+      "question_sha256": "8a93aa3f5247ebb576b7be6858bf5af30821a4c28d89c648504a6ca1c78cff24",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 244,
+      "question_sha256": "27f1ba04e4a599642459cbf826a0ced519928858d3273e0285de00359c92309f",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 245,
+      "question_sha256": "31a4781e1b2a667064d54e881966633a0027bc5cd69f39ead9e31e3f50513ec4",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 246,
+      "question_sha256": "c6e32778df14719cb35c93d1e9a291b90237451667e57977da7cc8feabc66e2c",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 247,
+      "question_sha256": "67ab8da22dbdd3d72e0d11db61d25a64d9caa9877489d8a04c4c652d86056b37",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 248,
+      "question_sha256": "a71ee7e081db5056240ace945b2790b966527b423d59a276319e120b314a8400",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 249,
+      "question_sha256": "4647c20bedcfbe3337182cc694a7c07188b9717f0c5d697950cbf22d4098a670",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 250,
+      "question_sha256": "f7e37df2c00626ef47968a2e3d3b43f622fecb15c67fff7691cede2127fa601a",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 251,
+      "question_sha256": "f7ab87bc3d24a2add59ab08870d5eb1801c2ac20dd2493e2807fc7d39d1c06b3",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 252,
+      "question_sha256": "e24d4e45ed9e57a7b6e5d3a6f9b89c513825e6ba08e23a68a8e7d855ace72ac5",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 253,
+      "question_sha256": "db26e583946f6652b423a114f00f1393aee7a49ae451470ab229b48719b34d71",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 254,
+      "question_sha256": "cf94468cf8d06788495fe8df00d711c0735ab8f50d0d46bfda0c3f815f1050c6",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 255,
+      "question_sha256": "8bee21c3f2828a61f7f11d25e39e1f90761a17151908f14c19ad327793c7a778",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 256,
+      "question_sha256": "90ad4f5e299531f102550fac2c66d60e009935516b4f39cf31839afe1286b9e0",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 257,
+      "question_sha256": "cfbd7925561876a917b141faeae5fe309d6d035e5c211ad89bae57b8553dedd8",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 258,
+      "question_sha256": "952fab995cbfb25eb89435c41175f4ab167fcc7d155490c858088a21ced8acb6",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 259,
+      "question_sha256": "21968ec979341a768c2359ffbd98c6d1dd905ee99f03896f429b192546cb62b3",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 260,
+      "question_sha256": "b84156da3ef64679ecf15f92a25f9ea5347de8703ef7427651320fd20c2b1398",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 261,
+      "question_sha256": "9d946f5a241ceca34ec03ec4f972be787825c63983e10b8a5daf016df2467084",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 262,
+      "question_sha256": "17e8c243f2be0a8f2917bad5e38c1269e55e742b6bdabdc58e53ee2852fb86a2",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 263,
+      "question_sha256": "993acbbb83a4860bbda6a9b4ed9db5f931b54ca8fc9bcb988be70eb1783deeb6",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 264,
+      "question_sha256": "df6fe7aa49093b0bfa63d59422a77e61ff212d786847aca1b020c68af125e09c",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 265,
+      "question_sha256": "563f5fafe1b8dc68e65150ac062793716c9e01950dcf5fc3767118b8f9fc1581",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 266,
+      "question_sha256": "b77a2f1d5cbf891e350e911e1dfcb25679b13157eb37cf71383604d7fd10e006",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 267,
+      "question_sha256": "7427fc953c0e443b82b9a78cb0cf29434cc972f992baf4c333b13277b2ebb58b",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 268,
+      "question_sha256": "e8382de6ec57ab6eca660c5c2b13c51134e7a8bac4a772b5fddf1c765be89e7a",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 269,
+      "question_sha256": "3558ef9bd2b2314282f6b8ae441b22e105ff99173eb7f4b7c329de1f095ae5ad",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 270,
+      "question_sha256": "ef3b7612b300b8718625209dee41ce3936285c30a84951f75f142bbf1351febe",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 271,
+      "question_sha256": "3c9848f0d83ad5e0554b2a9233fb465dd93ad08840b4c9ebc180daf9936419d8",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 272,
+      "question_sha256": "62a850a2d1f5d587b87b2ff45ba5fbd4374a4aa939fde1fc53d204417d8aa385",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 273,
+      "question_sha256": "29e5793133f9ce2ce1ce0ba623c050031fabfd6b4428a4d31d98e9615457b84c",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 274,
+      "question_sha256": "ab68b7efb6f70196f57b6517565ad762c809a7369cd092347cb3055e48e359d4",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 275,
+      "question_sha256": "28b65fdc9103e22f125273d8bd33c20bf527118cc7dbf4035b8bb74a3e0e1240",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 276,
+      "question_sha256": "bbba2a01da9e2e388fe21d10f46d0fbb56e557f42ab5584dfede95738bcbe701",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 277,
+      "question_sha256": "071ef65f313dc857d2499aceb4e134f47e7a0bdbe6d9647f922eb64cafd6696c",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 278,
+      "question_sha256": "ccdee045e119a87237a1027853358f8b2824cfd476baa0ea2777761e3c2befb4",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 279,
+      "question_sha256": "6799ee5ac4d9f23c4f0ced0c15fbd0eee5384c01ea25c321ee0bf47f494be55d",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 280,
+      "question_sha256": "329979556decfad6a1ba55185cb7492e36e90de9d6ea450556a6b94172f3cc79",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 281,
+      "question_sha256": "e44ae01d0a52ced196d615a3b807e49279067fefe12bdc3936e24ca145c37a36",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 282,
+      "question_sha256": "d7965b7ba14acc3cfd4832fee0b8bdebafe1f2b83b5872276f614e0d3577405a",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 283,
+      "question_sha256": "eca5ac513137449014797b054fc19793f13ef80bae2acb6b645cac21ef691221",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 284,
+      "question_sha256": "2b088c5d13c90b38f7ff86502fc875644f56b3694563cef8c3ff0eab79f18d73",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 285,
+      "question_sha256": "7824bb7f373ee4a5de21cfff476f8dddbb14f8af2f9f4df446016a2dd77b25ec",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 286,
+      "question_sha256": "fe88129957342927b8265919fc39a1bd4d04fc39be305a2c8bbbe57c3b19c210",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 287,
+      "question_sha256": "0736974de68d9dc1c1bf95c8542aa85e5ceaa261fc51a23ef3146515846cec6f",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 288,
+      "question_sha256": "86b49da39a2b74fb5f49b7e05ad49519f4cfcc3bc5348b90202bcf3464838056",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 289,
+      "question_sha256": "ec6d531bd4d0a686ba522fab1e5d5cfb76fe9e7da821cdc81b2160a53423f316",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 290,
+      "question_sha256": "5d54e50d64bdd5aae93cb9a230d2acd70614aa5be48c416d1331c7cb4dd4bad5",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 291,
+      "question_sha256": "cfa0db4bdcbf9287b647c936ec686109f9cde2d26128a96dcb5b3b81faeeeb6e",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 292,
+      "question_sha256": "eeeaa0ec1735bdd550befce4db3fd884617d9c968e667f1b14df02eb1328b489",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 293,
+      "question_sha256": "ccd08c75d2d8d478db339b56baff4011ba546f0d7282613b67a875c39188fc44",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 294,
+      "question_sha256": "549a9ef1c4611e699df39ece74e162fb29d91b48d20c107d9aa3331280bf97db",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 295,
+      "question_sha256": "8753b221ade8ac1201c92df9b9887b8ae51dab5d0184e400237eb10e90f7e1de",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 296,
+      "question_sha256": "110565ffee529c969d24b4ce048576c2f3b5b2db282ad7af3e183eeb695606b4",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 297,
+      "question_sha256": "6f18db19ca4a0c7e3e1e9e8ba6fa26ac5edda87ab6c48f474dd4afc41cf98106",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 298,
+      "question_sha256": "dc7b5b37ddc1f545c42eac37873157210ba905d9da64f5a8654416f92208271d",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 299,
+      "question_sha256": "b4fdb9999711e56b61e832fd1a361f9ebbac2e65d8b8aab302240cc54fd5a354",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 300,
+      "question_sha256": "e1087b8e72e966cba0f74a75f9774de4d7ccea8f367e95906b3bdf35cebd51b1",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 301,
+      "question_sha256": "07f50bc8ec49db8f8544c9961b2cf924efaeffabff653491a31e9e762d62817d",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 302,
+      "question_sha256": "032e6d5937472afb74eff8320ce0e293b1a9a4132f375dc7b983fe0175eb1b0e",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 303,
+      "question_sha256": "c6a8de2f22bee2e70fb9d65500c15b83f23d26e86f61e022f2614f5bfb460f3d",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 304,
+      "question_sha256": "d4084cee8172220f5373180c86dc62124733e055f37f003db9864cccabb7296d",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 305,
+      "question_sha256": "d3715cc19f38d70ceee04f9e2882426162b12b25e91e051bf76b19af92339d36",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 306,
+      "question_sha256": "cbb98726fedb998e69a4c126dd715dcbfb1b7314c02e028c64b8f80d775ed967",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 307,
+      "question_sha256": "85f51dd6ca5fccd77754bde4f4e275689cd5e1f17e40296ce699499d356b71a4",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 0,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 308,
+      "question_sha256": "17287e7b47e127db33d07ee46069a4384babecfa61e64aeb30305a7ed0cb1d27",
+      "scores": {
+        "gpt-oss-120b": 0,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 0
+      }
+    },
+    {
+      "index": 309,
+      "question_sha256": "6ddd01682ab176782dc63473474f7c15f8ce7a64ba219bbf4d99d9adcd2cc72f",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 310,
+      "question_sha256": "a426fa1c64e47d8ce533473fcffd25b2633b74154cc5d0ef48b38bb4735751c6",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 311,
+      "question_sha256": "5989216af48f025b237fc623521a8041b25b2bc00b8d61e0dbfc9d645be18b77",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 312,
+      "question_sha256": "d9685e5f49181a4fe04c708717358ed56d14414bf9a38485d432f4acb19770e1",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 313,
+      "question_sha256": "399bf30f200af8cfdd8d3ebcc8e438aa36b671dfc98999650972f20128844fac",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    },
+    {
+      "index": 314,
+      "question_sha256": "535e37fa0d5ddcdec9e5203fa337b0d3059f2ab1ab91e93996c148382af0ba90",
+      "scores": {
+        "gpt-oss-120b": 1,
+        "kimi-k2.5": 1,
+        "minimax-m2.5": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "dataset": "marianna13/livecodebench_code_generation_lite_parquet",
+  "matched": 315,
+  "matched_date_max": "2024-12-28T18:30:00",
+  "matched_date_min": "2024-07-06T00:00:00",
+  "method": "Projected parquet question columns over HTTP ranges; no inference or grading.",
+  "missing": [],
+  "reference_count": 315,
+  "revision": "e70df9620dd54c12afac5e2881355de6f9ece2e9",
+  "source_count": 880,
+  "subset": "release_v5"
+}

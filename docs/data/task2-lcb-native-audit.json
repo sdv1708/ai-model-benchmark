@@ -1,0 +1,13 @@
+{
+  "full_retention_scores": {
+    "gpt-oss-120b": 0.765079365079365,
+    "kimi-k2.5": 0.6285714285714286,
+    "minimax-m2.5": 0.6190476190476191
+  },
+  "inference_calls": 0,
+  "pair_folds": 600,
+  "scope": "Registry/loader and historical grade replay; empty-test loader fixtures are never graded.",
+  "score_folds": 600,
+  "selected_ids_weights_and_replayed_scores_match": true,
+  "selection_cases": 1200
+}
