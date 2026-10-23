@@ -346,7 +346,9 @@ For fully observed R, use design-based stratified finite-population uncertainty
 on **per-question paired differences**, including the `1-n_h/N_h` correction.
 Noncensus cells need at least two observations; otherwise expand before a
 confirmatory claim. Estimate variance as
-`sum_h (N_h/N)^2 * (1-n_h/N_h) * s_h^2/n_h`. It quantifies sampling uncertainty
+`sum_h (N_h/N)^2 * (1-n_h/N_h) * s_h^2/n_h`, the mean-scale form of the
+[stratified sampling variance](https://www150.statcan.gc.ca/n1/pub/12-001-x/2019002/article/00006/02-eng.htm).
+It quantifies sampling uncertainty
 for the realized question outcomes; repeat variability and human/serving errors
 remain separate. Use an explicitly documented small-sample method, not a claim
 of exact normal coverage. Repeated images require a duplicate-group sensitivity
@@ -373,7 +375,8 @@ all prespecified lower/upper bounds to clear the relevant minima/maxima, suffici
 coverage, valid controls and acceptable reliability. A bound entirely violating
 a required gate supports NO GO; overlapping bounds or missing evidence mean
 inconclusive and expansion/full evaluation. Use simultaneous bounds (e.g.
-Bonferroni across the declared gates); do not cherry-pick a favorable axis.
+[Bonferroni](https://itl.nist.gov/div898/handbook/prc/section4/prc473.htm) across
+the declared gates); do not cherry-pick a favorable axis.
 
 Choose the final budget on validation/independent calibration systems, then make
 one confirmatory test decision. No repeatedly peeking at test and expanding until

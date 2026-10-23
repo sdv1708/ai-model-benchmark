@@ -42,6 +42,18 @@ The encoder is only one part of the visual path. An API usually hides those
 parts. Say “evidence of a visual-path problem” unless the experiment actually
 isolates the encoder. That careful wording is a strength in an interview.
 
+```mermaid
+flowchart LR
+    A[Picture pixels] --> B[Resize and prepare]
+    B --> C[Image encoder: represent what is visible]
+    C --> D[Combine picture information with words]
+    D --> E[Use knowledge and reason]
+    E --> F[Write the final answer]
+```
+
+An error at any step can produce the same wrong final answer. The controls help
+us investigate which explanation fits the evidence.
+
 ## 3. Why 660 is not the whole book
 
 The official metadata totals 11,550 questions: 150 development, 900 validation

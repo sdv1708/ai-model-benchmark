@@ -56,6 +56,9 @@ Only primary sources and actual framework source were used:
    read using `git show` from the existing fork checkout. Verified its default
    validation split, mirror/HF configuration, image ordering and stale note about
    withheld test answers. No fork files were modified.
+7. Statistics Canada's [stratified sampling treatment](https://www150.statcan.gc.ca/n1/pub/12-001-x/2019002/article/00006/02-eng.htm)
+   and NIST's [Bonferroni method](https://itl.nist.gov/div898/handbook/prc/section4/prc473.htm)
+   support the design-variance expression and simultaneous-bound approach.
 
 Local audit streamed every supplied prediction/review file, joined equal indices
 within subjects and checked metadata source IDs: 660 unique validation IDs,
@@ -106,8 +109,29 @@ verify the target and image content against the downloaded dataset.
 This is a documentation/data-evidence change with no new runtime seam. No TDD
 tests were added to assert prose. Existing Task 2 type checks, lint and the full
 Task 2 test suite are the regression checks; Markdown/JSON formatting, internal
-links, audit arithmetic and patch whitespace are checked separately. Exact final
-results are recorded below after execution.
+links, audit arithmetic and patch whitespace are checked separately.
+
+Verified results:
+
+- `.venv/Scripts/python.exe -m mypy` from `task2/`: no issues in 34 source
+  files. The type check also passed during the initial research stage.
+- `.venv/Scripts/python.exe -m ruff check .`: passed.
+- `.venv/Scripts/python.exe -m ruff format --check .`: 47 files already formatted.
+- `.venv/Scripts/python.exe -m pytest -q --tb=short --basetemp output/pytest-issue22-20261023`:
+  **129 passed in 33.54 seconds**, Python 3.12.8. The initial default-temp run had
+  62 passes and 67 fixture-setup errors because the sandbox could not create its
+  Windows temp directories. Moving the test temp root into the workspace resolved
+  the environmental failure without application changes.
+- Pinned remote metadata matched every saved subject/split count. The answer
+  checksum matched and all 10,500 entries had supported question types and
+  nonempty ground truths. All 22 local prediction hashes and row counts matched.
+- Audit totals, missing-subject count, local Markdown links, Prettier formatting
+  and `git diff --check` were checked. Independent parallel review found
+  **Standards: 0 findings; Spec: 0 findings**; see the [reports](issue-22-review.md).
+
+Commands beginning `.venv/` above run from `task2/`; Prettier runs from the repo
+root with `frontend/node_modules/.bin/prettier.cmd`. Task 1 and the separate fork
+were not modified, so their runtime suites were not rerun.
 
 No full-data image census, feasible selected manifest, equivalent-text oracle,
 transformed image, live API request, confidence interval, accuracy result or
