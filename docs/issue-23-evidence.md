@@ -63,6 +63,13 @@ exclusion, tampered evidence rejection, inapplicability and open-answer parsing.
 Final full-suite, type/format checks and independent review are recorded in
 [the review record](issue-23-review.md).
 
+Final result: **152 Task2 tests passed**, including 23 new harness tests; Ruff
+lint/format and strict mypy passed. All 53 files from two complete fresh demos
+were byte-identical. Both independent reviewers confirmed their two P2 findings
+were resolved (unsupported image references and case-sensitive scientific units).
+The supplied-message audit scanned 22 files / 660 rows and found only reasoning
+and text content types, with no embedded image content.
+
 ## Limits and next experiment
 
 The harness is a small offline prototype, not a native EvalScope pruner or the
