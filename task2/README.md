@@ -7,8 +7,8 @@ now contains a registered `pruning_smoke` benchmark, with an exact upstream base
 and implementation commit recorded in [evalscope-baseline.json](evalscope-baseline.json).
 Read the [beginner walkthrough](ISSUE_18_GUIDE.md) and
 [acceptance evidence](../docs/issue-18-evidence.md). This is the native integration
-foundation; production coding/AA-LCR adapters and run comparison remain in
-issues #19–#21. The analysis commands below retain their existing behavior.
+foundation. Issue #19's native coding adapter is described below; AA-LCR and run
+comparison remain in issues #20–#21. The analysis commands retain their behavior.
 
 ## Part A operating points (issue #17)
 
@@ -225,3 +225,10 @@ and keep inputs unchanged during analysis; there is no concurrent snapshot isola
 Stable ordering, UTF-8 bytes, relative source paths, and no timestamps make unchanged
 runs byte-identical, including runs in different output directories. Tests use
 synthetic fixtures with known answers; no tests are skipped or marked expected failures.
+
+## Native coding integration
+
+See [issue #19](ISSUE_19_GUIDE.md) for `live_code_bench_pruned` in the private
+EvalScope repository, panel export, native parity checks and live run instructions.
+The adapter defaults to the full 315-task reference; no smaller operating point
+has been certified by this integration work.

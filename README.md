@@ -26,8 +26,13 @@ See the [implementation and interview guide](./task2/INTERVIEW_GUIDE.md) and
 [issue #14 acceptance evidence](./docs/issue-14-evidence.md). The
 [native EvalScope baseline](./task2/ISSUE_18_GUIDE.md) is now established in a
 private derived repository, with a registered synthetic smoke benchmark and
-[pinned source versions](./task2/evalscope-baseline.json). Production benchmark
-adapters remain later Task 2 deliverables.
+[pinned source versions](./task2/evalscope-baseline.json).
+AA-LCR integration and saved-run comparison remain later Task 2 deliverables.
+
+Issue #19 adds the [native LiveCodeBench pruner](./task2/ISSUE_19_GUIDE.md), with
+fingerprint-bound historical selection, configurable retained ratios, weighted
+reporting and framework tests. Its default retains all 315 recorded coding tasks,
+consistent with issue #17; smaller ratios remain experimental.
 
 Issue #15 adds [LiveCodeBench pruning experiments](./task2/ISSUE_15_GUIDE.md): two
 reference-only stratified candidates, three comparison baselines, exact finite-pool
