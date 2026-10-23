@@ -27,7 +27,9 @@ See the [implementation and interview guide](./task2/INTERVIEW_GUIDE.md) and
 [native EvalScope baseline](./task2/ISSUE_18_GUIDE.md) is now established in a
 private derived repository, with a registered synthetic smoke benchmark and
 [pinned source versions](./task2/evalscope-baseline.json).
-Saved-run comparison remains a later Task 2 deliverable.
+Issue #21 adds the [saved full-versus-pruned comparison workflow and interview guide](./task2/ISSUE_21_GUIDE.md),
+with validated counts, weighted score differences, ordering/threshold evidence and
+explicit uncertainty limits. See [acceptance evidence](./docs/issue-21-evidence.md).
 
 Issue #19 adds the [native LiveCodeBench pruner](./task2/ISSUE_19_GUIDE.md), with
 fingerprint-bound historical selection, configurable retained ratios, weighted
