@@ -6,6 +6,12 @@ Welcome, and thanks for taking the time. This challenge has two independent task
 
 ## Task 2 full-benchmark reference analysis
 
+Issue #23 implements an [offline paired-image harness](./task2/MMMU_HARNESS.md)
+and [beginner-to-interview walkthrough](./task2/ISSUE_23_GUIDE.md): reproducible
+degradations, stable pair identities, future request plans and saved-response
+diagnostics. Its demo uses synthetic images and scripted responses; no new
+live-model conclusion is claimed. See [acceptance evidence](./docs/issue-23-evidence.md).
+
 Issue #22 adds the [full-dataset MMMU visual-path probe proposal](./task2/MMMU_PROBE_DESIGN.md)
 and [beginner-to-interview guide](./task2/ISSUE_22_GUIDE.md). It distinguishes the
 11,550-question official inventory from the 660 supplied references and specifies
