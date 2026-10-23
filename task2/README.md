@@ -7,8 +7,28 @@ now contains a registered `pruning_smoke` benchmark, with an exact upstream base
 and implementation commit recorded in [evalscope-baseline.json](evalscope-baseline.json).
 Read the [beginner walkthrough](ISSUE_18_GUIDE.md) and
 [acceptance evidence](../docs/issue-18-evidence.md). This is the native integration
-foundation. Issue #19's native coding adapter is described below; AA-LCR and run
-comparison remain in issues #20–#21. The analysis commands retain their behavior.
+foundation. Issues #19 and #20 add native coding and AA-LCR adapters; issue #21
+adds the saved-run comparison described below. The analysis commands retain their behavior.
+
+## Full-versus-pruned run comparison (issue #21)
+
+In the separate pinned EvalScope fork, run:
+
+```powershell
+python examples/aa_lcr_pruned/smoke.py --compare --work-dir outputs/comparison-smoke
+python -m evalscope_ext.tools.compare_runs --full outputs/comparison-smoke/full --pruned outputs/comparison-smoke/pruned --threshold 0.8
+```
+
+The credential-free Native smoke produces 12 full / 3 retained synthetic questions,
+matching 100% scores and zero-point error, while the subset decision remains
+inconclusive with completion bounds [0.25,1.0]. This is integration evidence,
+not validated production compression. The module validates matching populations,
+settings, grading inputs, complete attempts, weights and report/review consistency.
+See the [beginner-to-interview walkthrough](ISSUE_21_GUIDE.md),
+[integration pin](evalscope-compare-runs.json) and
+[acceptance evidence](../docs/issue-21-evidence.md). The fork's `COMPARE_RUNS.md`
+documents the full real coding CLI contract, actual `--work-dir` flag, optional
+threshold, multiple-model ordering, output schema and limitations.
 
 ## Part A operating points (issue #17)
 

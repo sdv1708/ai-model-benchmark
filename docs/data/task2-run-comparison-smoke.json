@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "comparisons": [
+    {
+      "model": "unseen",
+      "benchmark": "aa_lcr",
+      "subset": "fixture",
+      "full_samples": 12,
+      "pruned_samples": 3,
+      "full_attempts": 12,
+      "pruned_attempts": 3,
+      "retained_fraction": 0.25,
+      "full_score": 1.0,
+      "pruned_score": 1.0,
+      "raw_pruned_mean": 1.0,
+      "difference_pp": 0.0,
+      "absolute_error_pp": 0.0,
+      "finite_pool_bounds": [
+        0.25,
+        1.0
+      ],
+      "paired_question_mae": 0.0,
+      "decision": {
+        "threshold": 0.8,
+        "full": "GO",
+        "pruned": "inconclusive",
+        "observed_pruned_point": "GO",
+        "agreement": false,
+        "decision_certified": false
+      }
+    }
+  ],
+  "ordering": [],
+  "warnings": [
+    "Observed saved-run fidelity is retrospective; it does not validate transfer to an unseen model.",
+    "Bounds cover only unobserved grades in this fixed pool, not generation or judge randomness, future tasks, or a production GO guarantee.",
+    "AA-LCR judge noise is unidentifiable from one saved verdict per answer; a census does not remove judge uncertainty.",
+    "Ordering unavailable: provide at least two matching models per benchmark/subset."
+  ],
+  "sources": {
+    "full": [
+      "D:\\ai-model-quality-challenge-main\\evalscope-issue-18\\outputs\\issue21-native-verified\\full\\configs\\task_config.yaml",
+      "D:\\ai-model-quality-challenge-main\\evalscope-issue-18\\outputs\\issue21-native-verified\\full\\reports\\unseen\\aa_lcr_pruned.json",
+      "D:\\ai-model-quality-challenge-main\\evalscope-issue-18\\outputs\\issue21-native-verified\\full\\reviews\\unseen\\aa_lcr_pruned_fixture.jsonl"
+    ],
+    "pruned": [
+      "D:\\ai-model-quality-challenge-main\\evalscope-issue-18\\outputs\\issue21-native-verified\\pruned\\configs\\task_config.yaml",
+      "D:\\ai-model-quality-challenge-main\\evalscope-issue-18\\outputs\\issue21-native-verified\\pruned\\reports\\unseen\\aa_lcr_pruned.json",
+      "D:\\ai-model-quality-challenge-main\\evalscope-issue-18\\outputs\\issue21-native-verified\\pruned\\reviews\\unseen\\aa_lcr_pruned_fixture.jsonl"
+    ]
+  }
+}
