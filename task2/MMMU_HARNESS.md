@@ -207,7 +207,7 @@ uv run mmmu-pairs report --bundle output/my-bundle --plan output/my-plan.json --
 ## Scoring, denominators and limits
 
 The strict parser requires one `ANSWER: <value>` line. MC uses exact uppercase
-valid letters, no extra punctuation/explanation. Open answers case-fold and
+valid letters, no extra punctuation/explanation. Open answers preserve case and
 collapse whitespace, then match explicit accepted strings exactly. Numeric/unit
 equivalents need explicit accepted forms. No random fallback, semantic judge or
 leaderboard-equivalence claim. Malformed completed answers score zero; missing
@@ -262,5 +262,8 @@ evidence is not independently verified. Stronger claims still need the issue
   provider preflight.
 - [MMStar](https://arxiv.org/abs/2403.20330) motivates visual-dependence controls;
   those controls are not executed here.
+- [BIPM SI prefixes](https://www.bipm.org/en/measurement-units/si-prefixes)
+  distinguishes `m` (milli) from `M` (mega). The open-answer scorer preserves
+  scientific symbol case; alternative spellings require explicit accepted forms.
 - [Pinned MMMU and framework research](MMMU_PROBE_DESIGN.md) remains the full
   experimental design authority. Research and metadata are not endpoint results.

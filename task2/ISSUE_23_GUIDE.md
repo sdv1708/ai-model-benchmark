@@ -137,6 +137,11 @@ accuracy would hide that instability.
 
 Puzzle 4 is perfectly consistent and wrong. Stability is not correctness.
 
+Scoring must preserve important differences too. `mV` means millivolts while
+`MV` means megavolts: changing case changes magnitude by a billion. Our open
+scorer only collapses whitespace, preserves case, and requires other acceptable
+spellings to be listed explicitly. Lowercasing everything would hide real errors.
+
 When every binary outcome is scored and properly formatted, signed drop equals
 `100 * (regressions - improvements) / paired attempts`. Format failures also
 score zero but have their own exclusive category, so use component scores rather

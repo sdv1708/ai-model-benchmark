@@ -19,7 +19,8 @@ ATTEMPT_STATES = {"completed", "http_error", "timeout", "truncated", "rejected"}
 
 
 def normalize_answer(value: str) -> str:
-    return " ".join(value.casefold().split())
+    # Case carries meaning in scientific symbols (mV != MV); variants are explicit.
+    return " ".join(value.split())
 
 
 def score_answer(raw: str, sample: dict[str, Any]) -> tuple[str | None, int]:

@@ -188,7 +188,11 @@ def build_bundle(source: Path, output: Path) -> None:
         ):
             raise ValueError("Accepted answers must be nonempty, valid MC letters or open strings")
         images = object_value(row.get("images"))
-        referenced = {f"image_{slot}" for slot in SLOT.findall("\n".join([question, *options]))}
+        prompt = "\n".join([question, *options])
+        numbered_slots = re.findall(r"<image ([0-9]+)>", prompt)
+        if any(slot not in "1234567" or len(slot) != 1 for slot in numbered_slots):
+            raise ValueError("Only image references 1..7 are supported")
+        referenced = {f"image_{slot}" for slot in SLOT.findall(prompt)}
         if not referenced or referenced != images.keys():
             raise ValueError("Image slots must exactly match references in question and options")
         target = text(row.get("target_slot"))

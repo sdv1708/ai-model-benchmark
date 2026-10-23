@@ -400,7 +400,7 @@ def test_open_answers_use_explicit_normalization_and_reject_multiline_format(
                 "request_sha256": call["request_sha256"],
                 "status": "completed",
                 "finish_reason": "stop",
-                "raw_answer": "ANSWER: -12  MV"
+                "raw_answer": "ANSWER: -12  mV"
                 if call["condition_id"] == call["sample_id"]
                 else "ANSWER:\n-12 mV",
             }
@@ -418,3 +418,81 @@ def test_open_answers_use_explicit_normalization_and_reject_multiline_format(
     assert all(g["original_accuracy"] == 1 for g in report["groups"])
     assert all(g["transformed_accuracy"] == 0 for g in report["groups"])
     assert all(g["answer_consistency"] is None for g in report["groups"])
+
+
+def test_cli_rejects_unsupported_image_reference_without_publishing(tmp_path: Path) -> None:
+    from benchmark_reference.mmmu_cli import main
+
+    source = inventory(tmp_path)
+    value = read_json(source)
+    value["samples"][0]["question"] += " Also compare <image 8>."
+    source.write_text(json.dumps(value))
+    output = tmp_path / "bundle"
+    with pytest.raises(SystemExit) as error:
+        main(["build", "--input", str(source), "--output-dir", str(output)])
+    assert error.value.code == 2
+    assert not output.exists()
+
+
+def test_open_scoring_preserves_meaningful_unit_case(tmp_path: Path) -> None:
+    from benchmark_reference.mmmu_cli import main
+    from benchmark_reference.mmmu_measurements import paired_report
+
+    source = inventory(tmp_path)
+    value = read_json(source)
+    value["samples"][0].update(
+        options=[], accepted_answers=["-12 mV"], question="Read <image 1> and <image 2>."
+    )
+    source.write_text(json.dumps(value))
+    bundle = tmp_path / "bundle"
+    main(["build", "--input", str(source), "--output-dir", str(bundle)])
+    profile = {
+        "endpoint": "https://example.org/v1/chat/completions",
+        "model": "fixture",
+        "detail": "high",
+        "generation": {"max_tokens": 128},
+    }
+    profile_path = tmp_path / "profile.json"
+    profile_path.write_text(json.dumps(profile))
+    plan_path = tmp_path / "plan.json"
+    main(
+        [
+            "plan",
+            "--bundle",
+            str(bundle),
+            "--profile",
+            str(profile_path),
+            "--output",
+            str(plan_path),
+        ]
+    )
+    qa = read_json(bundle / "qa-template.json")
+    for row in qa:
+        row.update(status="labels_preserved", reviewers=["one", "two"], notes="Fixture")
+    qa_path = tmp_path / "qa.json"
+    qa_path.write_text(json.dumps(qa))
+    attempts = [
+        {
+            "attempt_id": c["attempt_id"],
+            "request_sha256": c["request_sha256"],
+            "status": "completed",
+            "finish_reason": "stop",
+            "raw_answer": "ANSWER: -12 mV"
+            if c["condition_id"] == c["sample_id"]
+            else "ANSWER: -12 MV",
+        }
+        for c in read_json(plan_path)["calls"]
+    ]
+    responses = tmp_path / "responses.json"
+    responses.write_text(
+        json.dumps(
+            {
+                "evidence_kind": "synthetic",
+                "plan_sha256": hashlib.sha256(plan_path.read_bytes()).hexdigest(),
+                "attempts": attempts,
+            }
+        )
+    )
+    report = paired_report(bundle, plan_path, responses, qa_path)
+    assert all(g["accuracy_drop_pp"] == 100 for g in report["groups"])
+    assert all(g["error_categories"] == {"regression": 2} for g in report["groups"])
