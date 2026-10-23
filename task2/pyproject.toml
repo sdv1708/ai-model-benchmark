@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "Learner-owned reference analysis for issue 14."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "pillow==13.0.0",
+]
 
 [project.optional-dependencies]
 integration = ["tiktoken==0.14.0"]
@@ -14,6 +16,7 @@ benchmark-reference = "benchmark_reference.cli:main"
 lcb-pruning = "benchmark_reference.pruning_cli:main"
 aa-lcr-pruning = "benchmark_reference.long_context_cli:main"
 part-a-operating-points = "benchmark_reference.operating_cli:main"
+mmmu-pairs = "benchmark_reference.mmmu_cli:main"
 
 [dependency-groups]
 dev = ["pytest>=8.3,<10", "ruff>=0.11,<1", "mypy>=1.15,<2"]

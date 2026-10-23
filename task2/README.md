@@ -1,5 +1,20 @@
 # Task 2 full-benchmark reference analysis
 
+## Paired image prototype (issue #23)
+
+Read the [harness contract](MMMU_HARNESS.md), [interview walkthrough](ISSUE_23_GUIDE.md)
+and [acceptance evidence](../docs/issue-23-evidence.md). From this directory:
+
+```powershell
+uv sync --locked
+uv run python tools/demo_mmmu_pairs.py --output-dir output/mmmu-demo
+```
+
+The offline prototype creates seven deterministic transformation families,
+stable pairs and future request plans, then measures saved responses with QA,
+consistency and missing-outcome bounds. The demo is entirely synthetic. It
+does not select a full-MMMU probe, call a model or implement a native pruner.
+
 ## Full-dataset MMMU probe design (issue #22)
 
 Read the [technical proposal](MMMU_PROBE_DESIGN.md),
