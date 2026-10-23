@@ -1,0 +1,9 @@
+{
+  "archive_sha256": "5e839249826f6b9bd5324f0d139089c9dc481ccb3f212a6dfad00c51045d9d8a",
+  "csv_sha256": "2f90d9c30cfb4dd8df2c0f46547c384065e4c76917bd347a9a97bf797235c1ea",
+  "document_order": "declared data_source_filenames",
+  "inference_calls": 0,
+  "loaded_questions": 100,
+  "panel_sha256": "06e76276c366112af5ee056ba6d2bcdab13521bfce85d4f9294ce5864075a4e6",
+  "scope": "Real pinned CSV and document corpus through native local-mirror loader; every context read successfully."
+}

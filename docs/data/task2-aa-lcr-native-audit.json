@@ -1,0 +1,15 @@
+{
+  "full_retention_scores": {
+    "gpt-oss-120b": 0.48,
+    "kimi-k2.5": 0.66,
+    "minimax-m2.5": 0.64
+  },
+  "inference_calls": 0,
+  "pair_folds": 600,
+  "panel_sha256": "06e76276c366112af5ee056ba6d2bcdab13521bfce85d4f9294ce5864075a4e6",
+  "scope": "Registry/loader and historical grade replay; synthetic-context loader fixtures are never inferred or judged.",
+  "score_folds": 600,
+  "selected_ids_weights_and_replayed_scores_match": true,
+  "selection_cases": 1200,
+  "source_csv_sha256": "2f90d9c30cfb4dd8df2c0f46547c384065e4c76917bd347a9a97bf797235c1ea"
+}

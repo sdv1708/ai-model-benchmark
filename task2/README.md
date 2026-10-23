@@ -232,3 +232,11 @@ See [issue #19](ISSUE_19_GUIDE.md) for `live_code_bench_pruned` in the private
 EvalScope repository, panel export, native parity checks and live run instructions.
 The adapter defaults to the full 315-task reference; no smaller operating point
 has been certified by this integration work.
+
+## Native long-context integration
+
+See [issue #20's walkthrough](ISSUE_20_GUIDE.md) for `aa_lcr_pruned`, benchmark
+signals, weights, judge noise, source-version findings and runnable verification.
+[evalscope-aa-lcr.json](evalscope-aa-lcr.json) pins the native implementation and
+the historical source. The default retains all 100 reference questions. Smaller
+ratios remain research settings; no judge-robust compression is certified.
