@@ -170,6 +170,13 @@ local mirror is supported through native `local_path`, with extracted `text_dir`
 The source must still contain every panel question and agree in token counts and
 URL sets. A different source cannot silently redefine the population.
 
+The real document archive revealed a second encoding issue: four ZIP filenames
+lack a UTF-8 flag, and one also uses decomposed Unicode. The loader supports the
+exact corresponding CP437/NFD filenames and rejects ambiguous alternatives.
+This preserves document contents and declared order. A registry regression also
+checks local CSV token-count conversion. The real CSV plus the entire archive
+successfully load all 100 contexts without model or judge calls.
+
 ## 9. Judge noise versus sampling uncertainty
 
 There are two different uncertainties:

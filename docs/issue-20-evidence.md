@@ -68,10 +68,19 @@ exercise the public framework interfaces rather than selector internals. A separ
 known-answer weighted example distinguishes subset accuracy 1/3 from population
 estimate 2/3. Missing/nonbinary/excluded grades fail the weighted estimate closed.
 
+The [real-source load check](data/task2-aa-lcr-source-loading.json) also loaded
+all 100 original questions and document contexts through the native CSV-mirror
+path, without inference. It verifies the pinned archive and CSV hashes.
+Review found CSV token fields needed strict decimal conversion, and the archive
+omits UTF-8 flags for four filenames, one additionally decomposed. Exact encoding
+resolution and the CSV loader have a red-green public regression. Unknown or
+ambiguous files still fail; no fuzzy identity/content matching is used.
+
 ## Validation and limits
 
 Complete challenge Task 2 suite: **129 passed**, Ruff check/format passed,
-strict Mypy passed for **34 files**. The framework result and reproducible command
+strict Mypy passed for **34 files**. The native final suite passed **208 tests**, including **33 AA-LCR feature cases**.
+The framework reproduction command
 are recorded in the private repository's `VALIDATION_ISSUE_20.md`.
 
 The first expanded framework run passed 204 tests and found three unrelated
@@ -92,3 +101,8 @@ cannot estimate judge variance. Full retention removes sampling error, not judge
 error, and a two-point historical model gap remains judge-sensitive. Provider
 behavior, paid fresh-model runs, actual billing/latency savings and repeat-judge
 variance are unmeasured. Saved-run comparison belongs to issue #21.
+
+The [two-axis review](issue-20-review.md) has no unresolved actionable findings.
+Its documented test-placement finding was resolved by moving judge verdict cases
+to the required upstream migrated-adapter module; the CSV finding was fixed and
+regression-tested. The benchmark-specific evidence audit scripts remain separate.

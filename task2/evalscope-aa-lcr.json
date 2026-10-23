@@ -6,7 +6,7 @@
   "development_repository": "https://github.com/sdv1708/evalscope-pruning",
   "development_base_commit": "3e850321",
   "development_branch": "feature/issue-20-aalcr-pruner",
-  "extension_commit": "f0179b6e7059529ef866fc0548ab5b40d9695dcc",
+  "extension_commit": "70effdaa6de98d095e3f7ce4c2746ed44b9f9db3",
   "registered_benchmark": "aa_lcr_pruned",
   "extension_seam": "AALCRAdapter + shared ReferencePruningAdapter.load_subset",
   "default_strategy": "length_difficulty_stratified",
@@ -33,5 +33,7 @@
   },
   "native_parity_cases": 1200,
   "judge_variance_estimated": false,
-  "scope": "Native AA-LCR integration and fixed-grade replay; smaller ratios are experimental. Fresh official text/document order differs from historical prompts. No new-model or judge-noise certification."
+  "scope": "Native AA-LCR integration and fixed-grade replay; smaller ratios are experimental. Fresh official text/document order differs from historical prompts. No new-model or judge-noise certification.",
+  "real_source_contexts_loaded": 100,
+  "public_document_archive_sha256": "5e839249826f6b9bd5324f0d139089c9dc481ccb3f212a6dfad00c51045d9d8a"
 }
