@@ -1,0 +1,441 @@
+{
+  "schema_version": 1,
+  "audited_on": "2026-10-23",
+  "kind": "metadata_and_supplied_prediction_inventory_only",
+  "official_source": {
+    "repository": "MMMU/MMMU",
+    "revision": "876ce5cb130f7f7e290ce4d9984357737d4db5cf",
+    "metadata_url": "https://huggingface.co/api/datasets/MMMU/MMMU/revision/876ce5cb130f7f7e290ce4d9984357737d4db5cf",
+    "subject_split_counts": {
+      "Accounting": {
+        "dev": 5,
+        "validation": 30,
+        "test": 380
+      },
+      "Agriculture": {
+        "dev": 5,
+        "validation": 30,
+        "test": 287
+      },
+      "Architecture_and_Engineering": {
+        "dev": 5,
+        "validation": 30,
+        "test": 551
+      },
+      "Art": {
+        "dev": 5,
+        "validation": 30,
+        "test": 231
+      },
+      "Art_Theory": {
+        "dev": 5,
+        "test": 429,
+        "validation": 30
+      },
+      "Basic_Medical_Science": {
+        "dev": 5,
+        "validation": 30,
+        "test": 326
+      },
+      "Biology": {
+        "dev": 5,
+        "validation": 30,
+        "test": 345
+      },
+      "Chemistry": {
+        "dev": 5,
+        "validation": 30,
+        "test": 603
+      },
+      "Clinical_Medicine": {
+        "dev": 5,
+        "validation": 30,
+        "test": 325
+      },
+      "Computer_Science": {
+        "dev": 5,
+        "validation": 30,
+        "test": 371
+      },
+      "Design": {
+        "dev": 5,
+        "test": 169,
+        "validation": 30
+      },
+      "Diagnostics_and_Laboratory_Medicine": {
+        "dev": 5,
+        "validation": 30,
+        "test": 162
+      },
+      "Economics": {
+        "dev": 5,
+        "validation": 30,
+        "test": 267
+      },
+      "Electronics": {
+        "dev": 5,
+        "validation": 30,
+        "test": 256
+      },
+      "Energy_and_Power": {
+        "dev": 5,
+        "validation": 30,
+        "test": 432
+      },
+      "Finance": {
+        "dev": 5,
+        "test": 355,
+        "validation": 30
+      },
+      "Geography": {
+        "dev": 5,
+        "validation": 30,
+        "test": 565
+      },
+      "History": {
+        "dev": 5,
+        "validation": 30,
+        "test": 278
+      },
+      "Literature": {
+        "dev": 5,
+        "validation": 30,
+        "test": 112
+      },
+      "Manage": {
+        "dev": 5,
+        "validation": 30,
+        "test": 245
+      },
+      "Marketing": {
+        "dev": 5,
+        "validation": 30,
+        "test": 181
+      },
+      "Materials": {
+        "dev": 5,
+        "validation": 30,
+        "test": 458
+      },
+      "Math": {
+        "dev": 5,
+        "validation": 30,
+        "test": 505
+      },
+      "Mechanical_Engineering": {
+        "dev": 5,
+        "validation": 30,
+        "test": 429
+      },
+      "Music": {
+        "dev": 5,
+        "validation": 30,
+        "test": 334
+      },
+      "Pharmacy": {
+        "dev": 5,
+        "validation": 30,
+        "test": 430
+      },
+      "Physics": {
+        "dev": 5,
+        "validation": 30,
+        "test": 408
+      },
+      "Psychology": {
+        "dev": 5,
+        "validation": 30,
+        "test": 305
+      },
+      "Public_Health": {
+        "dev": 5,
+        "validation": 30,
+        "test": 509
+      },
+      "Sociology": {
+        "dev": 5,
+        "validation": 30,
+        "test": 252
+      }
+    },
+    "split_totals": {
+      "dev": 150,
+      "validation": 900,
+      "test": 10500
+    },
+    "total_rows": 11550,
+    "features": [
+      {
+        "name": "id",
+        "dtype": "string"
+      },
+      {
+        "name": "question",
+        "dtype": "string"
+      },
+      {
+        "name": "options",
+        "dtype": "string"
+      },
+      {
+        "name": "explanation",
+        "dtype": "string"
+      },
+      {
+        "name": "image_1",
+        "dtype": "image"
+      },
+      {
+        "name": "image_2",
+        "dtype": "image"
+      },
+      {
+        "name": "image_3",
+        "dtype": "image"
+      },
+      {
+        "name": "image_4",
+        "dtype": "image"
+      },
+      {
+        "name": "image_5",
+        "dtype": "image"
+      },
+      {
+        "name": "image_6",
+        "dtype": "image"
+      },
+      {
+        "name": "image_7",
+        "dtype": "image"
+      },
+      {
+        "name": "img_type",
+        "dtype": "string"
+      },
+      {
+        "name": "answer",
+        "dtype": "string"
+      },
+      {
+        "name": "topic_difficulty",
+        "dtype": "string"
+      },
+      {
+        "name": "question_type",
+        "dtype": "string"
+      },
+      {
+        "name": "subfield",
+        "dtype": "string"
+      }
+    ]
+  },
+  "supplied_reference": {
+    "model": "glm-4.5v-fp8",
+    "rows": 660,
+    "unique_source_ids": 660,
+    "subjects": [
+      "Accounting",
+      "Agriculture",
+      "Architecture_and_Engineering",
+      "Art",
+      "Art_Theory",
+      "Basic_Medical_Science",
+      "Biology",
+      "Chemistry",
+      "Clinical_Medicine",
+      "Computer_Science",
+      "Design",
+      "Diagnostics_and_Laboratory_Medicine",
+      "Economics",
+      "Electronics",
+      "Energy_and_Power",
+      "Finance",
+      "Geography",
+      "History",
+      "Literature",
+      "Manage",
+      "Marketing",
+      "Materials"
+    ],
+    "missing_subjects": [
+      "Math",
+      "Mechanical_Engineering",
+      "Music",
+      "Pharmacy",
+      "Physics",
+      "Psychology",
+      "Public_Health",
+      "Sociology"
+    ],
+    "split_counts_from_source_ids": {
+      "validation": 660
+    },
+    "image_type_tag_counts_overlapping": {
+      "Advertisements": 1,
+      "Body Scans: MRI, CT scans, and X-rays": 17,
+      "Chemical Structures": 21,
+      "Comics and Cartoons": 20,
+      "DNA Sequences": 1,
+      "Diagrams": 161,
+      "Geometric Shapes": 13,
+      "Icons and Symbols": 2,
+      "Landscapes": 2,
+      "Logos and Branding": 2,
+      "Maps": 13,
+      "Mathematical Notations": 2,
+      "Medical Images": 31,
+      "Microscopic Images": 27,
+      "Other": 3,
+      "Paintings": 51,
+      "Pathological Images": 26,
+      "Photographs": 76,
+      "Plots and Charts": 49,
+      "Portraits": 9,
+      "Poster": 3,
+      "Screenshots": 4,
+      "Sculpture": 9,
+      "Sketches and Drafts": 8,
+      "Tables": 137,
+      "Technical Blueprints": 17,
+      "Trees and Graphs": 8
+    },
+    "difficulty_counts": {
+      "Easy": 209,
+      "Hard": 147,
+      "Medium": 304
+    },
+    "question_type_counts": {
+      "multiple-choice": 613,
+      "open": 47
+    },
+    "prediction_review_metadata_id_disagreements_at_equal_index": 0,
+    "prediction_files": [
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Accounting.jsonl",
+        "sha256": "e5baa73e290d29344e3127622692500749259a7db8f11b29971f3005eaebb85d",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Agriculture.jsonl",
+        "sha256": "afa1df4e5734983b5a8424d4e8c45e568a3456b115de2d9fad941db1db8f2095",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Architecture_and_Engineering.jsonl",
+        "sha256": "3c53dedac635ec26a68af8067201073e94ec3674928f96818ea566ffd1c47a22",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Art.jsonl",
+        "sha256": "a7ade2bf8382e5edf6bbf76718fec6ef6b4ede03576164d6f30efcdf5ef986ec",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Art_Theory.jsonl",
+        "sha256": "b664abd9e8941fa117373efde025201c9f406f7f167e19065ce1af3848cb88e4",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Basic_Medical_Science.jsonl",
+        "sha256": "b67f23679266392681073ec88fe5af84e009f3d0ff6699e63a36c1c2fba280eb",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Biology.jsonl",
+        "sha256": "eb217a1f16108cba09db483e6e0091ef83f2a5ff0976f64028bec3f66bb50e95",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Chemistry.jsonl",
+        "sha256": "f488b7bb64f3d80a81848f182f29733bf3dd91773811f2ad0e91779b86b1f0d8",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Clinical_Medicine.jsonl",
+        "sha256": "949d4e1ce296c2d9f98bff699429348ed28c6145511368c74895535cd1fdcd47",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Computer_Science.jsonl",
+        "sha256": "b8e71ec9e4cf47bab74cdec8c2619a3f05bd32dfa15e54580c8179f34ed2fcc7",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Design.jsonl",
+        "sha256": "cafe20e4226d8da47103d37b65221b6dbdf95b8116aa7a498f7a170ce2cb94d4",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Diagnostics_and_Laboratory_Medicine.jsonl",
+        "sha256": "8895ec3636aa5ab859fa87d575f7bbc5f480e4ff8294d9144555c451183cb8d3",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Economics.jsonl",
+        "sha256": "1636086ae9f199aab019a32fb5a9a3f002e8886611a844b670bd123e2ee27259",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Electronics.jsonl",
+        "sha256": "7c8b5a4d8e547f8171a5b1f21bbe2248a1fc554dee8e4bde89f67084152ab466",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Energy_and_Power.jsonl",
+        "sha256": "2242511536a9bb028efe3664cf014b3fdd772e2a8630ccb48f7503f0247835aa",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Finance.jsonl",
+        "sha256": "581ec78569547fc2b39fb394c897eb668a374d58901f3e4780ecda9eec9994c9",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Geography.jsonl",
+        "sha256": "3f3f4d06059ba95b9de8e4d06bbeadaee1243dda6e21a32aa8303c07a6987d60",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_History.jsonl",
+        "sha256": "0e40c466e10438fd12bf713a9c0c7bbd8c98b4061b3a5e43cd83bdf8b232ec63",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Literature.jsonl",
+        "sha256": "e2c53c1322c7721772e610f2fc91daba78f159d0d68af6ba6a2763afe99adfc2",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Manage.jsonl",
+        "sha256": "7b6997a69276dd2e87849770329c003ed83fa0a0c02485823ec4010de19a5089",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Marketing.jsonl",
+        "sha256": "1710efd177d4597fbcd6567b6b95e2d2dfe90181436323010c50ccd2fe9115b5",
+        "rows": 30
+      },
+      {
+        "path": "Evals/MMMU/predictions/glm-4.5v-fp8/mmmu_Materials.jsonl",
+        "sha256": "ee83ef4d1d53a2013fea9305fca62b73ceeee5f0a416c8bce68423e1ef513861",
+        "rows": 30
+      }
+    ]
+  },
+  "limits": [
+    "No full-dataset image or per-row metadata census was downloaded. Official counts come from the dataset card, not a Parquet scan.",
+    "No new model calls, image transforms, oracle annotations, or probe selection were performed.",
+    "Image-type tags can overlap; counts are not mutually exclusive strata.",
+    "Equal-index prediction/review metadata source IDs agree in all 660 supplied rows. No model score or per-item visual conclusion is inferred."
+  ],
+  "official_repository_revision": "268471d0d488258990025331c7528359c324aa25",
+  "official_test_answers": {
+    "url": "https://raw.githubusercontent.com/MMMU-Benchmark/MMMU/268471d0d488258990025331c7528359c324aa25/mmmu/answer_dict_test.json",
+    "sha256": "45b639a937017d3d71f81f610df3a1471debe1887c5c1d24644fec1b33059d5c",
+    "entries": 10500,
+    "all_ids_test": true,
+    "entry_schema_verified": true
+  }
+}

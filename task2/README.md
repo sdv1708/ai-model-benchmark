@@ -1,5 +1,18 @@
 # Task 2 full-benchmark reference analysis
 
+## Full-dataset MMMU probe design (issue #22)
+
+Read the [technical proposal](MMMU_PROBE_DESIGN.md),
+[beginner-to-interview walkthrough](ISSUE_22_GUIDE.md) and
+[acceptance evidence](../docs/issue-22-evidence.md).
+The researched official inventory has 11,550 questions across 30 subjects;
+the supplied 660 validation references cover only 22 subjects.
+The proposal separates weighted population estimation from diagnostic coverage,
+uses paired image/text controls and eight visual stress axes, and specifies
+OpenAI-compatible requests, scoring, provenance, uncertainty and cost.
+No probe was selected or run, and no accuracy or compression saving is established.
+An eventual runnable implementation belongs inside the pinned EvalScope fork.
+
 ## Native EvalScope baseline (issue #18)
 
 The [private EvalScope-derived repository](https://github.com/sdv1708/evalscope-pruning)

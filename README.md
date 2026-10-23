@@ -6,6 +6,12 @@ Welcome, and thanks for taking the time. This challenge has two independent task
 
 ## Task 2 full-benchmark reference analysis
 
+Issue #22 adds the [full-dataset MMMU visual-path probe proposal](./task2/MMMU_PROBE_DESIGN.md)
+and [beginner-to-interview guide](./task2/ISSUE_22_GUIDE.md). It distinguishes the
+11,550-question official inventory from the 660 supplied references and specifies
+sampling, visual stressors, controls and API measurement. This is a researched,
+unrun design, not validated multimodal compression. See [acceptance evidence](./docs/issue-22-evidence.md).
+
 Read the [complete Task 2 issues #14–#17 walkthrough](./task2/ISSUE_17_GUIDE.md)
 for worked examples and the shared operating-point policy. Its conservative
 illustrative requirements retain the full recorded references: no smaller tested
