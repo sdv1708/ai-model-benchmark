@@ -1,5 +1,15 @@
 # Task 2 full-benchmark reference analysis
 
+## Technical Handout A (issue #24)
+
+The [one-page PDF](../output/pdf/handout-a.pdf) explains the Part A approach,
+defended retained sizes, Part B design, assumptions and future experiments.
+Read the [editable Markdown](HANDOUT_A.md), [detailed interview guide](ISSUE_24_GUIDE.md),
+and [acceptance/verification record](../docs/issue-24-evidence.md).
+The selected defaults retain 315/315 coding and 100/100 AA-LCR questions;
+no smaller tested candidate passed the illustrative policy. Proposed MMMU
+budgets and synthetic harness counts are explicitly distinguished from model results.
+
 ## Paired image prototype (issue #23)
 
 Read the [harness contract](MMMU_HARNESS.md), [interview walkthrough](ISSUE_23_GUIDE.md)

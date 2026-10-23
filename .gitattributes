@@ -1,3 +1,4 @@
 Evals/**/*.jsonl filter=lfs diff=lfs merge=lfs -text
 task2/data/lcb-reference-panel.json text eol=lf
 task2/data/aa-lcr-reference-panel.json text eol=lf
+*.pdf binary
