@@ -127,6 +127,8 @@ Rendering it again after renderer formatting produced the same bytes.
 PDFs are explicitly marked binary in `.gitattributes` to prevent CRLF conversion
 from changing their encoded bytes during staging or checkout.
 
-The implement skill requires independent Standards and Spec reviews against
-the freshly pulled main commit; their final outcomes are recorded in the
-review record after review completion.
+The implement skill's independent parallel review against freshly pulled main
+is complete: **Standards 0 actionable findings; Spec 0 findings**. See the
+[separate review reports](issue-24-review.md). No implementation changes were
+required. PDF text also exactly matches normalized canonical Markdown; staged
+and working PDF Git blob hashes agree after binary protection.
