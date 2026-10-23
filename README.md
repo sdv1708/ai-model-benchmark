@@ -6,6 +6,12 @@ Welcome, and thanks for taking the time. This challenge has two independent task
 
 ## Task 2 full-benchmark reference analysis
 
+Issue #24 supplies [Handout A: Why this works (one-page PDF)](./output/pdf/handout-a.pdf),
+its [editable source](./task2/HANDOUT_A.md), and a
+[first-principles interview guide](./task2/ISSUE_24_GUIDE.md).
+The handout defends 0% pruning on the tested Part A grid and distinguishes
+the proposed MMMU study from synthetic validation. See [acceptance evidence](./docs/issue-24-evidence.md).
+
 Issue #23 implements an [offline paired-image harness](./task2/MMMU_HARNESS.md)
 and [beginner-to-interview walkthrough](./task2/ISSUE_23_GUIDE.md): reproducible
 degradations, stable pair identities, future request plans and saved-response
