@@ -225,3 +225,13 @@ Logs/artifacts remain in the audit clones and ignored `task2/output/issue27`.
 The committed JSON is a compact result snapshot, not a full log or a guarantee
 that links, hosting or dependency advisories will remain unchanged.
 Independent review is recorded [separately](issue-27-review.md).
+
+## Final documentation and review checks
+
+All **131 local Markdown links**, including **13 heading targets**, resolve in
+the changed documents. All **9 PowerShell blocks** parse. Both the evidence JSON
+and frontend lockfile parse, changed documentation passes Prettier, and
+`git diff --check` passes. The independent review reports **0 Standards findings
+and 0 Spec findings**. Its one handoff note, to populate the review record, is
+resolved. The final follow-up changes only this verification note and the review
+record, so no runtime suite rerun is warranted.
