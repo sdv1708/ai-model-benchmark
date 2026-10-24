@@ -4,6 +4,16 @@ This guide covers local installation, workbook analysis, API use, and offline be
 Run each command from its stated directory.
 The shell examples use PowerShell.
 
+## Use the live application
+
+1. Open [Performance Studio on Vercel](https://ai-model-quality-challenge-rho.vercel.app/).
+2. Select **Load sample workbook**, or upload one or more `.xlsx` workbooks.
+3. Inspect the comparison, customer decisions, and engineering evidence.
+
+The live application requires no local installation.
+The workbook procedures below apply to both the live and local application.
+Benchmark analysis requires the local setup described below.
+
 ## Requirements
 
 | Tool    | Version or purpose                                             |

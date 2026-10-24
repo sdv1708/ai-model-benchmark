@@ -1,11 +1,14 @@
 # Performance & Quality Lab
 
+**Live application:** [Performance Studio](https://ai-model-quality-challenge-rho.vercel.app/)
+
 Performance & Quality Lab supports two parts of model selection: serving performance and answer quality.
 Performance Studio compares workbook projections against workload requirements.
 The benchmark package tests how smaller question sets affect recorded quality scores and decisions.
 
 The web app and benchmark package run independently.
 They share a repository, but they do not share an API, database, or runtime process.
+The live application hosts Performance Studio. Benchmark analysis runs locally.
 
 ## Start here
 
