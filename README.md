@@ -6,7 +6,8 @@
 Native EvalScope upstream base: `66f0945d145ce6c30de40253cd78144003c6f1fe`;
 tested runtime: `800119ff6870ca958f5d8459970f5fe75bfac305`.
 See the [submission checklist](SUBMISSION_CHECKLIST.md) for deliverables and open items.
-Walkthrough video is skipped at the owner's direction; its submission requirement remains unmet.
+The walkthrough recording is [deferred to issue #49](https://github.com/sdv1708/ai-model-benchmark/issues/49)
+and remains required for submission.
 
 Welcome, and thanks for taking the time. This challenge has two independent tasks.
 

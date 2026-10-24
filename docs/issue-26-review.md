@@ -50,8 +50,9 @@ The Spec reviewer rechecked imports and source and confirmed the repair.
 Otherwise, no material Spec findings. The reviewer checked pinned SHAs,
 historical scores, 0.7/0.6 policy thresholds, retained counts, CLI flag semantics,
 comparator fields/bounds/exit codes, weighting, limitations, handout links and
-multimodal attribution. The skipped recording is an explicit user-authorized
-scope adjustment; the original video criterion remains transparently unmet.
+multimodal attribution. The recording was outside the current written work.
+The user subsequently clarified that it should be deferred into open issue #49;
+the requirement remains active for submission.
 
 Fresh-clone verification additionally found that Windows' default CRLF checkout
 fails the native LF formatter. The guides now use
@@ -67,5 +68,7 @@ clone has no `.env`; no user environment file was removed or edited. The reviewe
 confirmed this correction and the optional scikit-learn/pytest-parent instructions.
 
 Standards: **0 findings**. Spec: **2 repaired, 0 unresolved** (initial worst: P2).
-The original
-video criterion remains unmet at the owner's direction, separate from review defects.
+Recording and reviewer video access are deferred to
+[issue #49](https://github.com/sdv1708/ai-model-benchmark/issues/49), separate from
+the written issue's acceptance and review defects. Issue #27 retains the final
+submission dependency on that video.

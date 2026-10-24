@@ -17,8 +17,10 @@ We built and tested the selection/integration machinery, but we have not deliver
 a smaller validated exam. Do not turn that distinction into a savings claim.
 
 Issue #26 finishes the reviewer entrypoints and this written demonstration.
-The video is skipped at your direction; no video was recorded or uploaded.
-The [submission checklist](../SUBMISSION_CHECKLIST.md) records that unmet criterion.
+The recording is deferred to [issue #49](https://github.com/sdv1708/ai-model-benchmark/issues/49),
+at your direction. It remains required for submission; no video has been recorded
+or uploaded. The [submission checklist](../SUBMISSION_CHECKLIST.md) tracks it
+separately from issue #26's written deliverables.
 
 ## Two repositories, two jobs
 
@@ -299,8 +301,8 @@ and customer audiences, plus a controlled multimodal study proposal."
 
 Practise without reading: draw the two repositories, the native flow and the two
 small arithmetic examples. Then run the demo and explain every displayed number.
-Avoid memorizing a claim stronger than the evidence. Recording a video is optional
-for your learning but still required by the original submission.
+Avoid memorizing a claim stronger than the evidence. Resume the recording through
+issue #49 when ready; it remains required by the original submission.
 
 ## Evidence and further reading
 

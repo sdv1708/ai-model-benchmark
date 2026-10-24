@@ -3,7 +3,8 @@
 Authoritative issue: [#26](https://github.com/sdv1708/ai-model-benchmark/issues/26).
 Read its body, empty comment thread, parent #1 and closed prerequisites #24/#25.
 The explicit user implementation request overrides learner-labelled ownership;
-the user also directs that video components may be skipped.
+the user subsequently clarified that recording should be split into a separate
+ticket and deferred, rather than cancelled.
 
 ## Provenance and scope
 
@@ -16,7 +17,7 @@ to the previous #21 implementation pin `5fd26289972f6d01b13ea95bb30481ebd103fa2d
 This documentation issue introduces no runtime or selection-policy changes.
 Optional TDD does not apply to editorial edits; existing public tests are reused.
 Final native documentation commit:
-`4a478da57af930a87ea92c480cb598314eeebd95` (local issue branch, not pushed).
+`1f7396ea0eb33f55162f48596dcb1dc8991965f4` (local issue branch, not pushed).
 
 ## Acceptance mapping
 
@@ -26,11 +27,13 @@ Final native documentation commit:
 | Clean clone can run relevant tests and reproduce analysis/comparison | Exact Python/dependency/runtime pins, native isolated-clone verification and challenge historical commands; results below |
 | Walkthrough demonstrates integration and explains evidence | Seven-step written demonstration in both guides; native synthetic CLI demonstration; no recorded walkthrough |
 | Trade-offs and limitations stated directly | Full-retention result, no live savings, retrospective-policy reuse, unknown judge variance, conditional GO, synthetic-only image harness and API causality limit |
-| Accessible video link in checklist | **Unmet: skipped at user direction.** [Checklist](../SUBMISSION_CHECKLIST.md) explicitly records no URL/recording |
+| Accessible video link in checklist | Recording/publication/access criteria moved to open, deferred [#49](https://github.com/sdv1708/ai-model-benchmark/issues/49); [checklist](../SUBMISSION_CHECKLIST.md) tracks the still-required video |
 
-The issue is partially fulfilled against its original acceptance criteria because
-video remains absent. No issue closure, remote publication, reviewer invitation,
-deployment or submission-form action is performed. The native README is edited
+Issue #26 now owns written documentation and the written walkthrough; its original
+video criteria were moved to #49 at the user's request. The final submission audit
+(#27) explicitly depends on #49, preserving the recording requirement. No issue
+closure, source-branch publication, reviewer invitation, deployment or
+submission-form action is performed. The native README is edited
 in the actual EvalScope-derived repository, not only described in this submission.
 
 ## Research
@@ -125,5 +128,15 @@ Independent reviewers found **0 Standards findings** and **two Spec findings**,
 both repaired and independently verified: walkthroughs must point to the
 production `_reference_pruning` helper, and CI-lite's mock prerequisite must match
 its actual `.env` key source. See [the review record](issue-26-review.md).
-The skipped video remains an
-explicitly unmet original criterion, rather than an undisclosed review defect.
+The video is explicitly deferred in #49 and remains required for the overall
+submission, rather than being cancelled or silently treated as complete.
+
+## Deferred recording ticket split
+
+Created [#49](https://github.com/sdv1708/ai-model-benchmark/issues/49) and verified
+that it is **OPEN**, explicitly deferred, with recording, publication, reviewer
+access and checklist/form URL acceptance criteria preserved. Issue #26 was renamed
+to documentation and written walkthrough, with those video criteria transferred.
+Issue #27's blockers now include #49. The existing Task 1 video remains in #13.
+No recording deadline was invented and no video requirement was cancelled.
+README entrypoints, both native guides and the checklist reflect this split.

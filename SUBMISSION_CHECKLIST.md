@@ -1,8 +1,10 @@
 # Submission checklist
 
 This is a handoff record, not a claim that the submission form was sent.
-Issue #26 completes written Task 2 documentation. The owner requested skipping
-video; **the original submission remains incomplete without required videos**.
+Issue #26 completes written Task 2 documentation. Its recording requirements are
+[deferred to open issue #49](https://github.com/sdv1708/ai-model-benchmark/issues/49),
+at the owner's request. The video has not been cancelled; the overall submission
+still requires it.
 
 ## Task 2 deliverables
 
@@ -17,7 +19,7 @@ video; **the original submission remains incomplete without required videos**.
 | Handout B: half mixed-audience page | [PDF](output/pdf/handout-b.pdf), [editable source](task2/HANDOUT_B.md) |
 | Multimodal roadmap | [full-MMMU proposal](task2/MMMU_PROBE_DESIGN.md), [offline harness](task2/MMMU_HARNESS.md); no live-quality result |
 | Walkthrough demonstrates method, integration, evidence, trade-offs and handouts | [written demonstration/rehearsal](task2/ISSUE_26_GUIDE.md#written-walkthrough-and-demonstration); recording not made |
-| Video link accessible to reviewers | **SKIPPED at owner's direction; no URL exists; criterion unmet** |
+| Video link accessible to reviewers | **DEFERRED to [#49](https://github.com/sdv1708/ai-model-benchmark/issues/49)**; still required, no recording/URL yet |
 | Both private repositories accessible to named reviewers | **Not verified in #26.** Confirm the form's reviewer identities and grant/check both repositories before submission |
 | Issue #26 documentation published remotely | **Pending.** Local commits/branches must be pushed or supplied as an archive before remote reviewers can use new branch links |
 
@@ -27,11 +29,11 @@ video; **the original submission remains incomplete without required videos**.
 | --- | --- |
 | Task 1 live URL | [Performance Studio](https://ai-model-quality-challenge-rho.vercel.app); prior deployment evidence in [deployment guide](docs/vercel-deployment.md), not freshly revalidated in #26 |
 | Task 1 launch, upload and comparison instructions | [root README](README.md#task-1-run-from-a-clean-clone) |
-| Task 1 video, at most five minutes | No verified URL recorded here; owner plans to skip video |
+| Task 1 video, at most five minutes | Tracked separately in [#13](https://github.com/sdv1708/ai-model-benchmark/issues/13); no verified URL recorded here |
 | Task 2 smaller defended subset | **Unmet research ambition:** full retention is the only passing tested operating point; no compression savings claimed |
 | Submission form completed | **Not performed.** Use the form linked in [README submission instructions](README.md#how-to-submit) after resolving or accepting open requirements |
 
-If recording later, cover the seven walkthrough beats, use synthetic fixture
+When resuming #49, cover the seven walkthrough beats, use synthetic fixture
 results with their labels visible, show both handouts, and state 0% defended
 pruning. Add the actual video URL here and verify reviewer access while signed
 out or from a reviewer account. A placeholder URL or this script is not a video.
