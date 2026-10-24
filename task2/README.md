@@ -1,5 +1,15 @@
 # Task 2 full-benchmark reference analysis
 
+## Operational Handout B (issue #25)
+
+The [half-page PDF](../output/pdf/handout-b.pdf) explains customer value,
+tomorrow's practice commands, GO/NO GO/inconclusive interpretation and the
+proposed image probe's value. Read the [editable source](HANDOUT_B.md),
+[detailed beginner/interview guide and real endpoint runbook](ISSUE_25_GUIDE.md),
+and [acceptance evidence](../docs/issue-25-evidence.md).
+The defended settings retain all 315 coding / 100 long-context questions;
+no savings or live multimodal conclusion are claimed.
+
 ## Technical Handout A (issue #24)
 
 The [one-page PDF](../output/pdf/handout-a.pdf) explains the Part A approach,
