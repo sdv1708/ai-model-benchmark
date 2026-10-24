@@ -1,8 +1,11 @@
 # Deployment guide
 
+**Live application:** [Performance Studio](https://ai-model-quality-challenge-rho.vercel.app/)
+
 The root `vercel.json` defines a Vite frontend and FastAPI backend in one Vercel project.
 The services share a public domain.
-The repository contains the service configuration; deployment remains a separate operation.
+The public application runs at the Vercel endpoint above.
+The repository contains its service configuration.
 
 ## Service configuration
 
@@ -55,8 +58,8 @@ npm run test:e2e:built
 
 ## Hosted verification
 
-1. Open the deployed root URL.
-2. Check that `/health` returns HTTP 200 with `status: ok`.
+1. Open [the deployed application](https://ai-model-quality-challenge-rho.vercel.app/).
+2. Check that the [health endpoint](https://ai-model-quality-challenge-rho.vercel.app/health) returns HTTP 200 with `status: ok`.
 3. Load the bundled sample through the application.
 4. Upload a second valid workbook.
 5. Inspect the comparison, customer evidence, and engineering evidence.
@@ -66,7 +69,6 @@ npm run test:e2e:built
 
 A successful build alone does not establish correct service routing.
 These checks must use the deployed domain.
-No deployment or current availability claim follows from this configuration document.
 
 ## Deployment content
 

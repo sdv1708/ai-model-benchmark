@@ -1,5 +1,7 @@
 # Performance Studio frontend
 
+**Live application:** [Performance Studio on Vercel](https://ai-model-quality-challenge-rho.vercel.app/)
+
 This React and TypeScript application displays performance workbook comparisons and their supporting evidence.
 Vite serves local development assets and builds the static application.
 The browser uses relative `/api/v1/...` URLs.

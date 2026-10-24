@@ -16,6 +16,7 @@ uv run uvicorn perf_api.main:app --reload --host 127.0.0.1 --port 8000
 Use Python 3.12.
 Open [interactive API documentation](http://127.0.0.1:8000/docs) after startup.
 The [project usage guide](../USAGE.md) contains a complete upload and decision example.
+The deployed API exposes a [public health check](https://ai-model-quality-challenge-rho.vercel.app/health).
 
 ## HTTP endpoints
 
