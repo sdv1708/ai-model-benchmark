@@ -44,7 +44,7 @@ Use Git, Python 3.12, uv and PowerShell 7, with private repository access and in
 for installation. From a parent directory where the destination does not exist:
 
 ```powershell
-git clone https://github.com/sdv1708/evalscope-pruning.git
+git clone -c core.autocrlf=false https://github.com/sdv1708/evalscope-pruning.git
 cd evalscope-pruning
 git checkout 800119ff6870ca958f5d8459970f5fe75bfac305
 uv venv --python 3.12
@@ -55,7 +55,9 @@ uv pip install --python .venv/Scripts/python.exe --no-deps -e .
 ```
 
 Stop at any installation error. Direct interpreter paths avoid activation and
-PowerShell execution-policy changes. The snapshot is Windows/Python 3.12 tested;
+PowerShell execution-policy changes. The clone option preserves LF endings for
+the native formatter without changing global Git settings.
+The snapshot is Windows/Python 3.12 tested;
 POSIX uses `.venv/bin/python` and needs dependency revalidation per the fork's
 `PRUNING_BASELINE.md`. The runtime checkout predates issue #26's new native
 `TASK2_README.md`; keep this guide open for the following steps.
@@ -87,7 +89,10 @@ Exit 2 means invalid/incompatible evidence. Without `--threshold` there is no
 threshold decision. Fixture question savings are not production savings.
 
 The full relevant native suite and type/lint commands are in the fork's
-`TASK2_README.md` and `VALIDATION_ISSUE_21.md`. A fast public-boundary check is:
+`TASK2_README.md`; #26's verified recipe adds the optional scikit-learn dependency
+needed by three inherited judge tests and creates pytest's temporary parent.
+The older `VALIDATION_ISSUE_21.md` describes a pre-existing environment.
+A fast public-boundary check is:
 
 ```powershell
 .venv/Scripts/python.exe -m pytest tests/tools/test_compare_runs.py tests/api/test_live_code_bench_pruned.py tests/api/test_aa_lcr_pruned.py -q
@@ -123,6 +128,7 @@ uv run benchmark-reference --data-root ../Evals --output-dir output/issue26-refe
 if ($LASTEXITCODE -ne 0) { throw 'Reference validation failed' }
 uv run part-a-operating-points --data-root ../Evals --output-dir output/issue26-operating --lcb-thresholds 0.7 --aa-lcr-thresholds 0.6
 if ($LASTEXITCODE -ne 0) { throw 'Operating-point analysis failed' }
+New-Item -ItemType Directory -Path .pytest-tmp -Force > $null
 uv run pytest --basetemp=.pytest-tmp/issue26 -q
 uv run mypy
 uv run ruff check .
@@ -172,7 +178,8 @@ No recording is needed to learn or reproduce the work.
    evidence for a new family. Uniform random, easiest-only and hardest-only appear
    only as comparison baselines, never the defended configured strategy.
 4. **Show the native seam.** In the EvalScope fork open the two `*_pruned` adapter
-   folders and shared code under `evalscope/benchmarks/pruning_smoke/`. Selection
+   folders and shared `ReferencePruningAdapter` in
+   `evalscope/benchmarks/_reference_pruning/adapter.py`, plus adjacent `selection.py`. Selection
    happens at `DefaultDataAdapter.load_subset`, before inference and repeats.
    Registration, source loading, prompts, sandbox/judge and reporting remain native.
    Fingerprints bind selected historical IDs to the actual question text/source.
@@ -191,6 +198,19 @@ No recording is needed to learn or reproduce the work.
    judging/generation and measured costs; do not present a production GO guarantee.
 
 ## Build the ideas from small numbers
+
+The native flow keeps selection before the expensive steps:
+
+```mermaid
+flowchart LR
+    Source[Original questions] --> Select[Validate identities and select questions]
+    Panel[Historical reference panel] --> Select
+    Select --> Model[Candidate answers]
+    Model --> Grade[Code tests or LLM judge]
+    Grade --> Saved[Native configs, reviews and reports]
+    Saved --> Compare[Compare full and selected runs]
+    Compare --> Decision[Scores, bounds and conditional decision]
+```
 
 **Strata are question baskets.** Suppose there are two diagram questions and six
 text questions. Keeping one from each basket ensures coverage. If the diagram
