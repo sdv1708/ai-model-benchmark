@@ -105,7 +105,12 @@ From `task2/`, using the existing Python 3.12.8 environment:
 All checks passed: **152 tests in 47.20 seconds**, Mypy **40 source files**,
 Ruff lint and formatting **59 files**. The new renderer separately passed
 Ruff lint/format. All four PowerShell code blocks in the guide parsed under
-PowerShell 7.6.5. Real endpoint blocks were not executed against providers.
+PowerShell 7.6.5. Both live-run blocks were then executed with a command capture
+in place of Python and synthetic environment values: their four evaluation
+argument lists were accepted by the pinned native CLI parser, including nested
+dataset JSON, ratios, panel paths, sandbox and judge configuration. Their two
+comparison argument lists were also captured. No provider was called. The
+standalone comparator additionally passed on the fresh synthetic saved roots.
 
 Documentation-only PDF dependencies came from the bundled runtime, without
 adding them to benchmark dependencies. Reproduce from the submission root:
@@ -121,7 +126,10 @@ render was visually inspected: no clipped text, overlap or missing glyphs.
 Poppler emitted system-font lookup warnings for unused fallback fonts; the
 rendered Helvetica/Courier document was intact. Unrelated Task 1 code and the
 native fork's unchanged full suite were not retested for this editorial issue.
+Regenerating the final PDF produced identical bytes. All **106 local Markdown
+links** across the six changed Markdown documents resolve. `git diff --check`
+passed; intermediate render and command-capture files were removed.
 
-The implement skill requires independent Standards and Spec review against the
-fresh main base. Final reports and any corrections are recorded in
-[the two-axis review](issue-25-review.md).
+The implement skill's independent parallel Standards and Spec reviews against
+fresh main completed with **0 findings on each axis**. No implementation changes
+were required. See [the two-axis review](issue-25-review.md).
