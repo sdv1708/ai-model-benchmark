@@ -33,8 +33,8 @@ The benchmark commands analyze local artifacts and need no provider key.
 1. Clone the repository.
 
    ```powershell
-   git clone https://github.com/sdv1708/ai-model-quality-challenge.git
-   cd ai-model-quality-challenge
+   git clone https://github.com/sdv1708/ai-model-benchmark.git
+   cd ai-model-benchmark
    ```
 
 2. Install the backend dependencies.
