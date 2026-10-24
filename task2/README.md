@@ -1,5 +1,13 @@
 # Task 2 full-benchmark reference analysis
 
+Start with the [final reproduction and interview guide](ISSUE_26_GUIDE.md) for
+both repository roles, exact upstream/runtime pins, native tests and demo,
+historical-analysis reproduction, and a written walkthrough. The
+[submission checklist](../SUBMISSION_CHECKLIST.md) tracks open reviewer-access,
+publishing and video items. Recording is deferred to
+[issue #49](https://github.com/sdv1708/ai-model-benchmark/issues/49), remains required,
+and is separate from issue #26's written deliverables.
+
 ## Operational Handout B (issue #25)
 
 The [half-page PDF](../output/pdf/handout-b.pdf) explains customer value,
