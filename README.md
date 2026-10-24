@@ -63,7 +63,7 @@ cd frontend
 npm run dev -- --port 5173 --strictPort
 ```
 
-Open [Performance Studio](http://127.0.0.1:5173).
+Open [Performance Studio](https://ai-model-quality-challenge-rho.vercel.app/).
 Select **Load sample workbook**.
 The sample follows the same upload and validation path as a user file.
 
