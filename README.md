@@ -6,6 +6,13 @@ Welcome, and thanks for taking the time. This challenge has two independent task
 
 ## Task 2 full-benchmark reference analysis
 
+Issue #25 supplies [Handout B: Why this matters and how to use it (half-page PDF)](./output/pdf/handout-b.pdf),
+its [editable source](./task2/HANDOUT_B.md), and a
+[beginner-to-interview guide with operational commands](./task2/ISSUE_25_GUIDE.md).
+It translates the defended full-retention result into customer guidance,
+GO/NO GO/inconclusive interpretation and a runnable synthetic practice workflow.
+See [acceptance evidence](./docs/issue-25-evidence.md).
+
 Issue #24 supplies [Handout A: Why this works (one-page PDF)](./output/pdf/handout-a.pdf),
 its [editable source](./task2/HANDOUT_A.md), and a
 [first-principles interview guide](./task2/ISSUE_24_GUIDE.md).
