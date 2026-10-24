@@ -2,6 +2,12 @@
 
 **Live Task 1 app:** [Performance Studio](https://ai-model-quality-challenge-rho.vercel.app)
 
+**Task 2 reviewer start:** [pinned setup, reproduction and written walkthrough](task2/ISSUE_26_GUIDE.md).
+Native EvalScope upstream base: `66f0945d145ce6c30de40253cd78144003c6f1fe`;
+tested runtime: `800119ff6870ca958f5d8459970f5fe75bfac305`.
+See the [submission checklist](SUBMISSION_CHECKLIST.md) for deliverables and open items.
+Walkthrough video is skipped at the owner's direction; its submission requirement remains unmet.
+
 Welcome, and thanks for taking the time. This challenge has two independent tasks.
 
 ## Task 2 full-benchmark reference analysis
