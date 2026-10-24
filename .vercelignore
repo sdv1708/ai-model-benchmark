@@ -1,6 +1,18 @@
 # Task 2 evaluation data is not part of the deployed Task 1 application.
 Evals/
 perf_data.zip
+perf_data/
+
+# Only the performance application is deployed.
+task2/
+docs/
+output/
+private-reference/
+ai-model-quality-challenge-main/
+**/*GUIDE*.md
+**/INTERVIEW*.md
+USAGE.md
+normalized.json
 
 # Local dependencies, credentials, and generated verification output.
 **/.venv/**

@@ -1,290 +1,346 @@
 # Performance & Quality Lab
 
-**Live Task 1 app:** [Performance Studio](https://ai-model-quality-challenge-rho.vercel.app)
+Performance & Quality Lab supports two parts of model selection: serving performance and answer quality.
+Performance Studio compares workbook projections against workload requirements.
+The benchmark package tests how smaller question sets affect recorded quality scores and decisions.
 
-A portfolio project for two model-selection questions: **can a model serve this
-workload fast enough, and is its answer quality good enough?** Performance Studio
-turns uploaded Excel projections into customer decisions and engineering
-comparisons. The evaluation work adds native EvalScope benchmark selection,
-saved-run comparison, and a controlled multimodal research proposal.
+The web app and benchmark package run independently.
+They share a repository, but they do not share an API, database, or runtime process.
 
-Start with the [portfolio tour and demo](docs/PORTFOLIO.md), the
-[plain-language interview guide](docs/ISSUE_27_GUIDE.md), and the
-[fresh verification and requirement audit](docs/issue-27-evidence.md).
-The performance app is deployed; **no smaller validated benchmark or live cost
-saving is claimed**. The defended setting retains 315 coding and 100 long-context
-questions. The multimodal harness is synthetic; the full study is proposed.
+## Start here
 
-This project grew from the original challenge briefs preserved below. At the
-owner's direction, the current goal is a personal portfolio, with a written demo
-and interview preparation. Videos, challenge-reviewer invitations, private
-repository requirements, and form submission are outside this portfolio scope.
-Original submission obligations remain documented if that path is resumed.
+| Goal                                     | Document                                                 |
+| ---------------------------------------- | -------------------------------------------------------- |
+| Install and use the project              | [Usage guide](USAGE.md)                                  |
+| Understand the system                    | [Architecture](#architecture)                            |
+| Integrate the performance API            | [Backend reference](backend/README.md)                   |
+| Change the browser interface             | [Frontend reference](frontend/README.md)                 |
+| Understand benchmark methods and reports | [Benchmark reference](task2/README.md)                   |
+| Understand performance assumptions       | [Performance design](docs/task1-analysis.md)             |
+| Inspect model and workload estimates     | [Projection analysis](docs/task1-models-and-profiles.md) |
+| Configure hosting                        | [Deployment guide](docs/vercel-deployment.md)            |
 
-**Task 2 reviewer start:** [pinned setup, reproduction and written walkthrough](task2/ISSUE_26_GUIDE.md).
-Native EvalScope upstream base: `66f0945d145ce6c30de40253cd78144003c6f1fe`;
-original runtime pin: `800119ff6870ca958f5d8459970f5fe75bfac305`.
-Freshly verified native main: `f06acd10c80470696f3d719f079e3094e448d2d8`;
-see the [issue #27 audit](docs/issue-27-evidence.md).
-See the [submission checklist](SUBMISSION_CHECKLIST.md) for deliverables and open items.
-The original challenge's walkthrough recording is
-[deferred to issue #49](https://github.com/sdv1708/ai-model-benchmark/issues/49).
-It is optional for this portfolio and remains required only for that submission.
+## Capabilities and scope
 
-Welcome, and thanks for taking the time. This challenge has two independent tasks.
+| Component                    | Implemented behavior                                                                                        | Interpretation                                                                               |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Performance Studio           | Upload, align, and compare Excel projections. Evaluate workload requirements. Inspect trends and anomalies. | Results describe supplied projections. Production measurements require a separate load test. |
+| Reference analysis           | Validate saved predictions and reviews. Reproduce six full benchmark scores.                                | No model endpoint is called.                                                                 |
+| Subset experiments           | Compare stratified subsets, weighted scores, model order, and threshold decisions.                          | Results apply to the supplied historical panel.                                              |
+| Operating-point analysis     | Select the smallest tested candidate that passes the configured policy.                                     | The recorded policy selects full retention: 315 coding tasks and 100 long-context questions. |
+| Image-pair prototype         | Create image variants, export request plans, and analyze saved responses.                                   | The demonstration uses synthetic images and scripted answers.                                |
+| Native EvalScope integration | Preserve source pins, reference panels, export tools, and audit tools.                                      | Adapter implementations live in a separate private repository. They are not included here.   |
 
-## Task 2 full-benchmark reference analysis
+No smaller tested subset passed every recorded policy gate.
+The project does not establish live inference savings or a validated multimodal subset.
 
-Issue #25 supplies [Handout B: Why this matters and how to use it (half-page PDF)](./output/pdf/handout-b.pdf),
-its [editable source](./task2/HANDOUT_B.md), and a
-[beginner-to-interview guide with operational commands](./task2/ISSUE_25_GUIDE.md).
-It translates the defended full-retention result into customer guidance,
-GO/NO GO/inconclusive interpretation and a runnable synthetic practice workflow.
-See [acceptance evidence](./docs/issue-25-evidence.md).
+## Quick start
 
-Issue #24 supplies [Handout A: Why this works (one-page PDF)](./output/pdf/handout-a.pdf),
-its [editable source](./task2/HANDOUT_A.md), and a
-[first-principles interview guide](./task2/ISSUE_24_GUIDE.md).
-The handout defends 0% pruning on the tested Part A grid and distinguishes
-the proposed MMMU study from synthetic validation. See [acceptance evidence](./docs/issue-24-evidence.md).
-
-Issue #23 implements an [offline paired-image harness](./task2/MMMU_HARNESS.md)
-and [beginner-to-interview walkthrough](./task2/ISSUE_23_GUIDE.md): reproducible
-degradations, stable pair identities, future request plans and saved-response
-diagnostics. Its demo uses synthetic images and scripted responses; no new
-live-model conclusion is claimed. See [acceptance evidence](./docs/issue-23-evidence.md).
-
-Issue #22 adds the [full-dataset MMMU visual-path probe proposal](./task2/MMMU_PROBE_DESIGN.md)
-and [beginner-to-interview guide](./task2/ISSUE_22_GUIDE.md). It distinguishes the
-11,550-question official inventory from the 660 supplied references and specifies
-sampling, visual stressors, controls and API measurement. This is a researched,
-unrun design, not validated multimodal compression. See [acceptance evidence](./docs/issue-22-evidence.md).
-
-Read the [complete Task 2 issues #14–#17 walkthrough](./task2/ISSUE_17_GUIDE.md)
-for worked examples and the shared operating-point policy. Its conservative
-illustrative requirements retain the full recorded references: no smaller tested
-candidate meets every score, ranking and decision gate. See
-[issue #17 evidence](./docs/issue-17-evidence.md) for reproduction and limitations.
-
-The [reference-analysis package](./task2/README.md) validates all supplied evaluation
-artifacts and reproduces six full LiveCodeBench/AA-LCR model scores without live
-inference. Run from the repository root with Python 3.12 and uv:
+Use Python 3.12, uv, and Node.js 24.x.
+Run these installation commands from the repository root:
 
 ```powershell
-cd task2
-uv sync --locked
-uv run benchmark-reference --data-root ../Evals --output-dir output/reference
-```
-
-See the [implementation and interview guide](./task2/INTERVIEW_GUIDE.md) and
-[issue #14 acceptance evidence](./docs/issue-14-evidence.md). The
-[native EvalScope baseline](./task2/ISSUE_18_GUIDE.md) is now established in a
-private derived repository, with a registered synthetic smoke benchmark and
-[pinned source versions](./task2/evalscope-baseline.json).
-Issue #21 adds the [saved full-versus-pruned comparison workflow and interview guide](./task2/ISSUE_21_GUIDE.md),
-with validated counts, weighted score differences, ordering/threshold evidence and
-explicit uncertainty limits. See [acceptance evidence](./docs/issue-21-evidence.md).
-
-Issue #19 adds the [native LiveCodeBench pruner](./task2/ISSUE_19_GUIDE.md), with
-fingerprint-bound historical selection, configurable retained ratios, weighted
-reporting and framework tests. Its default retains all 315 recorded coding tasks,
-consistent with issue #17; smaller ratios remain experimental.
-
-Issue #20 adds the [native AA-LCR pruner and learning guide](./task2/ISSUE_20_GUIDE.md),
-with pinned historical source identities, length/difficulty selection, explicit
-judge-noise limits and 1,200 native parity cases. Its defended default retains
-all 100 questions. See [acceptance evidence](./docs/issue-20-evidence.md).
-
-Issue #15 adds [LiveCodeBench pruning experiments](./task2/ISSUE_15_GUIDE.md): two
-reference-only stratified candidates, three comparison baselines, exact finite-pool
-uncertainty, threshold abstention, and 3,000 score/pair-transfer evaluations. From `task2/`, run
-`uv run lcb-pruning --data-root ../Evals --output-dir output/lcb-pruning`.
-See [measured fidelity and acceptance evidence](./docs/issue-15-evidence.md).
-
-Issue #16 adds [AA-LCR long-context pruning and judge-noise analysis](./task2/ISSUE_16_GUIDE.md):
-metadata-aware candidates, five retention levels, independent model-pair checks,
-and explicit separation of subset uncertainty from unidentifiable judge randomness.
-From `task2/`, run `uv run aa-lcr-pruning --data-root ../Evals --output-dir output/aa-lcr-pruning`.
-See [measured results and acceptance evidence](./docs/issue-16-evidence.md).
-
-## Task 1 deployment
-
-Task 1 is configured as one Vercel project with two services in the root
-[`vercel.json`](./vercel.json): the Vite frontend and FastAPI backend. Both use
-one domain; `/api/*` and `/health` reach the backend and other paths reach the
-frontend. See [`docs/vercel-deployment.md`](./docs/vercel-deployment.md) for
-local services verification, deployment settings, and the live smoke procedure.
-
-## Task 1: run from a clean clone
-
-Install Git, Node.js **24.x** (includes npm), Python **3.12**, and
-[uv](https://docs.astral.sh/uv/getting-started/installation/). Python 3.13 is
-outside the backend's declared version range. The main project repository is
-public. Task 1 needs no API keys or environment file.
-
-```powershell
-git clone https://github.com/sdv1708/ai-model-benchmark.git
-cd ai-model-benchmark
 cd backend
 uv sync --locked
 cd ../frontend
 npm ci
-cd ..
 ```
 
-From the repository root, start the API in terminal 1:
+In terminal 1, start the API from the repository root:
 
 ```powershell
 cd backend
 uv run uvicorn perf_api.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-From the repository root, start the frontend in terminal 2:
+In terminal 2, start the browser server from the repository root:
 
 ```powershell
 cd frontend
 npm run dev -- --port 5173 --strictPort
 ```
 
-Open <http://127.0.0.1:5173>. The frontend proxies `/api` to the API on port 8000.
-The standalone health endpoint is <http://127.0.0.1:8000/health> and interactive
-API documentation is <http://127.0.0.1:8000/docs>. Stop each server with Ctrl+C.
-These shell commands also work in a POSIX shell; the extraction command below
-is specifically for PowerShell.
+Open [Performance Studio](http://127.0.0.1:5173).
+Select **Load sample workbook**.
+The sample follows the same upload and validation path as a user file.
 
-Click **Load sample workbook** to use the bundled Model A workbook through the real API.
-To compare supplied models, extract the archive from the repository root:
+The [usage guide](USAGE.md) contains a worked comparison, API commands, benchmark commands, and fault recovery procedures.
+Dependency installation requires network access or a prepared package cache.
+Local app operation and saved-data analysis require no model API key.
 
-```powershell
-Expand-Archive -LiteralPath perf_data.zip -DestinationPath perf_data
+## Architecture
+
+### System boundaries
+
+```mermaid
+flowchart TB
+    subgraph Performance[Performance Studio]
+        Files[Local XLSX files or bundled sample] --> UI[React and TypeScript browser]
+        UI --> Upload[FastAPI upload routes]
+        Upload --> Parser[openpyxl parser and typed records]
+        Parser --> Align[Configuration alignment]
+        Align --> UI
+        UI --> Decision[Workload decision engine]
+        UI --> Engineering[Engineering diagnostics]
+        Decision --> UI
+        Engineering --> UI
+    end
+    subgraph Quality[Offline benchmark analysis]
+        Saved[Saved predictions and reviews] --> Validate[Inventory and identity validation]
+        Validate --> Scores[Normalized samples and full scores]
+        Scores --> Studies[Subset experiments and uncertainty]
+        Studies --> Policy[Operating-point policy]
+        Policy --> Reports[JSON and CSV reports with manifests]
+        Images[Image inventory] --> Pairs[Image pairs and request plans]
+        Responses[Saved responses and semantic review] --> PairedReport[Paired diagnostics]
+        Pairs --> PairedReport
+    end
 ```
 
-Upload `perf_data/Model_A_profile_1/Model A profile 1.xlsx` together with
-`perf_data/Model_C_profile_1/Model C profile 1.xlsx`. Select profile 1 and the
-10,000-input / 333-output / 50%-cache scenario. For a concrete customer example,
-set minimum capacity to **400000**, minimum generation speed to **1200**, and
-maximum TTFT to **10**; leave context and cost limits empty. Model A has a GO
-configuration at batch 20; Model C is NO GO. Inspect their evidence and the
-engineering section. These are projection-based decisions. The engineering
-batch selector controls inspection; customer evaluation searches matching rows.
+The browser sends HTTP requests to the Python API.
+The API processes workbooks in memory and returns JSON.
+The application code has no database, account system, or persistent upload store.
+Browser state holds the active session; a page reload clears that session.
 
-On macOS/Linux, use `unzip perf_data.zip -d perf_data`. Git LFS is needed for
-Task 2's `Evals/**/*.jsonl`, but the Task 1 archive and public sample are ordinary
-tracked files. A Task 1-only clone can leave those evaluation files as LFS
-pointers; do not mistake them for usable Task 2 data.
+Benchmark commands read local files and write local reports.
+They do not use the web API.
+The image prototype exports future request bodies, but it does not send those requests.
 
-## Task 1 analysis and verification
+### Repository structure
 
-- [Architecture, audience choices, assumptions, and trade-offs](./docs/task1-analysis.md)
-- [Evidence-backed model A–K estimates and profile 1–7 use cases](./docs/task1-models-and-profiles.md)
-- [Clean-clone verification and issue #12 acceptance evidence](./docs/issue-12-evidence.md)
-- [Backend API and checks](./backend/README.md), [frontend and browser checks](./frontend/README.md)
-- [Deployment configuration and production smoke evidence](./docs/vercel-deployment.md)
-
-To check a fresh installation, run the following from the repository root:
-
-```powershell
-cd backend
-uv run pytest
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy
-cd ../frontend
-npx playwright install chromium
-npm run test:e2e:built
+```text
+backend/
+  src/perf_api/          HTTP routes, schemas, parser, and analysis functions
+  tests/                 Parser, API, decision, comparison, and resilience tests
+frontend/
+  src/                   Upload flow, comparison view, decisions, and diagnostics
+  public/sample/         Bundled workbook
+  tests/                 Browser journeys, accessibility checks, and fixtures
+task2/
+  src/benchmark_reference/  Saved-data validation, subset studies, and image tools
+  data/                  Historical reference panels for external integration
+  tools/                 Audits, panel exports, source verification, and image demo
+  tests/                 Synthetic fixtures and method checks
+  evalscope-*.json        Version pins and external integration metadata
+Evals/                   Saved benchmark artifacts managed through Git LFS
+docs/
+  data/                  Recorded summaries, manifests, and source audit results
+  scripts/               Projection summary generation
+perf_data.zip            Supplied performance workbooks
+vercel.json              Frontend and API service routing
+USAGE.md                 Installation and operating procedures
 ```
 
-The built browser suite builds the frontend and starts its own API on **8018**
-and preview server on **4174**; keep those ports free. It exercises fresh-model
-uploads, both audiences, comparisons, validation recovery, and accessibility.
-For the earlier resilience work, see [`ISSUE_10_GUIDE.md`](./ISSUE_10_GUIDE.md).
+### Performance data flow
 
-Read each task's spec in full before starting. Each lists hard requirements and a
-set of **forbidden trivial baselines** that will not pass the rubric.
+1. The browser submits one or more `.xlsx` files as multipart form data.
+2. The parser reads the `Summary` worksheet and checks its required headers.
+3. The parser fills merged scenario cells and converts each row into a `PerformanceRecord`.
+4. The comparison function groups rows by matching configuration keys.
+5. The browser displays matched rows, missing models, and upload diagnostics.
+6. The decision engine evaluates complete rows against the selected workload requirements.
+7. The engineering engine computes metrics, controlled trends, and anomaly evidence.
 
----
+Model identity comes from the filename.
+For example, `Model A profile 1.xlsx` gives model `Model A` and profile `1`.
+Unrecognized filenames use the filename stem and profile `unknown`.
+The parser does not contain a fixed model list.
 
-## What's in this repo
+The alignment key contains five fields:
 
-| Path                     | What it is                                                                                                    |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `Task1_Performance.md`   | Task 1 spec — performance UI for customer + internal audiences                                                |
-| `Task2_Model_Quality.md` | Task 2 spec — benchmark/eval pruning inside `evalscope`                                                       |
-| `perf_data.zip`          | Task 1 data — perf projections, Models A–K × 7 traffic profiles (`.xlsx`)                                     |
-| `Evals/`                 | Task 2 data — model outputs (`predictions/`) + per-sample scores (`reviews/`) for LiveCodeBench, AA-LCR, MMMU |
-
-> **Git LFS:** the files under `Evals/` are stored via [Git LFS](https://git-lfs.github.com/).
-> Install it (`git lfs install`) before cloning, or the `.jsonl` files will appear as
-> small pointer stubs instead of the real data.
-
----
-
-## The two tasks
-
-### Task 1 — Performance UI for Customer and Product
-
-Turn an internal `.xlsx` perf projection sheet into something two audiences can act on:
-a customer/PM who needs a **go/no-go** signal, and an internal engineer who needs to
-**sanity-check** a projection. See [`Task1_Performance.md`](./Task1_Performance.md).
-
-Run contract: document your own install and launch steps in your README — a reviewer
-will clone and follow them. Your choice of framework and packaging. **Also deploy it:**
-ship a publicly reachable URL (a free host is fine — Vercel, Netlify, Cloudflare Pages,
-GitHub Pages, …) so a reviewer can click through without cloning, and let them **upload
-one or more perf sweeps to render and compare the views live** (we'll test it with a new
-model). See [`Task1_Performance.md`](./Task1_Performance.md#deploying-for-free).
-
-### Task 2 — Benchmark Compression for a Real Customer
-
-Prune coding (LiveCodeBench), long-context (AA-LCR), and (forward-looking) multimodal
-(MMMU) benchmarks to the smallest sample set that still gives a useful good-or-not
-signal. Your pruner **must live inside [`evalscope`](https://github.com/modelscope/evalscope)**
-as an upstream-quality extension. See [`Task2_Model_Quality.md`](./Task2_Model_Quality.md).
-
-Run contract:
-
-```bash
-evalscope eval --model <model> --datasets live_code_bench --output ./results_full/
-evalscope eval --model <model> --datasets live_code_bench_pruned \
-    --dataset-args '{"pruning_strategy": "your_strategy", "prune_ratio": 0.1}' \
-    --output ./results_pruned/
-python -m evalscope_ext.tools.compare_runs --full ./results_full/ --pruned ./results_pruned/
+```text
+(profile_id, input_length, output_length, round(cache_percentage, 4), batch_size)
 ```
 
-Each task's spec defines exactly what to submit (code, written handouts, and/or video).
+Rows with different keys remain separate.
+A missing model appears as a coverage gap.
+Identical duplicate sweeps collapse into one sweep.
+Conflicting sweeps and sweeps with duplicate configuration keys are excluded with diagnostics.
+Valid files can still load when another file fails.
 
----
+### Performance modules
 
-## How to submit
+| Module                                  | Responsibility                                                        |
+| --------------------------------------- | --------------------------------------------------------------------- |
+| `frontend/src/App.tsx`                  | Coordinates uploads, active selections, and analysis state.           |
+| `workbooks.ts`, `comparisons.ts`        | Define upload and comparison contracts and browser helpers.           |
+| `ComparisonView.tsx`                    | Displays aligned configurations and coverage.                         |
+| `DecisionView.tsx`, `decisions.ts`      | Collect requirements and display decision evidence.                   |
+| `EngineeringView.tsx`, `engineering.ts` | Display diagnostic metrics, trends, and source references.            |
+| `backend/src/perf_api/routes/`          | Accepts HTTP input and calls analysis functions.                      |
+| `parser.py`, `schemas.py`               | Convert workbook bytes into typed projection records.                 |
+| `comparison.py`                         | Aligns configurations and identifies duplicate or conflicting inputs. |
+| `decision.py`                           | Evaluates workload constraints and selects a representative row.      |
+| `engineering.py`                        | Computes diagnostics without changing or deleting projection rows.    |
 
-These are the original challenge's submission instructions, preserved as
-background. They are not the acceptance checklist for the current portfolio
-project; use the [portfolio checklist](SUBMISSION_CHECKLIST.md) for that scope.
+HTTP routes handle transport and input validation.
+Analysis functions operate on typed records without HTTP dependencies.
+This separation permits direct tests of decision and comparison rules.
 
-**Submit via this form:** https://docs.google.com/forms/d/e/1FAIpQLSdwLrRJkKUgTd2sisyJO10VSf1-1vJ3NIywV5HtMlUSc7ijMw/viewform?usp=publish-editor
+### Workload decisions
 
-Your submission **must** include:
+A scenario contains input tokens, output tokens, and cache fraction.
+The API can omit scenario fields; omitted fields do not filter rows.
+The browser requires a specific scenario for a multi-model comparison.
+Requirements can specify capacity, generation speed, time to first token, context, and hardware cost.
 
-1. **A private GitHub repo** with your code.
-   - Keep it **private**, and grant access to the reviewers listed in the form.
-   - Make it runnable from the instructions above — a reviewer will clone and run it.
-   - For Task 2, pin the `evalscope` commit SHA you developed against in your fork's README.
+| API status          | Display label | Rule                                                                              |
+| ------------------- | ------------- | --------------------------------------------------------------------------------- |
+| `go`                | GO            | At least one complete matching row meets every applicable check.                  |
+| `no_go`             | NO GO         | Every matching row has at least one known failure.                                |
+| `insufficient_data` | NEEDS DATA    | No requirements exist, no row matches, or a possible pass requires missing facts. |
 
-2. **A live URL for the Task 1 UI** — **required**.
-   - A publicly reachable link to your deployed frontend where a reviewer can **upload one
-     or more perf sweeps, compare them, and get the views** (the shipped sweeps may be
-     pre-loaded as a sample).
-   - Put it at the top of your README **and paste it into the submission form above**.
-   - A free host is expected — see
-     [`Task1_Performance.md`](./Task1_Performance.md#deploying-for-free) for options.
-   - The repo stays private; only the deployed UI is public (the perf data is synthetic).
+Equality meets a limit.
+The engine checks all applicable metrics on the same row.
+It never combines one row's capacity with another row's latency.
+The response includes every evaluated configuration and the representative row's evidence.
+Workbook order resolves selection ties.
 
-3. **Video walkthrough(s)** explaining your work — **required**.
-   - Task 1: a ≤5-minute video covering the questions in `Task1_Performance.md`
-     (what you cut and why, framework chosen vs ruled out, your assumptions, and your
-     read on the model sizes / profile use-cases).
-   - Task 2: walk through your pruning approach and the trade-offs in your handouts.
-   - Link the video(s) in the form (Loom, Drive, YouTube-unlisted, etc.). Make sure
-     reviewers can actually open the link.
+For example, a row can meet a capacity requirement and fail a latency requirement.
+That row cannot support GO.
+Another matching batch can support GO only if that complete row passes all checks.
 
-A submission without a private repo, a live Task 1 URL, **and** video(s) is incomplete.
+Context support requires an explicit supported context window.
+The required window is the larger of the requested minimum and the row's input-plus-output length.
+A projected input length alone does not establish context support.
+
+Hardware cost uses the following estimate:
+
+```text
+USD per million projected throughput tokens =
+  box-hour price * 1,000,000 / (throughput_per_box * 3,600)
+```
+
+For example, a price of USD 4 per box-hour and capacity of 2,000 tokens/second gives approximately USD 0.556 per million tokens.
+The estimate assumes sustained projected capacity.
+It excludes idle time, software charges, and other operating costs.
+
+### Engineering diagnostics
+
+The engineering engine preserves reported metrics and adds derived ratios.
+It compares batch sizes only when other scenario dimensions match.
+It compares cache fractions only when the model, profile, lengths, and batch size match.
+
+Anomaly rules identify inconsistent throughput components, negative values, and selected scaling drops.
+Flags contain the rule and source record indices.
+A flag requests investigation; it does not prove that a projection is incorrect.
+Source indices identify normalized records, not original Excel row numbers.
+
+### Benchmark data flow
+
+The reference loader expects 28 prediction/review pairs across 56 files.
+The coding and long-context panels contain three models each.
+Each coding model has 315 tasks; each long-context model has 100 questions.
+The MMMU reference contains 660 rows across 22 subjects for one model.
+The full loader therefore validates 1,905 joined sample results.
+
+The loader rejects missing partners, unexpected files, malformed grades, duplicate identities, and model mismatches.
+Missing grades do not become zero scores.
+Errors include source paths and line numbers.
+
+| Module group                               | Responsibility                                                      |
+| ------------------------------------------ | ------------------------------------------------------------------- |
+| `inputs.py`, `analysis.py`, `models.py`    | Validate files, join predictions to reviews, and represent samples. |
+| `pruning.py`, `long_context.py`            | Select stratified coding and long-context subsets.                  |
+| `experiments.py`, `transfer.py`            | Evaluate held-out models and independently held-out model pairs.    |
+| `uncertainty.py`, `study_metrics.py`       | Compute intervals, ordering evidence, and threshold outcomes.       |
+| `judge_noise.py`                           | Report sensitivity to hypothetical changed judgments.               |
+| `operating_points.py`                      | Apply score, ordering, uncertainty, and decision gates.             |
+| Reporting modules                          | Write scores, selections, summaries, and manifests.                 |
+| `mmmu_images.py`                           | Build normalized original images and controlled variants.           |
+| `mmmu_requests.py`, `mmmu_measurements.py` | Export request plans and analyze saved paired attempts.             |
+
+### Subset methods and uncertainty
+
+Coding candidates group tasks by historical difficulty or reference response patterns.
+Long-context candidates group questions by length and document count, or by length and historical difficulty.
+The target model's grades do not enter its subset selector.
+Pair comparisons exclude both compared models from selection inputs.
+
+Each occupied stratum receives samples.
+Population weights correct for different sampling rates between strata.
+A raw subset average can give the wrong full-population estimate.
+The [benchmark reference](task2/README.md#weighted-score-example) gives a numerical example.
+
+The default experiments test retained fractions of 10%, 20%, 30%, 50%, and 100%, with twenty seeds.
+A fraction describes the amount retained.
+For example, 10% of 315 tasks retains 32 tasks after rounding upward.
+Budgets that cannot cover every occupied stratum fail.
+
+Intervals describe sampling uncertainty within the fixed recorded pool.
+They do not measure future model behavior, generation variation, or judge randomness.
+A threshold result is inconclusive when the interval crosses the threshold.
+Full retention removes subset sampling error; it does not remove errors in recorded grades.
+
+Reports use deterministic ordering and content hashes.
+Each file is replaced atomically, and the manifest is written last.
+Publication across several files is not a transaction.
+A reader must check manifest hashes after an interrupted run.
+
+## Recorded results
+
+These scores describe saved artifacts, not current model endpoints.
+
+| Benchmark        | Model        | Successful samples | Mean score |
+| ---------------- | ------------ | ------------------ | ---------- |
+| LiveCodeBench v5 | gpt-oss-120b | 241 / 315          | 0.765079   |
+| LiveCodeBench v5 | kimi-k2.5    | 198 / 315          | 0.628571   |
+| LiveCodeBench v5 | minimax-m2.5 | 195 / 315          | 0.619048   |
+| AA-LCR           | gpt-oss-120b | 48 / 100           | 0.480000   |
+| AA-LCR           | kimi-k2.5    | 66 / 100           | 0.660000   |
+| AA-LCR           | minimax-m2.5 | 64 / 100           | 0.640000   |
+
+The [recorded scores](docs/data/task2-full-scores.json) and [source manifest](docs/data/task2-manifest.json) identify the reference inputs.
+The [operating-point results](docs/data/task2-operating-selected.json) retain the full recorded panels under the illustrative policy.
+These results do not establish a generally sufficient benchmark size.
+
+## Image-pair prototype
+
+The prototype creates variants through downsampling, blur, JPEG compression, occlusion, contrast changes, color changes, and text-region blur.
+It preserves question text and changes one selected image slot per sample.
+Content hashes bind image bytes, transformation settings, and pair identities.
+
+Request plans exclude accepted answers.
+Reports require saved responses and explicit semantic review states.
+They separate correct answers, regressions, format failures, and missing attempts.
+Missing-attempt bounds describe incomplete observations; they are not confidence intervals.
+
+The [image harness reference](task2/MMMU_HARNESS.md) defines inputs and scoring.
+The [research design](task2/MMMU_PROBE_DESIGN.md) describes the larger proposed study.
+The supplied MMMU reference does not represent the full dataset inventory.
+
+## Development and deployment
+
+The [usage guide](USAGE.md#verification) lists tests, static checks, and build commands.
+Python tests cover pure functions and HTTP boundaries.
+Browser tests cover uploads, customer decisions, engineering evidence, recovery, and accessibility scans.
+Synthetic benchmark fixtures provide known expected answers.
+
+Local development uses a Vite proxy for `/api` requests.
+The configured Vercel deployment builds separate frontend and backend services under one domain.
+`/api/*` and `/health` reach the backend; remaining paths reach the frontend.
+The [deployment guide](docs/vercel-deployment.md) describes configuration and verification.
+
+The app has no authentication, durable sessions, or application-level upload size limits.
+The Python process reads uploaded workbooks into memory.
+Production capacity and resource limits require separate validation.
+
+## Terminology and documentation
+
+| Term              | Meaning                                                                            |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| Projection        | A supplied performance estimate.                                                   |
+| Sweep             | One model/profile workbook with several configurations.                            |
+| Configuration     | One scenario and batch size.                                                       |
+| Capacity          | Aggregate projected throughput in tokens/second.                                   |
+| Generation speed  | Output tokens/second for one user.                                                 |
+| TTFT              | Time to first token, measured in milliseconds.                                     |
+| Stratum           | A group of questions with shared selection characteristics.                        |
+| Retained fraction | The proportion of the original question set selected.                              |
+| Operating point   | A candidate method and retained size evaluated against a policy.                   |
+| Percentage point  | An absolute difference between percentages; 60% to 63% is three percentage points. |
+
+The documentation uses ASD-STE100 writing principles: short sentences, active voice, consistent technical names, and ordered procedures.
+Software identifiers and benchmark names retain their exact spelling.
+The [official ASD-STE100 specification](https://www.asd-ste100.org/assets/files/ASD-STE100_ISSUE9.pdf) defines the writing rules and controlled vocabulary.
+This documentation does not claim independently audited conformity.

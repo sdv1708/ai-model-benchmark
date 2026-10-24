@@ -1,7 +1,7 @@
 [project]
 name = "benchmark-reference"
 version = "0.1.0"
-description = "Learner-owned reference analysis for issue 14."
+description = "Offline benchmark validation, stratified subset analysis, and paired-image diagnostics."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [

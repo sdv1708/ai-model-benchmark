@@ -1,4 +1,4 @@
-"""Independent browser-test data; does not implement the learner's backend factory."""
+"""Independent browser-test data; separate from the backend fixture factory."""
 
 from io import BytesIO
 from pathlib import Path

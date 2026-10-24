@@ -1,4 +1,4 @@
-"""HTTP boundary for the learner-owned engineering analysis endpoint."""
+"""HTTP boundary for the engineering analysis endpoint."""
 
 from fastapi import APIRouter
 
