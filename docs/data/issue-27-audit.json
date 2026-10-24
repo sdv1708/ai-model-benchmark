@@ -1,0 +1,244 @@
+{
+  "schema_version": 1,
+  "verified_at_utc": "2026-10-24T02:43:34.075267+00:00",
+  "scope": "Owner-directed personal portfolio; not original challenge submission certification",
+  "challenge_base_commit": "17e6cf060749efde007eb4996350764f79902e34",
+  "native_verified_commit": "f06acd10c80470696f3d719f079e3094e448d2d8",
+  "upstream_base_commit": "66f0945d145ce6c30de40253cd78144003c6f1fe",
+  "clean_clone": {
+    "source": "GitHub HTTPS, depth 1; no copied environments or LFS objects",
+    "lfs_files": 56,
+    "lfs_bytes": 964345076,
+    "all_manifest_input_hashes_match": true,
+    "full_scores_equal": true,
+    "selected_policy_and_plan_equal": true,
+    "pairs": 28,
+    "samples": 1905
+  },
+  "full_scores": {
+    "scale": "0..1",
+    "summaries": [
+      {
+        "benchmark": "aa_lcr",
+        "mean_score": 0.48,
+        "metric": "acc",
+        "model": "gpt-oss-120b",
+        "sample_count": 100,
+        "score_sum": 48.0,
+        "subset": "default"
+      },
+      {
+        "benchmark": "aa_lcr",
+        "mean_score": 0.66,
+        "metric": "acc",
+        "model": "kimi-k2.5",
+        "sample_count": 100,
+        "score_sum": 66.0,
+        "subset": "default"
+      },
+      {
+        "benchmark": "aa_lcr",
+        "mean_score": 0.64,
+        "metric": "acc",
+        "model": "minimax-m2.5",
+        "sample_count": 100,
+        "score_sum": 64.0,
+        "subset": "default"
+      },
+      {
+        "benchmark": "live_code_bench_v5",
+        "mean_score": 0.765079365079365,
+        "metric": "pass",
+        "model": "gpt-oss-120b",
+        "sample_count": 315,
+        "score_sum": 241.0,
+        "subset": "default"
+      },
+      {
+        "benchmark": "live_code_bench_v5",
+        "mean_score": 0.6285714285714286,
+        "metric": "pass",
+        "model": "kimi-k2.5",
+        "sample_count": 315,
+        "score_sum": 198.0,
+        "subset": "default"
+      },
+      {
+        "benchmark": "live_code_bench_v5",
+        "mean_score": 0.6190476190476191,
+        "metric": "pass",
+        "model": "minimax-m2.5",
+        "sample_count": 315,
+        "score_sum": 195.0,
+        "subset": "default"
+      }
+    ]
+  },
+  "selected": {
+    "aa_lcr": {
+      "failed_gates": [],
+      "keep_ratio": 1.0,
+      "metrics": {
+        "max_absolute_error": 0.0,
+        "max_false_threshold_fraction": 0.0,
+        "max_mean_score_interval_width": 0.0,
+        "max_seed_score_std": 0.0,
+        "max_wrong_pair_fraction": 0.0,
+        "min_pair_decisive_fraction": 1.0,
+        "min_pair_interval_coverage": 1.0,
+        "min_pair_order_agreement": 1.0,
+        "min_score_interval_coverage": 1.0,
+        "min_threshold_decisive_fraction": 1.0,
+        "min_threshold_point_agreement": 1.0,
+        "worst_fold_mae": 0.0
+      },
+      "realized_keep_ratio": 1.0,
+      "role": "candidate",
+      "selected_count": 100,
+      "status": "full_reference_fallback",
+      "strategy": "length_difficulty_stratified"
+    },
+    "live_code_bench_v5": {
+      "failed_gates": [],
+      "keep_ratio": 1.0,
+      "metrics": {
+        "max_absolute_error": 0.0,
+        "max_false_threshold_fraction": 0.0,
+        "max_mean_score_interval_width": 0.0,
+        "max_seed_score_std": 0.0,
+        "max_wrong_pair_fraction": 0.0,
+        "min_pair_decisive_fraction": 1.0,
+        "min_pair_interval_coverage": 1.0,
+        "min_pair_order_agreement": 1.0,
+        "min_score_interval_coverage": 1.0,
+        "min_threshold_decisive_fraction": 1.0,
+        "min_threshold_point_agreement": 1.0,
+        "worst_fold_mae": 0.0
+      },
+      "realized_keep_ratio": 1.0,
+      "role": "candidate",
+      "selected_count": 315,
+      "status": "full_reference_fallback",
+      "strategy": "difficulty_stratified"
+    }
+  },
+  "synthetic_native_comparison": {
+    "model": "unseen",
+    "benchmark": "aa_lcr",
+    "subset": "fixture",
+    "full_samples": 12,
+    "pruned_samples": 3,
+    "full_attempts": 12,
+    "pruned_attempts": 3,
+    "retained_fraction": 0.25,
+    "full_score": 1.0,
+    "pruned_score": 1.0,
+    "raw_pruned_mean": 1.0,
+    "difference_pp": 0.0,
+    "absolute_error_pp": 0.0,
+    "finite_pool_bounds": [0.25, 1.0],
+    "paired_question_mae": 0.0,
+    "decision": {
+      "threshold": 0.8,
+      "full": "GO",
+      "pruned": "inconclusive",
+      "observed_pruned_point": "GO",
+      "agreement": false,
+      "decision_certified": false
+    }
+  },
+  "live_checks": {
+    "origin": "https://ai-model-quality-challenge-rho.vercel.app",
+    "/": {
+      "status": 200,
+      "content_type": "text/html; charset=utf-8"
+    },
+    "/health": {
+      "status": 200,
+      "content_type": "application/json"
+    },
+    "/api/v1/does-not-exist": {
+      "status": 404,
+      "content_type": "application/json"
+    },
+    "supplied_A_C_decisions": [
+      {
+        "model": "Model A",
+        "status": "go",
+        "selected_batch": 20,
+        "evidence": [
+          {
+            "metric": "throughput",
+            "outcome": "met",
+            "actual": 404149.0928,
+            "target": 400000.0,
+            "unit": "t/s",
+            "explanation": "Projected throughput 404149.09 t/s >= target 400000.00 t/s"
+          },
+          {
+            "metric": "generation_speed",
+            "outcome": "met",
+            "actual": 1220.4817,
+            "target": 1200.0,
+            "unit": "t/s/user",
+            "explanation": "Projected gen speed 1220.48 t/s/user >= target 1200.00 t/s/user"
+          },
+          {
+            "metric": "ttft",
+            "outcome": "met",
+            "actual": 8.333333333333334,
+            "target": 10.0,
+            "unit": "ms",
+            "explanation": "Projected TTFT 8.33 ms <= target 10.00 ms"
+          }
+        ]
+      },
+      {
+        "model": "Model C",
+        "status": "no_go",
+        "selected_batch": 10,
+        "evidence": [
+          {
+            "metric": "throughput",
+            "outcome": "unmet",
+            "actual": 86661.0758,
+            "target": 400000.0,
+            "unit": "t/s",
+            "explanation": "Projected throughput 86661.08 t/s < target 400000.00 t/s"
+          },
+          {
+            "metric": "generation_speed",
+            "outcome": "unmet",
+            "actual": 451.4924,
+            "target": 1200.0,
+            "unit": "t/s/user",
+            "explanation": "Projected gen speed 451.49 t/s/user < target 1200.00 t/s/user"
+          },
+          {
+            "metric": "ttft",
+            "outcome": "unmet",
+            "actual": 16.66666666666667,
+            "target": 10.0,
+            "unit": "ms",
+            "explanation": "Projected TTFT 16.67 ms > target 10.00 ms"
+          }
+        ]
+      }
+    ],
+    "supplied_A_C_engineering_configurations": 8
+  },
+  "dependency_update": {
+    "frontend_lock_sha256": "6aa345b21d3eeeca50f515e2890b51a2c22ef958e3d3bcc0fcdee26a656075eb",
+    "vite": "6.4.5",
+    "source_map_js": "1.2.2",
+    "npm_audit_known_advisories_after_update": 0,
+    "deployed_in_this_issue": false
+  },
+  "boundaries": [
+    "Native companion remains private; owner-authenticated clone is not public access proof.",
+    "Browser suites include mocked error responses for resilience cases; successful upload/decision cases use the real API.",
+    "No paid inference, live MMMU quality study, videos, reviewer invitations, visibility changes or form submission.",
+    "Prepared rehearsal does not establish learner mastery or completed rehearsal.",
+    "Original validated-compression ambition remains unmet; no live saving is established."
+  ]
+}
