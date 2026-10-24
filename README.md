@@ -1,13 +1,35 @@
-# AI Engineer — Model Quality & Performance Challenge
+# Performance & Quality Lab
 
 **Live Task 1 app:** [Performance Studio](https://ai-model-quality-challenge-rho.vercel.app)
 
+A portfolio project for two model-selection questions: **can a model serve this
+workload fast enough, and is its answer quality good enough?** Performance Studio
+turns uploaded Excel projections into customer decisions and engineering
+comparisons. The evaluation work adds native EvalScope benchmark selection,
+saved-run comparison, and a controlled multimodal research proposal.
+
+Start with the [portfolio tour and demo](docs/PORTFOLIO.md), the
+[plain-language interview guide](docs/ISSUE_27_GUIDE.md), and the
+[fresh verification and requirement audit](docs/issue-27-evidence.md).
+The performance app is deployed; **no smaller validated benchmark or live cost
+saving is claimed**. The defended setting retains 315 coding and 100 long-context
+questions. The multimodal harness is synthetic; the full study is proposed.
+
+This project grew from the original challenge briefs preserved below. At the
+owner's direction, the current goal is a personal portfolio, with a written demo
+and interview preparation. Videos, challenge-reviewer invitations, private
+repository requirements, and form submission are outside this portfolio scope.
+Original submission obligations remain documented if that path is resumed.
+
 **Task 2 reviewer start:** [pinned setup, reproduction and written walkthrough](task2/ISSUE_26_GUIDE.md).
 Native EvalScope upstream base: `66f0945d145ce6c30de40253cd78144003c6f1fe`;
-tested runtime: `800119ff6870ca958f5d8459970f5fe75bfac305`.
+original runtime pin: `800119ff6870ca958f5d8459970f5fe75bfac305`.
+Freshly verified native main: `f06acd10c80470696f3d719f079e3094e448d2d8`;
+see the [issue #27 audit](docs/issue-27-evidence.md).
 See the [submission checklist](SUBMISSION_CHECKLIST.md) for deliverables and open items.
-The walkthrough recording is [deferred to issue #49](https://github.com/sdv1708/ai-model-benchmark/issues/49)
-and remains required for submission.
+The original challenge's walkthrough recording is
+[deferred to issue #49](https://github.com/sdv1708/ai-model-benchmark/issues/49).
+It is optional for this portfolio and remains required only for that submission.
 
 Welcome, and thanks for taking the time. This challenge has two independent tasks.
 
@@ -97,12 +119,12 @@ local services verification, deployment settings, and the live smoke procedure.
 
 Install Git, Node.js **24.x** (includes npm), Python **3.12**, and
 [uv](https://docs.astral.sh/uv/getting-started/installation/). Python 3.13 is
-outside the backend's declared version range. GitHub access to this private
-repository is required to clone. Task 1 needs no API keys or environment file.
+outside the backend's declared version range. The main project repository is
+public. Task 1 needs no API keys or environment file.
 
 ```powershell
-git clone https://github.com/sdv1708/ai-model-quality-challenge.git
-cd ai-model-quality-challenge
+git clone https://github.com/sdv1708/ai-model-benchmark.git
+cd ai-model-benchmark
 cd backend
 uv sync --locked
 cd ../frontend
@@ -234,6 +256,10 @@ Each task's spec defines exactly what to submit (code, written handouts, and/or 
 ---
 
 ## How to submit
+
+These are the original challenge's submission instructions, preserved as
+background. They are not the acceptance checklist for the current portfolio
+project; use the [portfolio checklist](SUBMISSION_CHECKLIST.md) for that scope.
 
 **Submit via this form:** https://docs.google.com/forms/d/e/1FAIpQLSdwLrRJkKUgTd2sisyJO10VSf1-1vJ3NIywV5HtMlUSc7ijMw/viewform?usp=publish-editor
 
