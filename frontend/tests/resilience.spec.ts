@@ -8,9 +8,7 @@ import {
   uploadGeneratedModels,
 } from './support/resilience'
 
-test('learner-generated workbooks reach both audience views through the real API', async ({
-  page,
-}) => {
+test('API fixture workbooks reach both audience views through the real API', async ({ page }) => {
   const directory = path.resolve(import.meta.dirname, 'fixtures/generated')
   await page.goto('/')
   await page

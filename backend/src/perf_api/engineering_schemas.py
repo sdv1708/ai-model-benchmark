@@ -1,7 +1,7 @@
-"""Public contract for learner-owned engineering diagnostics (issue #8).
+"""Public contract for engineering diagnostics.
 
 These shapes describe evidence, not a judgment that a projection is correct.
-See ISSUE_8_GUIDE.md before implementing the calculations.
+See backend/README.md for the calculations and their interpretation.
 """
 
 from typing import Literal

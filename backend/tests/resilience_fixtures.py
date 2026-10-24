@@ -1,7 +1,7 @@
 """Fresh issue #10 workbook fixtures and optional export command.
 
 Run from backend: uv run python tests/resilience_fixtures.py
-These are learner-owned API fixtures. Frontend tests generate independent inputs.
+These are API fixtures. Frontend tests generate independent inputs.
 """
 
 import io

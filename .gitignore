@@ -31,3 +31,21 @@ frontend/tests/fixtures/generated/
 frontend/tests/fixtures/browser-generated/
 .env*
 task2/output/
+
+# Extracted inputs and local API examples.
+/perf_data/
+/normalized.json
+
+# Private reference material belongs outside the repository.
+private-reference/
+ISSUE_*GUIDE.md
+INTERVIEW_GUIDE.md
+docs/issue-*-evidence.md
+docs/issue-*-review.md
+docs/PORTFOLIO.md
+task2/HANDOUT_*.md
+task2/learning/
+/output/
+
+# Accidental nested copies of this checkout.
+/ai-model-quality-challenge-main/

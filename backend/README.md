@@ -1,133 +1,179 @@
 # Performance API
 
-This directory contains the Task 1 Python backend. The single-workbook endpoint for
-GitHub Issue #2 accepts a performance projection `.xlsx` file and returns normalized,
-typed records.
+The API converts Excel performance projections into typed records and analysis results.
+It uses FastAPI, Pydantic, and openpyxl.
+Pure analysis functions remain separate from HTTP routes.
 
-## Prerequisites
+## Setup and launch
 
-- Python 3.12
-- [uv](https://docs.astral.sh/uv/)
-
-## Set up
+From this directory, run:
 
 ```powershell
-cd backend
 uv sync --locked
+uv run uvicorn perf_api.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-`uv sync --locked` creates `backend/.venv` and installs both runtime and development dependencies
-from `uv.lock`.
+Use Python 3.12.
+Open [interactive API documentation](http://127.0.0.1:8000/docs) after startup.
+The [project usage guide](../USAGE.md) contains a complete upload and decision example.
 
-## Run locally
+## HTTP endpoints
 
-```powershell
-uv run uvicorn perf_api.main:app --reload
-```
+| Method and path                      | Request                                             | Response                                                                  |
+| ------------------------------------ | --------------------------------------------------- | ------------------------------------------------------------------------- |
+| `GET /health`                        | None                                                | `status` and service identity.                                            |
+| `POST /api/v1/workbooks/normalize`   | Multipart field `workbook` with one `.xlsx` file.   | Model, profile, record count, and normalized records.                     |
+| `POST /api/v1/comparisons/workbooks` | Repeated multipart field `workbooks`.               | Usable workbooks, models, aligned configurations, and diagnostics.        |
+| `POST /api/v1/decisions/evaluate`    | JSON with `workbook`, `targets`, and `assumptions`. | Decision status, representative row, and evidence for all matching rows.  |
+| `POST /api/v1/engineering/analyze`   | JSON with a nonempty `workbooks` array.             | Configuration metrics, controlled trends, anomaly flags, and limitations. |
 
-Then open:
+For JSON analysis requests, use the normalization response as the `workbook` value.
+For engineering requests, place one or more normalization responses in the `workbooks` array.
+The API reference gives the complete generated schemas.
 
-- API documentation: <http://127.0.0.1:8000/docs>
-- Health check: <http://127.0.0.1:8000/health>
+The normalization route returns HTTP 400 for an unsupported filename extension.
+It returns HTTP 422 for malformed workbook structure or data.
+The comparison route reports individual rejected files in `diagnostics` when valid configurations remain.
+It returns HTTP 422 when no usable configuration remains.
+Pydantic returns HTTP 422 for invalid JSON request fields.
 
-In the API documentation, use `POST /api/v1/workbooks/normalize` to upload a workbook.
-Sample `.xlsx` files are inside the repository's `perf_data.zip`. The endpoint returns
-`400` for a filename without the `.xlsx` extension and `422` for an invalid workbook
-or invalid workbook data.
+## Workbook contract
 
-## Workload decisions (Issue #4)
-
-`POST /api/v1/decisions/evaluate` accepts JSON with three required objects:
-`workbook` (the response from `/api/v1/workbooks/normalize`), `targets`, and
-`assumptions`. The target and assumption fields are defined in
-`src/perf_api/decision_schemas.py` and shown in `/docs`.
-
-The response returns `go` when a matching configuration meets every check,
-`no_go` when every matching configuration has a known failure, and
-`insufficient_data` when a potentially passing configuration depends on missing
-facts or no row matches the requested scenario. With no thresholds, there is no
-decision. Threshold equality counts as meeting a limit. Each result includes a
-representative row, its evidence, an explanation of its selection, and evidence
-for **every** matching configuration. Ties follow workbook row order.
-
-The context check compares an explicitly supplied context window with both the
-customer's minimum and the projected row's input plus output length. A workbook
-scenario does not prove the model's maximum supported context. Cost requires an
-explicit box-hour price and positive projected throughput per box. The estimate is:
+The parser requires a `Summary` worksheet.
+Headers occupy row 2, within columns 1 through 19.
+Data starts in row 3.
+Header text must match these names:
 
 ```text
-USD per million projected throughput tokens =
-    box-hour price * 1,000,000 / (throughput_per_box * 3,600)
+Input Length
+Output Length
+Cache %
+Batch Size
+Max number of milliseconds
+Target Max number of milliseconds
+Prompt only Throughput (t/s)
+Gen only Throughput (t/s)
+Throughput (t/s)
+Throughput / box (t/s/hardware)
+Uncached Throughput (t/s)
+Uncached Throughput / box (t/s/hardware)
+Cached Throughput (t/s)
+Cached Throughput / box (t/s/hardware)
+TTFT (ms)
+Real Prompt Speed (t/s/user)
+Prompt Speed with Queueing (t/s/user)
+Gen Speed (t/s/user)
+RPM
 ```
 
-This is a hardware-only estimate at sustained projected capacity. It excludes
-idle time and other costs; it is not a customer quote or production measurement.
-Missing price or unusable per-box throughput produces `unknown` cost evidence.
-Invalid request fields, such as a negative minimum throughput, return `422`.
+Column order can vary within that header range.
+The parser maps columns by their names.
+It fills missing input length, output length, and cache values from preceding rows.
+Other missing values cause errors.
+A blank row inside the data table causes an error.
+An empty table also causes an error.
 
-With the server running, this PowerShell example normalizes the bundled sample
-and evaluates a workload through the public endpoints:
+openpyxl reads cached formula values with `data_only=True`.
+The API does not recalculate formulas.
+A formula without a cached numeric result can fail validation.
 
-```powershell
-$sample = (Resolve-Path '../frontend/public/sample/Model A profile 1.xlsx').Path
-$workbook = curl.exe -sS -F "workbook=@$sample" `
-    'http://127.0.0.1:8000/api/v1/workbooks/normalize' | ConvertFrom-Json
-$body = @{
-    workbook = $workbook
-    targets = @{
-        input_tokens = 10000
-        output_tokens = 333
-        cache_fraction = 0.5
-        min_throughput_tps = 400000
-        min_generation_speed_tps_per_user = 1200
-        max_ttft_ms = 10
-    }
-    assumptions = @{}
-} | ConvertTo-Json -Depth 8
-$result = Invoke-RestMethod -Method Post `
-    -Uri 'http://127.0.0.1:8000/api/v1/decisions/evaluate' `
-    -ContentType 'application/json' -Body $body
-$result | Select-Object status, selection_explanation, unmet_constraints, unknown_constraints
-$result.selected_record.batch_size
-$result.evidence | Format-Table metric, outcome, actual, target, unit
+The filename pattern `Model Z profile 3.xlsx` produces model `Model Z` and profile `3`.
+Other names use the filename stem and profile `unknown`.
+Cache values use fractions, such as `0.5` for 50%.
+
+## Normalized records
+
+| Group              | Fields                                                                                          | Units                       |
+| ------------------ | ----------------------------------------------------------------------------------------------- | --------------------------- |
+| Scenario           | `input_length`, `output_length`, `cache_percentage`, `batch_size`                               | Tokens, fraction, count.    |
+| Timing             | `max_ms`, `target_max_ms`, `ttft_ms`                                                            | Milliseconds.               |
+| Throughput         | `prompt_throughput`, `gen_throughput`, `throughput`, `uncached_throughput`, `cached_throughput` | Tokens/second.              |
+| Per-box throughput | `throughput_per_box`, `uncached_throughput_per_box`, `cached_throughput_per_box`                | Tokens/second/hardware box. |
+| Per-user speed     | `real_prompt_speed`, `prompt_speed_queued`, `gen_speed`                                         | Tokens/second/user.         |
+| Request rate       | `rpm`                                                                                           | Requests/minute.            |
+
+`WorkbookNormalizationResponse` adds `model_name`, `profile_id`, `record_count`, and `records`.
+The parser validates numeric conversion.
+Engineering diagnostics identify selected questionable values after parsing.
+Parser acceptance alone does not establish physical validity.
+
+## Comparison rules
+
+The key combines profile, input length, output length, cache fraction, and batch size.
+Cache fractions are rounded to four decimal places for alignment.
+Output ordering is deterministic and independent of upload order.
+
+Identical repeated model/profile sweeps appear once with a diagnostic.
+Conflicting copies are excluded.
+A sweep with duplicate configuration keys is excluded.
+A configuration is comparable when at least two models share its key.
+`missing_models` identifies incomplete model coverage.
+
+## Decision contract
+
+`targets` can contain these optional fields:
+
+| Field                                             | Meaning                         |
+| ------------------------------------------------- | ------------------------------- |
+| `input_tokens`, `output_tokens`, `cache_fraction` | Scenario filters.               |
+| `min_throughput_tps`                              | Minimum aggregate capacity.     |
+| `min_generation_speed_tps_per_user`               | Minimum per-user output speed.  |
+| `max_ttft_ms`                                     | Maximum time to first token.    |
+| `min_context_window_tokens`                       | Minimum supported context.      |
+| `max_cost_usd_per_million_tokens`                 | Maximum hardware cost estimate. |
+
+`assumptions` can contain `context_window_tokens` and `hardware_cost_usd_per_box_hour`.
+Both objects are required, but either can be empty.
+
+The engine evaluates complete matching rows.
+A GO result needs one row with every applicable check met.
+A NO GO result needs a known failure in every matching row.
+Otherwise, the result is `insufficient_data`.
+Empty requirements and unmatched scenarios also produce `insufficient_data`.
+Equality meets a threshold.
+
+The context check covers both the requested minimum and the row's input-plus-output length.
+Supplying a supported context assumption also activates the row-fit check.
+The engine does not infer supported context from workbook scenario lengths.
+
+Cost requires an explicit box-hour price and positive per-box throughput:
+
+```text
+cost = box_hour_price * 1,000,000 / (throughput_per_box * 3,600)
 ```
 
-The sample yields `go` with batch size `20` and three met checks. The values
-remain workbook projections, not measured production performance. See
-`ISSUE_4_GUIDE.md` for the code map and test cases.
+The estimate assumes sustained projected capacity and excludes other charges.
+It does not represent a customer price.
 
-## Compare one or many workbooks (Issue #6)
+The first passing row represents GO.
+For an incomplete possible pass, the first row without a known failure is shown.
+For NO GO, it prefers the row with the fewest failed checks.
+Workbook order resolves remaining ties.
 
-`POST /api/v1/comparisons/workbooks` accepts repeated `workbooks` multipart
-fields. It runs every file through the existing parser, then aligns projected
-rows by profile, input and output lengths, cache fraction, and batch size.
-The response lists models, normalized workbooks, aligned configurations,
-missing models, and diagnostics. One file uses the same path and has no
-pairwise-comparable rows.
+## Engineering contract
 
-Identical repeated model/profile sweeps are compared once with a diagnostic.
-Conflicting sweeps and sweeps with duplicate configuration rows are excluded;
-they are never resolved by upload order. A mixed batch returns its
-usable comparisons and file-specific diagnostics. If no usable configuration
-remains, the endpoint returns `422` with diagnostics in `detail`. See
-`ISSUE_6_GUIDE.md` for the comparison policy and test cases.
+The response preserves the projection record and supplies source indices.
+It includes reported metrics and derived cached/uncached ratios when denominators permit calculation.
+Trends hold other configuration dimensions constant.
 
-## Vercel service
+| Rule                                 | Trigger                                                                                            |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `ANOMALY_NONPOSITIVE_METRIC`         | Selected throughput, TTFT, or generation-speed metrics are zero or negative.                       |
+| `ANOMALY_THROUGHPUT_MISMATCH`        | Cached plus uncached throughput differs from aggregate throughput beyond the configured tolerance. |
+| `ANOMALY_THROUGHPUT_DROP_ON_SCALING` | Throughput drops by more than 5% across a controlled batch or cache increase.                      |
 
-The root `vercel.json` selects `backend/` as the FastAPI service and explicitly
-uses `src.perf_api.main:app` as its entrypoint. Python 3.12 and dependencies are
-declared in `pyproject.toml` and pinned in `uv.lock`.
+The decomposition tolerance uses relative tolerance `0.001` and absolute tolerance `0.01` tokens/second.
+Flags do not remove rows.
+The source reference currently identifies normalized workbook and record indices.
+Filename, worksheet, and sheet-row coordinates can remain absent.
 
-Vercel preserves the incoming path: `/api/v1/...` reaches the existing API routes
-and `/health` reaches the health endpoint. Browser requests use the same domain,
-so this topology does not require CORS. The backend makes no outgoing service
-calls and needs no bindings. `/docs`, `/redoc`, and `/openapi.json` have no public
-backend rewrite; use the standalone local API for those routes.
+## Runtime and verification
 
-See [`../docs/vercel-deployment.md`](../docs/vercel-deployment.md) for running both
-services through `vercel dev --local` and verifying the deployed application.
+The application reads uploads into memory and has no persistent upload store.
+It has no authentication or application-level upload size limit.
+Hosted request limits come from the hosting configuration.
 
-## Verify changes
+From this directory, run:
 
 ```powershell
 uv run pytest
@@ -135,3 +181,7 @@ uv run ruff check .
 uv run ruff format --check .
 uv run mypy
 ```
+
+The [deployment guide](../docs/vercel-deployment.md) explains service routing.
+The local API exposes `/docs`, `/redoc`, and `/openapi.json`.
+The configured hosted rewrites expose `/api/*` and `/health` through the backend.
