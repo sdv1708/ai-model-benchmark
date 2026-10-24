@@ -21,7 +21,8 @@ still requires it.
 | Walkthrough demonstrates method, integration, evidence, trade-offs and handouts | [written demonstration/rehearsal](task2/ISSUE_26_GUIDE.md#written-walkthrough-and-demonstration); recording not made |
 | Video link accessible to reviewers | **DEFERRED to [#49](https://github.com/sdv1708/ai-model-benchmark/issues/49)**; still required, no recording/URL yet |
 | Both private repositories accessible to named reviewers | **Not verified in #26.** Confirm the form's reviewer identities and grant/check both repositories before submission |
-| Issue #26 documentation published remotely | **Pending.** Local commits/branches must be pushed or supplied as an archive before remote reviewers can use new branch links |
+| Issue #26 documentation published remotely | Published for PR review; merge the [native companion PR](https://github.com/sdv1708/evalscope-pruning/pull/4) before the submission documentation PR. Merge and reviewer-access checks remain pending |
+| Submission repository visibility | GitHub reports `sdv1708/ai-model-benchmark` as **public** at PR preparation; the brief's private-repository requirement remains an audit item. The EvalScope companion is private |
 
 ## Overall challenge handoff
 

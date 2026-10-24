@@ -16,8 +16,10 @@ Initial working trees were clean. Challenge main was pulled to
 to the previous #21 implementation pin `5fd26289972f6d01b13ea95bb30481ebd103fa2d`.
 This documentation issue introduces no runtime or selection-policy changes.
 Optional TDD does not apply to editorial edits; existing public tests are reused.
-Final native documentation commit:
-`1f7396ea0eb33f55162f48596dcb1dc8991965f4` (local issue branch, not pushed).
+Verified native documentation revision:
+`1f7396ea0eb33f55162f48596dcb1dc8991965f4`. Subsequent publication-status edits
+do not change the validated runtime. Native publication is tracked in
+[companion PR #4](https://github.com/sdv1708/evalscope-pruning/pull/4).
 
 ## Acceptance mapping
 
@@ -31,9 +33,9 @@ Final native documentation commit:
 
 Issue #26 now owns written documentation and the written walkthrough; its original
 video criteria were moved to #49 at the user's request. The final submission audit
-(#27) explicitly depends on #49, preserving the recording requirement. No issue
-closure, source-branch publication, reviewer invitation, deployment or
-submission-form action is performed. The native README is edited
+(#27) explicitly depends on #49, preserving the recording requirement. Issue
+closure is reserved for the submission PR's merge. No reviewer invitation,
+deployment or submission-form action is performed. The native README is edited
 in the actual EvalScope-derived repository, not only described in this submission.
 
 ## Research
