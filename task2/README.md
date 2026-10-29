@@ -167,6 +167,73 @@ It selects all 315 coding tasks and all 100 long-context questions.
 No smaller tested candidate passes every gate.
 The policy is retrospective and does not certify deployment performance.
 
+## Two-stage threshold decision
+
+`threshold-decision` answers one question for each model: is the full-set score at or above the customer threshold `t`?
+
+1. Select a stage-1 probe with the policy stratifier. The selector uses reference grades only.
+2. Compute a `1 - alpha` pooled exact hypergeometric interval for the full-set score. At alpha `0.05`, this is a 95% interval.
+3. If the lower bound is at or above `t`, decide GO and stop.
+4. If the upper bound is below `t`, decide NO GO and stop.
+5. Otherwise ESCALATE. Grade the remaining questions and decide on the full set.
+
+The census has no sampling error, so ESCALATE always resolves.
+Stage 1 spends the policy alpha.
+The census spends nothing.
+Pair-order metrics are diagnostics only and are not gates.
+
+### Policy files
+
+A versioned JSON file in `policies/` holds every setting:
+
+| Setting           | Draft value                                                      |
+| ----------------- | ---------------------------------------------------------------- |
+| `threshold`       | `0.70`                                                           |
+| `alpha`           | `0.05`                                                           |
+| `stage1_size`     | `63` of 315 questions                                            |
+| `interval_method` | `pooled_exact_hypergeometric`                                    |
+| `stratifier`      | `difficulty_stratified`                                          |
+| `seeds`           | Selector seeds `0` through `19`                                  |
+| `simulation`      | Seed `56`, true scores `0.30` to `0.90` by `0.05`, 50 per seed   |
+
+The manifest records the SHA-256 of the exact policy file bytes.
+`.gitattributes` keeps policy files at LF line endings, so the hash is the same on every platform.
+
+`--real-grades` requests a replay on real model grades.
+The command refuses it unless the policy is marked `frozen` and its hash matches the entry in `policies/frozen-policies.json`.
+The command reads that lock file from git `HEAD`.
+An uncommitted edit to the lock file therefore authorizes nothing.
+No policy is frozen yet.
+The real replay itself is issue #63.
+
+### Simulated models
+
+Each question's difficulty is its pass rate among the three reference models.
+A simulated model passes question `i` with odds proportional to `(p + 0.5) / (m + 0.5 - p)`, where `p` of `m` reference models pass it.
+The draw has exactly `ceil(true_score * 315)` passes.
+The full-set score is therefore known: it is the smallest score at or above the true score.
+A wrong decision differs from the decision on that full-set score.
+
+The generator and the stratifier use the same reference difficulty.
+This favors stratification.
+Issue #60 adds a second generator.
+
+### Run the decision
+
+```powershell
+uv run threshold-decision --policy policies/lcb-threshold-draft.json --output-dir output/threshold-decision
+```
+
+| File            | Content                                                                         |
+| --------------- | ------------------------------------------------------------------------------- |
+| `decisions.csv` | One row per simulated model: true score, stage-1 result, decision, stage.       |
+| `summary.json`  | Decisive fraction and wrong-decision rate for each true score, plus limits.     |
+| `report.html`   | Self-contained report with charts and tables, in light and dark modes.          |
+| `manifest.json` | Policy hash, input hashes, and output hashes.                                   |
+
+The command prints the manifest SHA-256.
+Two runs with the same policy file give identical bytes.
+
 ## Commands and reports
 
 From this directory, run:

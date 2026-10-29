@@ -294,6 +294,22 @@ A smaller sample count alone does not establish a useful operating point.
 
 The [benchmark reference](task2/README.md#operating-point-policy) explains the gates and their limits.
 
+## Run a two-stage threshold decision
+
+From `task2/`, run the draft policy on simulated LiveCodeBench models:
+
+```powershell
+uv run threshold-decision --policy policies/lcb-threshold-draft.json --output-dir output/threshold-decision
+```
+
+The command writes `decisions.csv`, `summary.json`, `report.html`, and `manifest.json`.
+Open `report.html` directly from the file system.
+The report makes no network requests.
+The command uses simulated models only.
+It refuses `--real-grades` until a policy is frozen and its hash is committed.
+
+The [benchmark reference](task2/README.md#two-stage-threshold-decision) explains the rule and its limits.
+
 ## Run the image-pair demonstration
 
 From `task2/`, choose an unused output directory:
