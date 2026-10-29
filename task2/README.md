@@ -216,7 +216,8 @@ Changing documentation does not regenerate or recertify those historical results
 ## Native EvalScope boundary
 
 This package does not include native EvalScope adapters or `evalscope_ext`.
-Those implementations live in a separate private repository.
+Those implementations live in the public [EvalScope pruning repository](https://github.com/sdv1708/evalscope-pruning).
+Its README has a synthetic smoke command that needs no credentials.
 The following integration records remain available:
 
 | File                          | Recorded integration                                            |

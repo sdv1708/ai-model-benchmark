@@ -12,27 +12,28 @@ The live application hosts Performance Studio. Benchmark analysis runs locally.
 
 ## Start here
 
-| Goal                                     | Document                                                 |
-| ---------------------------------------- | -------------------------------------------------------- |
-| Install and use the project              | [Usage guide](USAGE.md)                                  |
-| Understand the system                    | [Architecture](#architecture)                            |
-| Integrate the performance API            | [Backend reference](backend/README.md)                   |
-| Change the browser interface             | [Frontend reference](frontend/README.md)                 |
-| Understand benchmark methods and reports | [Benchmark reference](task2/README.md)                   |
-| Understand performance assumptions       | [Performance design](docs/task1-analysis.md)             |
-| Inspect model and workload estimates     | [Projection analysis](docs/task1-models-and-profiles.md) |
-| Configure hosting                        | [Deployment guide](docs/vercel-deployment.md)            |
+| Goal                                     | Document                                                                     |
+| ---------------------------------------- | ---------------------------------------------------------------------------- |
+| Install and use the project              | [Usage guide](USAGE.md)                                                      |
+| Understand the system                    | [Architecture](#architecture)                                                |
+| Integrate the performance API            | [Backend reference](backend/README.md)                                       |
+| Change the browser interface             | [Frontend reference](frontend/README.md)                                     |
+| Understand benchmark methods and reports | [Benchmark reference](task2/README.md)                                       |
+| Understand performance assumptions       | [Performance design](docs/task1-analysis.md)                                 |
+| Inspect model and workload estimates     | [Projection analysis](docs/task1-models-and-profiles.md)                     |
+| Configure hosting                        | [Deployment guide](docs/vercel-deployment.md)                                |
+| Run the native EvalScope adapters        | [EvalScope pruning repository](https://github.com/sdv1708/evalscope-pruning) |
 
 ## Capabilities and scope
 
-| Component                    | Implemented behavior                                                                                        | Interpretation                                                                               |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Performance Studio           | Upload, align, and compare Excel projections. Evaluate workload requirements. Inspect trends and anomalies. | Results describe supplied projections. Production measurements require a separate load test. |
-| Reference analysis           | Validate saved predictions and reviews. Reproduce six full benchmark scores.                                | No model endpoint is called.                                                                 |
-| Subset experiments           | Compare stratified subsets, weighted scores, model order, and threshold decisions.                          | Results apply to the supplied historical panel.                                              |
-| Operating-point analysis     | Select the smallest tested candidate that passes the configured policy.                                     | The recorded policy selects full retention: 315 coding tasks and 100 long-context questions. |
-| Image-pair prototype         | Create image variants, export request plans, and analyze saved responses.                                   | The demonstration uses synthetic images and scripted answers.                                |
-| Native EvalScope integration | Preserve source pins, reference panels, export tools, and audit tools.                                      | Adapter implementations live in a separate private repository. They are not included here.   |
+| Component                    | Implemented behavior                                                                                        | Interpretation                                                                                                                                       |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Performance Studio           | Upload, align, and compare Excel projections. Evaluate workload requirements. Inspect trends and anomalies. | Results describe supplied projections. Production measurements require a separate load test.                                                         |
+| Reference analysis           | Validate saved predictions and reviews. Reproduce six full benchmark scores.                                | No model endpoint is called.                                                                                                                         |
+| Subset experiments           | Compare stratified subsets, weighted scores, model order, and threshold decisions.                          | Results apply to the supplied historical panel.                                                                                                      |
+| Operating-point analysis     | Select the smallest tested candidate that passes the configured policy.                                     | The recorded policy selects full retention: 315 coding tasks and 100 long-context questions.                                                         |
+| Image-pair prototype         | Create image variants, export request plans, and analyze saved responses.                                   | The demonstration uses synthetic images and scripted answers.                                                                                        |
+| Native EvalScope integration | Preserve source pins, reference panels, export tools, and audit tools.                                      | Adapter implementations live in the public [EvalScope pruning repository](https://github.com/sdv1708/evalscope-pruning). They are not included here. |
 
 No smaller tested subset passed every recorded policy gate.
 The project does not establish live inference savings or a validated multimodal subset.
