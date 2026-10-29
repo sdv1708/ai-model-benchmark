@@ -347,20 +347,20 @@ Browser installation requires a download unless Chromium is already cached.
 
 ## Fault recovery
 
-| Symptom                            | Action                                                                                          |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Python version error               | Install Python 3.12. Repeat `uv sync --locked` in the affected package.                         |
-| JSONL pointer error                | Run `git lfs pull` from the repository root.                                                    |
-| Upload request fails               | Check the API health endpoint. Confirm that the API uses port 8000.                             |
-| Missing `Summary` sheet or columns | Compare the workbook with the bundled sample and the backend contract.                          |
-| Numeric validation error           | Supply numeric cells and cached formula results.                                                |
-| Model or profile appears unknown   | Use the filename pattern `Model Z profile 3.xlsx`.                                              |
-| Mixed upload warning               | Read each file diagnostic. Correct rejected files and upload them again.                        |
-| No matching configuration          | Select a scenario present in the uploaded workbook.                                             |
-| Cost or context remains unknown    | Supply the relevant assumption and requirement.                                                 |
-| Existing image output error        | Choose a new destination directory.                                                             |
-| Port already in use                | Stop the conflicting process or configure a matching API proxy target.                          |
-| EvalScope adapter is unavailable   | Use the local reference commands. Native adapter source requires the separate private checkout. |
+| Symptom                            | Action                                                                                                                                                           |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Python version error               | Install Python 3.12. Repeat `uv sync --locked` in the affected package.                                                                                          |
+| JSONL pointer error                | Run `git lfs pull` from the repository root.                                                                                                                     |
+| Upload request fails               | Check the API health endpoint. Confirm that the API uses port 8000.                                                                                              |
+| Missing `Summary` sheet or columns | Compare the workbook with the bundled sample and the backend contract.                                                                                           |
+| Numeric validation error           | Supply numeric cells and cached formula results.                                                                                                                 |
+| Model or profile appears unknown   | Use the filename pattern `Model Z profile 3.xlsx`.                                                                                                               |
+| Mixed upload warning               | Read each file diagnostic. Correct rejected files and upload them again.                                                                                         |
+| No matching configuration          | Select a scenario present in the uploaded workbook.                                                                                                              |
+| Cost or context remains unknown    | Supply the relevant assumption and requirement.                                                                                                                  |
+| Existing image output error        | Choose a new destination directory.                                                                                                                              |
+| Port already in use                | Stop the conflicting process or configure a matching API proxy target.                                                                                           |
+| EvalScope adapter is unavailable   | Use the local reference commands. Native adapter source requires a checkout of the [EvalScope pruning repository](https://github.com/sdv1708/evalscope-pruning). |
 
 `VITE_DEV_API_TARGET` changes the Vite development and preview proxy target.
 For example, set it to `http://127.0.0.1:8001` when the API uses port 8001.
