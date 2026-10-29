@@ -46,6 +46,12 @@ def _validate(references: ReferenceScores, keep_ratio: float, seed: int) -> tupl
         raise AnalysisError("keep_ratio must be finite and in (0, 1]")
     if isinstance(seed, bool) or not isinstance(seed, int):
         raise AnalysisError("seed must be an integer")
+    ids = validate_references(references)
+    return ids, math.ceil(len(ids) * keep_ratio)
+
+
+def validate_references(references: ReferenceScores) -> list[int]:
+    """Sorted question ids shared by every named reference model; grades are binary."""
     if not references or any(not model for model in references):
         raise AnalysisError("Selection requires named reference models")
     ids = set(next(iter(references.values())))
@@ -59,7 +65,7 @@ def _validate(references: ReferenceScores, keep_ratio: float, seed: int) -> tupl
                 raise AnalysisError("Reference indices must be nonnegative integers")
             if isinstance(score, bool) or not isinstance(score, int | float) or score not in (0, 1):
                 raise AnalysisError(f"Reference score for {model}#{index} must be binary")
-    return sorted(ids), math.ceil(len(ids) * keep_ratio)
+    return sorted(ids)
 
 
 def _priority(seed: int, index: int) -> bytes:
@@ -85,7 +91,15 @@ def select_samples(
     """
     if strategy not in CANDIDATES:
         raise AnalysisError(f"Unknown candidate strategy {strategy!r}; choose {CANDIDATES}")
-    ids, budget = _validate(references, keep_ratio, seed)
+    _, budget = _validate(references, keep_ratio, seed)
+    return select_strata(reference_strata(references, strategy=strategy), budget=budget, seed=seed)
+
+
+def reference_strata(references: ReferenceScores, *, strategy: str) -> dict[str, list[int]]:
+    """Group questions by reference pass count or by the full reference pass pattern."""
+    if strategy not in CANDIDATES:
+        raise AnalysisError(f"Unknown candidate strategy {strategy!r}; choose {CANDIDATES}")
+    ids = validate_references(references)
     models = sorted(references)
     groups: dict[str, list[int]] = defaultdict(list)
     for index in ids:
@@ -96,7 +110,7 @@ def select_samples(
             else "pattern:" + "".join(map(str, pattern))
         )
         groups[key].append(index)
-    return select_strata(groups, budget=budget, seed=seed)
+    return dict(groups)
 
 
 def select_strata(

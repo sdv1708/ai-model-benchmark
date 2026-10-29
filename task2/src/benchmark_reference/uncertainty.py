@@ -95,6 +95,63 @@ def _count_bounds(
     return lower, low
 
 
+def pooled_count_bounds(
+    population: int, sampled: int, successes: int, *, alpha: Fraction
+) -> tuple[int, int]:
+    """Equal-tail exact hypergeometric bounds on the population success count.
+
+    This pools every sampled question as one simple random sample, ignoring strata.
+    A census (``sampled == population``) returns ``(successes, successes)``.
+    """
+    if (
+        any(type(value) is not int for value in (population, sampled, successes))
+        or not 1 <= sampled <= population
+        or not 0 <= successes <= sampled
+        or not 0 < alpha < 1
+    ):
+        raise AnalysisError("Pooled bounds require 0 <= successes <= sampled <= population")
+    return _count_bounds(population, sampled, successes, alpha)
+
+
+def clopper_pearson_upper(failures: int, trials: int, *, alpha: float = 0.05) -> float:
+    """One-sided exact upper bound on a binomial rate: P(X <= failures | p) = alpha.
+
+    The bound assumes independent trials.
+    """
+    if (
+        type(failures) is not int
+        or type(trials) is not int
+        or not 0 <= failures <= trials
+        or trials < 1
+        or not 0 < alpha < 1
+    ):
+        raise AnalysisError("Binomial bounds require 0 <= failures <= trials and trials >= 1")
+    if failures == trials:
+        return 1.0
+
+    def cdf(p: float) -> float:
+        return math.fsum(
+            math.exp(
+                math.lgamma(trials + 1)
+                - math.lgamma(k + 1)
+                - math.lgamma(trials - k + 1)
+                + k * math.log(p)
+                + (trials - k) * math.log1p(-p)
+            )
+            for k in range(failures + 1)
+        )
+
+    # The binomial CDF falls as p rises, so bisection finds the unique root.
+    low, high = 0.0, 1.0
+    for _ in range(80):
+        middle = (low + high) / 2
+        if cdf(middle) > alpha:
+            low = middle
+        else:
+            high = middle
+    return high
+
+
 def score_interval(
     selection: Sequence[SelectedSample], observed_grades: Mapping[int, float], *, confidence: float
 ) -> ConfidenceInterval:
