@@ -91,15 +91,21 @@ def _model_seed(simulation_seed: int, true_score: str, selector_seed: int, repli
     return int.from_bytes(hashlib.sha256(text.encode("ascii")).digest()[:8], "big")
 
 
+def true_score_labels(policy: ThresholdPolicy) -> list[str]:
+    """The true scores as two-decimal labels. Two scores must not share a label."""
+    labels = [f"{score:.2f}" for score in policy.true_scores]
+    if len(set(labels)) != len(labels):
+        raise AnalysisError("Policy true_scores must differ at two decimal places")
+    return labels
+
+
 def run_simulated_study(
     references: ReferenceScores, policy: ThresholdPolicy
 ) -> tuple[SimulatedDecision, ...]:
     """Decide every simulated model in the policy grid; real grades are not used."""
     generator = SimulationGenerator(references)
     population = len(generator.ids)
-    labels = [f"{score:.2f}" for score in policy.true_scores]
-    if len(set(labels)) != len(labels):
-        raise AnalysisError("Policy true_scores must differ at two decimal places")
+    labels = true_score_labels(policy)
     probes: dict[int, tuple[SelectedSample, ...]] = {}
 
     def cached_probe(

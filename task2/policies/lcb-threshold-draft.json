@@ -1,10 +1,20 @@
 {
   "alpha": 0.05,
   "benchmark": "live_code_bench_v5",
+  "coverage": {
+    "stage_sizes": [
+      32,
+      63,
+      95,
+      158,
+      221
+    ],
+    "subsets": 2000
+  },
   "frozen": false,
   "interval_method": "pooled_exact_hypergeometric",
   "policy_id": "lcb-threshold",
-  "schema_version": 1,
+  "schema_version": 2,
   "seeds": [
     0,
     1,

@@ -14,13 +14,20 @@ from benchmark_reference.threshold_cli import main
 TASK2 = Path(__file__).parents[1]
 DRAFT = TASK2 / "policies" / "lcb-threshold-draft.json"
 PANEL = TASK2 / "data" / "lcb-reference-panel.json"
-OUTPUTS = {"decisions.csv", "summary.json", "report.html", "manifest.json"}
+OUTPUTS = {"decisions.csv", "coverage.csv", "summary.json", "report.html", "manifest.json"}
+METHODS = (
+    "pooled_exact_hypergeometric",
+    "stratified_bonferroni_hypergeometric",
+    "stratified_wilson",
+    "stratified_bootstrap_percentile",
+)
 
 
 def _small_policy(tmp_path: Path, **changes: object) -> Path:
     value = json.loads(DRAFT.read_text(encoding="utf-8"))
     value["seeds"] = [0, 1]
     value["simulation"] = {"seed": 56, "true_scores": [0.5, 0.7, 0.9], "models_per_seed": 5}
+    value["coverage"] = {"subsets": 20, "stage_sizes": [32, 63]}
     value.update(changes)
     path = tmp_path / "policy.json"
     path.write_bytes((json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8"))
@@ -74,9 +81,13 @@ def test_command_writes_decision_table_manifest_and_report(tmp_path: Path) -> No
     for name, digest in manifest["implementation_sha256"].items():
         source = (code / name).read_bytes().replace(b"\r\n", b"\n")
         assert digest == hashlib.sha256(source).hexdigest()
-    assert {"two_stage.py", "threshold_policy.py", "uncertainty.py"} <= set(
-        manifest["implementation_sha256"]
-    )
+    assert {
+        "two_stage.py",
+        "threshold_policy.py",
+        "uncertainty.py",
+        "threshold_intervals.py",
+        "threshold_coverage.py",
+    } <= set(manifest["implementation_sha256"])
 
 
 def test_report_shows_decisive_fraction_and_wrong_rate_for_each_true_score(
@@ -173,3 +184,60 @@ def test_draft_warning_appears_only_for_a_draft_policy(tmp_path: Path) -> None:
     assert warning in (draft / "report.html").read_text(encoding="utf-8")
     assert warning not in (frozen / "report.html").read_text(encoding="utf-8")
     assert warning not in (frozen / "summary.json").read_text(encoding="utf-8")
+
+
+def test_coverage_table_has_every_cell_and_method(tmp_path: Path) -> None:
+    output = tmp_path / "out"
+    _run(_small_policy(tmp_path), output, "--workers", "1")
+    with (output / "coverage.csv").open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    # 2 stratifiers x 2 stage sizes x 3 true scores x 4 methods.
+    assert len(rows) == 48
+    assert {row["method"] for row in rows} == set(METHODS)
+    assert {row["stratifier"] for row in rows} == {"difficulty_stratified", "response_stratified"}
+    assert {row["stage_size"] for row in rows} == {"32", "63"}
+    for row in rows:
+        assert row["subsets"] == "20"
+        misses = int(row["truth_below_interval"]) + int(row["truth_above_interval"])
+        assert int(row["covered"]) + misses == 20
+        assert row["passes"] == str(int(int(row["covered"]) / 20 >= 0.804))
+
+
+def test_report_has_a_coverage_chart_for_each_setting_and_a_width_table(tmp_path: Path) -> None:
+    output = tmp_path / "out"
+    _run(_small_policy(tmp_path), output)
+    summary = json.loads((output / "summary.json").read_text(encoding="utf-8"))
+    html = (output / "report.html").read_text(encoding="utf-8")
+    coverage = summary["coverage"]
+    # 0.95 - 3 * sqrt(0.95 * 0.05 / 20) = 0.80379.
+    assert coverage["pass_line"] == 0.804
+    assert coverage["subsets_per_cell"] == 20
+    charts = re.findall(r'<svg[^>]*data-coverage="([^"]+)"(.*?)</svg>', html, re.S)
+    assert [name for name, _ in charts] == [
+        "difficulty_stratified-32",
+        "difficulty_stratified-63",
+        "response_stratified-32",
+        "response_stratified-63",
+    ]
+    for _, chart in charts:
+        lines = re.findall(r'<polyline class="method-(\d) series"', chart)
+        assert lines == ["1", "2", "3", "4"]
+        assert "pass line 0.804" in chart
+        assert "<title" in chart and "<desc" in chart
+    for group in coverage["groups"]:
+        key = f"{group['stratifier']}-{group['stage_size']}-{group['method']}"
+        cell = re.search(rf'<td data-width="{key}">([^<]+)</td>', html)
+        assert cell is not None
+        assert cell.group(1) == f"{group['mean_width']:.3f}"
+        verdict = re.search(rf'<td data-coverage-pass="{key}"[^>]*>([^<]+)</td>', html)
+        assert verdict is not None
+        assert verdict.group(1).startswith("pass" if group["passes"] else "fail")
+    assert [m["method"] for m in coverage["methods"]] == list(METHODS)
+
+
+def test_worker_count_does_not_change_the_outputs(tmp_path: Path) -> None:
+    policy = _small_policy(tmp_path)
+    _run(policy, tmp_path / "one", "--workers", "1")
+    _run(policy, tmp_path / "two", "--workers", "2")
+    for name in OUTPUTS:
+        assert (tmp_path / "one" / name).read_bytes() == (tmp_path / "two" / name).read_bytes()

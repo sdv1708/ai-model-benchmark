@@ -15,10 +15,10 @@ from pathlib import Path
 
 from benchmark_reference.models import AnalysisError
 from benchmark_reference.pruning import CANDIDATES
+from benchmark_reference.threshold_intervals import INTERVAL_METHODS
 from benchmark_reference.uncertainty import validate_threshold
 
-POOLED_EXACT = "pooled_exact_hypergeometric"
-INTERVAL_METHODS = (POOLED_EXACT,)
+SCHEMA_VERSION = 2
 FROZEN_LOCK = Path(__file__).resolve().parents[2] / "policies" / "frozen-policies.json"
 _KEYS = {
     "schema_version",
@@ -33,8 +33,10 @@ _KEYS = {
     "stratifier",
     "seeds",
     "simulation",
+    "coverage",
 }
 _SIMULATION_KEYS = {"seed", "true_scores", "models_per_seed"}
+_COVERAGE_KEYS = {"subsets", "stage_sizes"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +56,8 @@ class ThresholdPolicy:
     simulation_seed: int
     true_scores: tuple[float, ...]
     models_per_seed: int
+    coverage_subsets: int
+    coverage_stage_sizes: tuple[int, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,8 +100,8 @@ def load_policy(path: Path) -> LoadedPolicy:
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise AnalysisError(f"Cannot read policy {path}: {exc}") from exc
     value = _exact_keys(raw, _KEYS, "file")
-    if value["schema_version"] != 1:
-        raise AnalysisError("Policy schema_version must be 1")
+    if value["schema_version"] != SCHEMA_VERSION:
+        raise AnalysisError(f"Policy schema_version must be {SCHEMA_VERSION}")
     if not isinstance(value["frozen"], bool):
         raise AnalysisError("Policy frozen must be true or false")
     threshold, alpha = value["threshold"], value["alpha"]
@@ -133,6 +137,15 @@ def load_policy(path: Path) -> LoadedPolicy:
         or scores != sorted(set(scores))
     ):
         raise AnalysisError("Policy true_scores must be unique, ascending values in [0, 1]")
+    coverage = _exact_keys(value["coverage"], _COVERAGE_KEYS, "coverage")
+    sizes = coverage["stage_sizes"]
+    if (
+        not isinstance(sizes, list)
+        or not sizes
+        or any(isinstance(n, bool) or not isinstance(n, int) or n < 1 for n in sizes)
+        or sizes != sorted(set(sizes))
+    ):
+        raise AnalysisError("Policy coverage stage_sizes must be unique, ascending integers >= 1")
     policy = ThresholdPolicy(
         policy_id=_text(value["policy_id"], "policy_id"),
         version=_text(value["version"], "version"),
@@ -147,6 +160,8 @@ def load_policy(path: Path) -> LoadedPolicy:
         simulation_seed=_integer(simulation["seed"], "simulation seed", minimum=0),
         true_scores=tuple(float(s) for s in scores),
         models_per_seed=_integer(simulation["models_per_seed"], "models_per_seed", minimum=1),
+        coverage_subsets=_integer(coverage["subsets"], "coverage subsets", minimum=1),
+        coverage_stage_sizes=tuple(sizes),
     )
     return LoadedPolicy(policy, path.name, hashlib.sha256(data).hexdigest())
 

@@ -9,6 +9,11 @@ import pytest
 
 from benchmark_reference.models import AnalysisError
 from benchmark_reference.pruning import ReferenceScores, SelectedSample
+from benchmark_reference.threshold_intervals import (
+    INTERVAL_METHODS,
+    interval_bounds,
+    stratum_counts,
+)
 from benchmark_reference.threshold_policy import ThresholdPolicy, load_policy
 from benchmark_reference.threshold_simulation import SimulationGenerator
 from benchmark_reference.two_stage import decide_two_stage, select_stage1
@@ -178,4 +183,60 @@ def test_stage_one_larger_than_the_population_is_rejected() -> None:
     with pytest.raises(AnalysisError, match="stage1_size"):
         decide_two_stage(
             ONE_STRATUM, dict.fromkeys(range(10), 1.0), policy=_policy(stage1_size=11), seed=0
+        )
+
+
+@pytest.mark.parametrize("method", INTERVAL_METHODS)
+def test_every_interval_method_decides_and_escalation_still_resolves(method: str) -> None:
+    references = {
+        m: {i: float((i * (j + 2)) % 5 < 3) for i in range(40)} for j, m in enumerate("abc")
+    }
+    generator = SimulationGenerator(references)
+    policy = _policy(threshold=0.55, stage1_size=12, interval_method=method)
+    results = []
+    for true_score in (0.3, 0.55, 0.9):
+        for seed in range(6):
+            grades = generator.draw(true_score, seed=seed)
+            result = decide_two_stage(references, grades, policy=policy, seed=seed)
+            counts = stratum_counts(
+                select_stage1(references, stratifier=policy.stratifier, size=12, seed=seed), grades
+            )
+            assert (result.stage1_lower, result.stage1_upper) == interval_bounds(
+                method, counts, alpha=Fraction(1, 20)
+            )
+            truth = "GO" if sum(grades.values()) / 40 >= 0.55 else "NO GO"
+            if result.stage1_result == "ESCALATE":
+                assert (result.decision, result.decided_stage) == (truth, 2)
+            results.append(result.stage1_result)
+    # The Bonferroni reference is too wide to decide at 12 of 40 questions.
+    if method != "stratified_bonferroni_hypergeometric":
+        assert {"GO", "NO GO"} <= set(results)
+
+
+@pytest.mark.parametrize("method", INTERVAL_METHODS)
+def test_a_stage_one_census_gives_width_zero_for_every_method(method: str) -> None:
+    grades = {i: float(i % 3 == 0) for i in range(10)}
+    result = decide_two_stage(
+        ONE_STRATUM,
+        grades,
+        policy=_policy(threshold=0.5, stage1_size=10, interval_method=method),
+        seed=3,
+    )
+    assert result.stage1_lower == result.stage1_upper == Fraction(4, 10)
+
+
+def test_selector_strata_that_do_not_cover_the_questions_are_rejected() -> None:
+    def partial(
+        references: ReferenceScores, *, stratifier: str, size: int, seed: int
+    ) -> tuple[SelectedSample, ...]:
+        # One stratum of 8 questions claims to be the whole population of 10.
+        return tuple(SelectedSample(i, 1 / 5, "part", 8, 5) for i in range(5))
+
+    with pytest.raises(AnalysisError, match="partition"):
+        decide_two_stage(
+            ONE_STRATUM,
+            dict.fromkeys(range(10), 1.0),
+            policy=_policy(stage1_size=5),
+            seed=0,
+            selector=partial,
         )

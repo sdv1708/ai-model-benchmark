@@ -3,14 +3,15 @@
 Decision question: is the full-set score at or above threshold ``t``?
 
 1. Select the stage-1 probe from reference grades only, then grade it.
-2. Compute the pooled exact ``1 - alpha`` interval (95% at alpha 0.05).
+2. Compute the policy's ``1 - alpha`` interval (95% at alpha 0.05).
 3. Lower bound at or above ``t``: GO.
 4. Upper bound below ``t``: NO GO.
 5. Otherwise ESCALATE: grade the remaining questions and decide on the census.
    The census has no sampling error.
 
 The selector receives reference grades only. It runs before any target grade is
-read. Bounds stay exact fractions, so a boundary tie cannot flip on rounding.
+read. Bounds are fractions. For the exact methods a boundary tie therefore
+cannot flip on rounding.
 """
 
 from collections.abc import Mapping
@@ -26,8 +27,8 @@ from benchmark_reference.pruning import (
     select_strata,
     validate_references,
 )
-from benchmark_reference.threshold_policy import POOLED_EXACT, ThresholdPolicy, alpha_spending
-from benchmark_reference.uncertainty import pooled_count_bounds
+from benchmark_reference.threshold_intervals import interval_bounds, stratum_counts
+from benchmark_reference.threshold_policy import ThresholdPolicy, alpha_spending
 
 type Stage1Result = Literal["GO", "NO GO", "ESCALATE"]
 type FinalDecision = Literal["GO", "NO GO"]
@@ -93,8 +94,6 @@ def decide_two_stage(
     selector: Stage1Selector = select_stage1,
 ) -> TwoStageDecision:
     """Apply the policy to one target; read only the grades each stage needs."""
-    if policy.interval_method != POOLED_EXACT:
-        raise AnalysisError(f"Unsupported interval method {policy.interval_method!r}")
     population = validate_references(references)
     if set(target) != set(population):
         raise AnalysisError("Target grades must cover exactly the reference questions")
@@ -110,9 +109,11 @@ def decide_two_stage(
         raise AnalysisError("Selector returned questions outside the reference questions")
     threshold = Fraction(str(policy.threshold))
     alpha = Fraction(str(alpha_spending(policy)[0]))
-    successes = sum(_grade(target, index) for index in chosen)
-    low, high = pooled_count_bounds(len(population), len(chosen), successes, alpha=alpha)
-    lower, upper = Fraction(low, len(population)), Fraction(high, len(population))
+    counts = stratum_counts(selection, target)
+    if sum(count.population for count in counts) != len(population):
+        raise AnalysisError("Selector strata must partition exactly the reference questions")
+    successes = sum(count.successes for count in counts)
+    lower, upper = interval_bounds(policy.interval_method, counts, alpha=alpha)
     result = _classify(lower, upper, threshold)
     if result != "ESCALATE":
         return TwoStageDecision(

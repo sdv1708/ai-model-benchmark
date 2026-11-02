@@ -172,7 +172,7 @@ The policy is retrospective and does not certify deployment performance.
 `threshold-decision` answers one question for each model: is the full-set score at or above the customer threshold `t`?
 
 1. Select a stage-1 probe with the policy stratifier. The selector uses reference grades only.
-2. Compute a `1 - alpha` pooled exact hypergeometric interval for the full-set score. At alpha `0.05`, this is a 95% interval.
+2. Compute a `1 - alpha` interval for the full-set score with the policy `interval_method`. At alpha `0.05`, this is a 95% interval.
 3. If the lower bound is at or above `t`, decide GO and stop.
 4. If the upper bound is below `t`, decide NO GO and stop.
 5. Otherwise ESCALATE. Grade the remaining questions and decide on the full set.
@@ -182,20 +182,55 @@ Stage 1 spends the policy alpha.
 The census spends nothing.
 Pair-order metrics are diagnostics only and are not gates.
 
+### Interval methods
+
+The policy `interval_method` names one of four methods.
+Each method reads only the passes in each sampled stratum.
+
+| `interval_method`                      | Interval                                                                                                 |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `pooled_exact_hypergeometric`          | Exact hypergeometric interval for all sampled questions as one simple random sample. It ignores strata.  |
+| `stratified_bonferroni_hypergeometric` | Exact interval for each stratum at `alpha / H`, with the bounds added. It is the conservative reference. |
+| `stratified_wilson`                    | Wilson score interval for the stratified estimate, with the Kish effective sample size and the FPC.      |
+| `stratified_bootstrap_percentile`      | Percentile interval of 1,999 Rao-Wu rescaling bootstrap resamples.                                       |
+
+`H` is the number of occupied strata.
+FPC is the finite-population correction.
+The Kish effective sample size is `1 / sum(W_h^2 * (N_h - n_h) / ((N_h - 1) * n_h))`, where `W_h = N_h / N`.
+Without the FPC factor, this is the usual Kish size for the weights `N_h / n_h`.
+
+The Rao-Wu bootstrap draws `n_h - 1` questions with replacement from the sample of each stratum.
+With `x` passes in the draw, the stratum mean becomes `p_h + sqrt(1 - n_h / N_h) * (x / (n_h - 1) - p_h)`.
+The variance of a replicate is then the unbiased stratified variance with the FPC.
+A stratum with one sampled question, or with only passes or only failures, adds no bootstrap width.
+The bootstrap seed comes from the stratum counts, so the interval is a fixed function of the data.
+
+Each method clips its interval to the feasible range.
+The sampled passes are known, so the full-set pass count is at least `sum(s_h)` and at most `sum(N_h - n_h + s_h)`.
+The clip never removes the true score.
+A census therefore gives width 0 for every method.
+
+With one stratum, each Wilson bound is within `2 / n` of the exact bound at every observed score.
+The bootstrap bounds meet the same tolerance for observed scores from 0.2 to 0.8.
+Bonferroni with one stratum is the exact interval.
+
 ### Policy files
 
 A versioned JSON file in `policies/` holds every setting:
 
-| Setting           | Draft value                                                      |
-| ----------------- | ---------------------------------------------------------------- |
-| `threshold`       | `0.70`                                                           |
-| `alpha`           | `0.05`                                                           |
-| `stage1_size`     | `63` of 315 questions                                            |
-| `interval_method` | `pooled_exact_hypergeometric`                                    |
-| `stratifier`      | `difficulty_stratified`                                          |
-| `seeds`           | Selector seeds `0` through `19`                                  |
-| `simulation`      | Seed `56`, true scores `0.30` to `0.90` by `0.05`, 50 per seed   |
+| Setting           | Draft value                                                        |
+| ----------------- | ------------------------------------------------------------------ |
+| `threshold`       | `0.70`                                                             |
+| `alpha`           | `0.05`                                                             |
+| `stage1_size`     | `63` of 315 questions                                              |
+| `interval_method` | `pooled_exact_hypergeometric`                                      |
+| `stratifier`      | `difficulty_stratified`                                            |
+| `seeds`           | Selector seeds `0` through `19`                                    |
+| `simulation`      | Seed `56`, true scores `0.30` to `0.90` by `0.05`, 50 per seed     |
+| `coverage`        | 2,000 draws per cell, stage sizes `32`, `63`, `95`, `158`, `221`   |
 
+Policy files use `schema_version` 2.
+Schema 2 adds the `coverage` section.
 The manifest records the SHA-256 of the exact policy file bytes.
 `.gitattributes` keeps policy files at LF line endings, so the hash is the same on every platform.
 
@@ -218,21 +253,45 @@ The generator and the stratifier use the same reference difficulty.
 This favors stratification.
 Issue #60 adds a second generator.
 
+### Interval coverage study
+
+The command also measures the coverage of all four interval methods.
+A cell is one stratifier, one coverage stage size, and one policy true score.
+The study runs every cell for both stratifiers.
+Each cell has 2,000 draws.
+A draw is a new simulated model and a new stratified subset, so the draws are independent.
+Every method sees the same draws.
+No real model grades are used.
+The policy key `coverage.subsets` sets the number of draws.
+
+A method covers a draw when its interval holds the full-set score of the simulated model.
+A method passes a cell when its coverage is at least 0.935.
+That value is 0.95 minus 3 standard errors for 2,000 draws, rounded to 3 decimals.
+The report shows coverage against true score for each setting, one line for each method, with the 0.935 line marked.
+It also gives the lowest coverage and the mean interval width for each method and setting.
+
+Coverage is measured over simulated models, not for one fixed model.
+The coverage study uses the same generator as the decision study.
+
 ### Run the decision
 
 ```powershell
 uv run threshold-decision --policy policies/lcb-threshold-draft.json --output-dir output/threshold-decision
 ```
 
-| File            | Content                                                                         |
-| --------------- | ------------------------------------------------------------------------------- |
-| `decisions.csv` | One row per simulated model: true score, stage-1 result, decision, stage.       |
-| `summary.json`  | Decisive fraction and wrong-decision rate for each true score, plus limits.     |
-| `report.html`   | Self-contained report with charts and tables, in light and dark modes.          |
-| `manifest.json` | Policy hash, input hashes, and output hashes.                                   |
+| File            | Content                                                                     |
+| --------------- | --------------------------------------------------------------------------- |
+| `decisions.csv` | One row per simulated model: true score, stage-1 result, decision, stage.   |
+| `coverage.csv`  | One row per coverage cell and method: coverage, misses on each side, width. |
+| `summary.json`  | Decision summary for each true score, coverage verdicts, and limits.        |
+| `report.html`   | Self-contained report with charts and tables, in light and dark modes.      |
+| `manifest.json` | Policy hash, input hashes, and output hashes.                               |
 
 The command prints the manifest SHA-256.
 Two runs with the same policy file give identical bytes.
+`--workers` sets the number of processes for the coverage study.
+The default is the number of CPUs.
+The outputs are the same for every worker count.
 
 ## Commands and reports
 
