@@ -384,8 +384,29 @@ This result has three limits:
 - The cost is in questions, not tokens.
 
 The published claim therefore stays full retention.
-Issues [#57](https://github.com/sdv1708/ai-model-benchmark/issues/57) to [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) address these limits.
+Issues [#58](https://github.com/sdv1708/ai-model-benchmark/issues/58) to [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) address these limits.
 To reproduce the table, run the command in the [usage guide](USAGE.md#run-a-two-stage-threshold-decision).
+
+### Interval coverage on simulated models
+
+The same command measures how often each interval method holds the full-set score.
+For each true score (0.30 to 0.90 by 0.05), stage size (32, 63, 95, 158, and 221 questions), and stratifier, it draws 2,000 simulated models with new stratified subsets.
+That gives 130 cells for each method.
+A method passes a cell when its 95% interval holds the full-set score in at least 0.935 of the draws.
+
+| Interval method      | Cells passed | Lowest coverage | Mean width |
+| -------------------- | -----------: | --------------: | ---------: |
+| Stratified Wilson    |   130 of 130 |          0.9625 |      0.159 |
+| Pooled exact         |   130 of 130 |          0.9675 |      0.167 |
+| Bonferroni exact     |   130 of 130 |          0.9990 |      0.349 |
+| Stratified bootstrap |   103 of 130 |          0.8230 |      0.133 |
+
+Of the methods that pass every cell, the stratified Wilson interval has the smallest mean width.
+The Bonferroni reference is about twice as wide.
+The bootstrap (Rao-Wu rescaling) fails 27 cells, all at 95 questions or fewer.
+There, some strata hold one sampled question, or only passes, and add no bootstrap width.
+The draft policy still names the pooled exact method.
+Issue #62 chooses the method for policy v1 with a fixed rule.
 
 ## EvalScope integration
 
@@ -522,7 +543,6 @@ All issues are in the [issue tracker](https://github.com/sdv1708/ai-model-benchm
 
 | Gap                                                                                                                                             | Planned work                                                                                                                                                        |
 | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The recorded per-stratum Bonferroni interval is too wide to decide anything below full retention.                                               | [#57](https://github.com/sdv1708/ai-model-benchmark/issues/57) adds stratified Wilson and stratified bootstrap intervals, and a coverage study on simulated models. |
 | Savings are counted in questions, not tokens. One AA-LCR answer uses about 73,000 input tokens. One LiveCodeBench task uses about 1,700 tokens. | [#58](https://github.com/sdv1708/ai-model-benchmark/issues/58) reports the expected token cost of every operating point.                                            |
 | The two-stage rule covers LiveCodeBench only.                                                                                                   | [#59](https://github.com/sdv1708/ai-model-benchmark/issues/59) runs AA-LCR through the same pipeline and states the judge-noise limit beside each result.           |
 | The error rate for an unseen model is not known. The current generator favors stratification.                                                   | [#60](https://github.com/sdv1708/ai-model-benchmark/issues/60) adds a second generator and reports the minimum distance from `t` at which the probe decides.        |
@@ -541,7 +561,7 @@ In that case, full retention stays the published claim.
 
 ```mermaid
 flowchart LR
-    I56["#56 Two-stage slice (done)"] --> I57["#57 Intervals"]
+    I56["#56 Two-stage slice (done)"] --> I57["#57 Intervals (done)"]
     I56 --> I58["#58 Token cost"]
     I58 --> I59["#59 AA-LCR"]
     I57 --> I60["#60 Unseen-model error"]

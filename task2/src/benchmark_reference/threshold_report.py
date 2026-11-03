@@ -9,16 +9,44 @@ import csv
 import hashlib
 import html
 import io
-from collections.abc import Mapping, Sequence
+import math
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
 from benchmark_reference.long_context_reporting import encode_json
+from benchmark_reference.threshold_intervals import (
+    BONFERRONI,
+    BOOTSTRAP,
+    BOOTSTRAP_REPLICATES,
+    INTERVAL_METHODS,
+    POOLED_EXACT,
+    WILSON,
+)
 from benchmark_reference.threshold_policy import LoadedPolicy, alpha_spending
 from benchmark_reference.threshold_study import SimulatedDecision
 
-ANALYSIS_VERSION = "threshold-two-stage-v1"
-OUTPUT_NAMES = ("decisions.csv", "summary.json", "report.html", "manifest.json")
+ANALYSIS_VERSION = "threshold-two-stage-v2"
+OUTPUT_NAMES = ("decisions.csv", "coverage.csv", "summary.json", "report.html", "manifest.json")
+METHOD_LABELS = {
+    POOLED_EXACT: "Pooled exact",
+    BONFERRONI: "Bonferroni exact",
+    WILSON: "Stratified Wilson",
+    BOOTSTRAP: "Stratified bootstrap",
+}
+METHOD_NOTES = {
+    POOLED_EXACT: "Exact hypergeometric interval for all sampled questions "
+    "as one simple random sample. It ignores the strata.",
+    BONFERRONI: "Exact interval for each stratum at alpha divided "
+    "by the number of strata, with the bounds added. It is a conservative reference.",
+    WILSON: "Wilson score interval for the stratified estimate, with the Kish "
+    "effective sample size and the finite-population correction.",
+    BOOTSTRAP: f"Percentile interval of {BOOTSTRAP_REPLICATES:,} Rao-Wu rescaling "
+    "bootstrap resamples. Its variance is the unbiased stratified variance with the "
+    "finite-population correction.",
+}
+# The line dash and the marker shape give each method a second encoding beside color.
+_DASHES = ("", "7 4", "2 3", "9 3 2 3")
 LIMITATIONS = (
     "Simulated models only. No real model grades are used in this run.",
     "The generator takes question difficulty from the same reference grades that "
@@ -36,18 +64,43 @@ LIMITATIONS = (
     "95% Clopper-Pearson upper bound for each rate. That bound assumes independent "
     "models, so the shared probes make it optimistic.",
     "Pair-order metrics are diagnostics only and are not gates. This report does not compute them.",
+    "Coverage is measured over simulated models: each draw has a new model and a new "
+    "subset. It is not the coverage for one fixed model.",
+    "The Wilson interval uses the Kish effective sample size. That size ignores the "
+    "variance reduction from stratification, so the interval is usually conservative.",
+    "The bootstrap cannot estimate the variance of a stratum with one sampled question or "
+    "with only passes or only failures. Such a stratum adds no width, so the bootstrap "
+    "interval can be too narrow when strata are small.",
+    "The coverage study uses the same generator as the decision study, so it has the "
+    "same match between strata and simulated difficulty. Issue #60 adds a second generator.",
 )
 DRAFT_LIMITATION = "The policy is a draft. It is not frozen and must not be used on real grades."
 IMPLEMENTATION_FILES = (
     "models.py",
     "pruning.py",
     "uncertainty.py",
+    "threshold_intervals.py",
     "threshold_policy.py",
     "threshold_simulation.py",
     "two_stage.py",
     "threshold_study.py",
+    "threshold_coverage.py",
     "threshold_report.py",
     "threshold_cli.py",
+)
+_COVERAGE_COLUMNS = (
+    "stratifier",
+    "stage_size",
+    "true_score",
+    "full_passes",
+    "method",
+    "subsets",
+    "covered",
+    "coverage",
+    "truth_below_interval",
+    "truth_above_interval",
+    "mean_width",
+    "passes",
 )
 _COLUMNS = (
     "true_score",
@@ -102,9 +155,29 @@ def decision_table(rows: Sequence[SimulatedDecision], *, population: int) -> byt
     return stream.getvalue().encode("utf-8")
 
 
+def coverage_table(coverage: Mapping[str, Any]) -> bytes:
+    stream = io.StringIO(newline="")
+    writer = csv.writer(stream, lineterminator="\n")
+    writer.writerow(_COVERAGE_COLUMNS)
+    for cell in coverage["cells"]:
+        writer.writerow(
+            (
+                # The first seven columns need no formatting.
+                *(cell[name] for name in _COVERAGE_COLUMNS[:7]),
+                f"{cell['coverage']:.4f}",
+                cell["truth_below_interval"],
+                cell["truth_above_interval"],
+                f"{cell['mean_width']:.6f}",
+                int(cell["passes"]),
+            )
+        )
+    return stream.getvalue().encode("utf-8")
+
+
 def summary_document(
     loaded: LoadedPolicy,
     summary: Sequence[Mapping[str, Any]],
+    coverage: Mapping[str, Any],
     *,
     population: int,
     panel_sha256: str,
@@ -139,6 +212,7 @@ def summary_document(
             "max_wrong_decision_rate": max(r["wrong_decision_rate"] for r in summary),
         },
         "true_scores": list(summary),
+        "coverage": {key: value for key, value in coverage.items() if key != "cells"},
         "limitations": [*LIMITATIONS, *(() if policy.frozen else (DRAFT_LIMITATION,))],
     }
 
@@ -177,6 +251,23 @@ svg text { fill: var(--muted); font-size: 12px; }
 .wrong { stroke: var(--wrong); fill: none; stroke-width: 2.5; }
 .wrong-dot { fill: var(--wrong); }
 .mark { stroke: var(--mark); stroke-dasharray: 5 4; stroke-width: 1.5; }
+.method-1 { --method: #2a78d6; } .method-2 { --method: #eb6834; }
+.method-3 { --method: #1baf7a; } .method-4 { --method: #eda100; }
+@media (prefers-color-scheme: dark) {
+  .method-1 { --method: #3987e5; } .method-2 { --method: #d95926; }
+  .method-3 { --method: #199e70; } .method-4 { --method: #c98500; }
+}
+.series { stroke: var(--method); fill: none; stroke-width: 2; }
+.marker { fill: var(--method); stroke: var(--bg); stroke-width: 1.5; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 20px; padding: 0; list-style: none; }
+.legend li { display: flex; align-items: center; gap: 6px; }
+.legend svg { width: 36px; height: 14px; }
+.panels { display: grid; gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
+.panels figure { margin: 0; min-width: 0; }
+.halo { paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
+.panels figcaption { font-weight: 600; margin-bottom: 4px; }
+.fail { font-weight: 700; }
 """
 
 
@@ -246,7 +337,217 @@ def _chart(
     return "\n".join(parts)
 
 
-def html_report(document: Mapping[str, Any], *, manifest_inputs: Mapping[str, str]) -> bytes:
+def _marker(slot: int, x: float, y: float, tip: str = "") -> str:
+    """Circle, square, triangle, or diamond for method slots 1 to 4."""
+    shape = (
+        f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4"',
+        f'<rect x="{x - 3.5:.1f}" y="{y - 3.5:.1f}" width="7" height="7"',
+        f'<path d="M{x:.1f} {y - 4.5:.1f} L{x + 4.5:.1f} {y + 3.5:.1f} '
+        f'L{x - 4.5:.1f} {y + 3.5:.1f} Z"',
+        f'<path d="M{x:.1f} {y - 5:.1f} L{x + 5:.1f} {y:.1f} L{x:.1f} {y + 5:.1f} '
+        f'L{x - 5:.1f} {y:.1f} Z"',
+    )[slot - 1]
+    tag = ("circle", "rect", "path", "path")[slot - 1]
+    title = f"<title>{html.escape(tip)}</title>" if tip else ""
+    return f'{shape} class="marker method-{slot}">{title}</{tag}>'
+
+
+def _series_line(slot: int, points: str) -> str:
+    dash = f' stroke-dasharray="{_DASHES[slot - 1]}"' if _DASHES[slot - 1] else ""
+    return f'<polyline class="method-{slot} series"{dash} points="{points}"/>'
+
+
+def _coverage_chart(
+    key: str,
+    cells: Sequence[Mapping[str, Any]],
+    *,
+    title: str,
+    y_min: float,
+    pass_line: float,
+) -> str:
+    """Coverage against true score, one line for each method, the pass line marked."""
+    width, height, left, right, top, bottom = 340, 230, 52, 20, 12, 40
+    xs = sorted({float(c["true_score"]) for c in cells})
+    x_low, x_high = xs[0], xs[-1]
+    span = x_high - x_low or 1.0
+
+    def px(x: float) -> float:
+        return left + (x - x_low) / span * (width - left - right)
+
+    def py(y: float) -> float:
+        return top + (1 - (max(y, y_min) - y_min) / (1 - y_min)) * (height - top - bottom)
+
+    e = html.escape
+    lows = {
+        m: min(float(c["coverage"]) for c in cells if c["method"] == m) for m in INTERVAL_METHODS
+    }
+    description = (
+        "Coverage for each true score and method. Lowest coverage: "
+        + "; ".join(f"{METHOD_LABELS[m]} {lows[m]:.3f}" for m in INTERVAL_METHODS)
+        + f". The dashed line is the pass line {pass_line:.3f}."
+    )
+    parts = [
+        f'<svg viewBox="0 0 {width} {height}" role="img" data-coverage="{e(key)}" '
+        f'aria-labelledby="{e(key)}-t {e(key)}-d">',
+        f'<title id="{e(key)}-t">{e(title)}</title>',
+        f'<desc id="{e(key)}-d">{e(description)}</desc>',
+        f'<line class="axis" x1="{left}" y1="{py(y_min):.1f}" x2="{width - right}" '
+        f'y2="{py(y_min):.1f}"/>',
+        f'<line class="axis" x1="{left}" y1="{top}" x2="{left}" y2="{py(y_min):.1f}"/>',
+    ]
+    for tick in (y_min, (y_min + 1) / 2, 1.0):
+        parts.append(
+            f'<text x="{left - 6}" y="{py(tick) + 4:.1f}" text-anchor="end">{tick:.3f}</text>'
+        )
+    for x in xs[::2]:
+        parts.append(
+            f'<text x="{px(x):.1f}" y="{py(y_min) + 15:.1f}" text-anchor="middle">{x:.2f}</text>'
+        )
+    parts.append(
+        f'<line class="mark" x1="{left}" y1="{py(pass_line):.1f}" x2="{width - right}" '
+        f'y2="{py(pass_line):.1f}"/>'
+        f'<text class="halo" x="{width - right}" y="{py(pass_line) + 14:.1f}" '
+        f'text-anchor="end">pass line {pass_line:.3f}</text>'
+    )
+    for slot, method in enumerate(INTERVAL_METHODS, start=1):
+        mine = sorted(
+            (c for c in cells if c["method"] == method), key=lambda c: float(c["true_score"])
+        )
+        path = " ".join(
+            f"{px(float(c['true_score'])):.1f},{py(float(c['coverage'])):.1f}" for c in mine
+        )
+        parts.append(_series_line(slot, path))
+        parts.extend(
+            _marker(
+                slot,
+                px(float(c["true_score"])),
+                py(float(c["coverage"])),
+                f"{METHOD_LABELS[method]}, true score {c['true_score']}: coverage "
+                f"{float(c['coverage']):.3f} ({c['covered']} of {c['subsets']}), "
+                f"mean width {float(c['mean_width']):.3f}",
+            )
+            for c in mine
+        )
+    parts.append(
+        f'<text x="{(left + width - right) / 2:.1f}" y="{height - 6}" text-anchor="middle">'
+        "true full-set score</text>"
+        f'<text transform="translate(12 {(top + py(y_min)) / 2:.1f}) rotate(-90)" '
+        'text-anchor="middle">coverage (share of draws)</text></svg>'
+    )
+    return "\n".join(parts)
+
+
+def _legend() -> str:
+    items = "\n".join(
+        f'<li><svg viewBox="0 0 36 14" aria-hidden="true">{_series_line(slot, "2,7 34,7")}'
+        f"{_marker(slot, 18, 7)}</svg>{html.escape(METHOD_LABELS[method])}</li>"
+        for slot, method in enumerate(INTERVAL_METHODS, start=1)
+    )
+    return f'<ul class="legend">\n{items}\n</ul>'
+
+
+def _coverage_section(coverage: Mapping[str, Any], cells: Sequence[Mapping[str, Any]]) -> str:
+    e = html.escape
+    pass_line = float(coverage["pass_line"])
+    # All panels use one y-range, so a reader can compare them at a glance.
+    y_min = min(0.85, math.floor(min(float(c["coverage"]) for c in cells) * 20) / 20)
+    groups = {(g["stratifier"], g["stage_size"], g["method"]): g for g in coverage["groups"]}
+    settings = sorted({(s, n) for s, n, _ in groups})
+    panels = []
+    for stratifier, size in settings:
+        passing = sum(groups[(stratifier, size, m)]["passes"] for m in INTERVAL_METHODS)
+        title = (
+            f"{size} questions, {stratifier}: {passing} of {len(INTERVAL_METHODS)} "
+            "methods pass at every true score"
+        )
+        chart = _coverage_chart(
+            f"{stratifier}-{size}",
+            [c for c in cells if (c["stratifier"], c["stage_size"]) == (stratifier, size)],
+            title=title,
+            y_min=y_min,
+            pass_line=pass_line,
+        )
+        panels.append(
+            f"<figure><figcaption>{size} questions, <code>{e(stratifier)}</code>: {passing} "
+            f"of {len(INTERVAL_METHODS)} methods pass</figcaption>\n{chart}</figure>"
+        )
+    header = "".join(f"<th>{e(METHOD_LABELS[m])}</th>" for m in INTERVAL_METHODS)
+
+    def table(cell: Callable[[str, Mapping[str, Any]], str]) -> str:
+        """One row for each setting. ``cell`` writes the cell of one method."""
+        lines = []
+        for stratifier, size in settings:
+            values = "".join(
+                cell(f"{e(stratifier)}-{size}-{e(m)}", groups[(stratifier, size, m)])
+                for m in INTERVAL_METHODS
+            )
+            lines.append(f"<tr><td><code>{e(stratifier)}</code>, {size}</td>{values}</tr>")
+        return "\n".join(lines)
+
+    def verdict(key: str, group: Mapping[str, Any]) -> str:
+        word, css = ("pass", "") if group["passes"] else ("fail", ' class="fail"')
+        low = float(group["min_coverage"])
+        return f'<td data-coverage-pass="{key}"{css}>{word} {low:.3f}</td>'
+
+    def width(key: str, group: Mapping[str, Any]) -> str:
+        return f'<td data-width="{key}">{float(group["mean_width"]):.3f}</td>'
+
+    notes = "\n".join(
+        f"<li><b>{e(METHOD_LABELS[m])}</b> (<code>{e(m)}</code>). {e(METHOD_NOTES[m])}</li>"
+        for m in INTERVAL_METHODS
+    )
+    passing_methods = [
+        METHOD_LABELS[m["method"]] for m in coverage["methods"] if m["passes_every_cell"]
+    ]
+    finding = (
+        "Methods that pass in every setting: " + ", ".join(passing_methods) + "."
+        if passing_methods
+        else "No method passes in every setting."
+    )
+    return f"""<h2>Interval coverage</h2>
+<p>A setting is one stratifier and one stage size. For each true score, the study draws
+{coverage["subsets_per_cell"]:,} pairs of a new simulated model and a new stratified subset.
+Every method sees the same pairs. A method covers a draw when its
+{float(coverage["nominal_coverage"]):.0%} interval holds the model's full-set score. A
+method passes a true score when its coverage is at least {pass_line:.3f}: the nominal
+coverage minus 3 standard errors. {e(finding)}</p>
+<ul>
+{notes}
+</ul>
+{_legend()}
+<div class="panels">
+{chr(10).join(panels)}
+</div>
+<h3>Lowest coverage across true scores</h3>
+<p>"pass" means that the method passes at every true score in that setting. The number is
+the lowest coverage. <code>coverage.csv</code> holds every cell.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>Stratifier, stage size</th>{header}</tr></thead>
+<tbody>
+{table(verdict)}
+</tbody>
+</table>
+</div>
+<h3>Mean interval width</h3>
+<p>The mean of the upper bound minus the lower bound, over every true score and draw in
+the setting.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>Stratifier, stage size</th>{header}</tr></thead>
+<tbody>
+{table(width)}
+</tbody>
+</table>
+</div>"""
+
+
+def html_report(
+    document: Mapping[str, Any],
+    coverage_cells: Sequence[Mapping[str, Any]],
+    *,
+    manifest_inputs: Mapping[str, str],
+) -> bytes:
     rows, overall, policy = document["true_scores"], document["overall"], document["policy"]
     threshold, alpha = float(document["threshold"]), float(document["alpha"])
     size, population = document["stage1_size"], document["population"]
@@ -323,8 +624,8 @@ wrong-decision rate at any true score is {worst:.3f}.</p>
 <ol>
 <li>Select {size} questions with the <code>{e(str(document["stratifier"]))}</code>
 selector. It uses reference grades only.</li>
-<li>Grade the probe. Compute a {1 - alpha:.0%} pooled exact hypergeometric interval for
-the full-set score.</li>
+<li>Grade the probe. Compute a {1 - alpha:.0%}
+<code>{e(str(document["interval_method"]))}</code> interval for the full-set score.</li>
 <li>If the lower bound is at or above the threshold, decide GO and stop.</li>
 <li>If the upper bound is below the threshold, decide NO GO and stop.</li>
 <li>Otherwise ESCALATE: grade the remaining questions and decide on the full set. The
@@ -350,6 +651,7 @@ go one way for a given model.</p>
 </tbody>
 </table>
 </div>
+{_coverage_section(document["coverage"], coverage_cells)}
 <h2>Limits</h2>
 <ul>
 {limitations}
@@ -372,19 +674,23 @@ def build_outputs(
     loaded: LoadedPolicy,
     rows: Sequence[SimulatedDecision],
     summary: Sequence[Mapping[str, Any]],
+    coverage: Mapping[str, Any],
     *,
     population: int,
     panel_name: str,
     panel_sha256: str,
 ) -> dict[str, bytes]:
     """All report files, with the manifest hashing the other three."""
-    document = summary_document(loaded, summary, population=population, panel_sha256=panel_sha256)
+    document = summary_document(
+        loaded, summary, coverage, population=population, panel_sha256=panel_sha256
+    )
     inputs = {loaded.file_name: loaded.sha256, panel_name: panel_sha256}
     code_root = Path(__file__).parent
     outputs = {
         "decisions.csv": decision_table(rows, population=population),
+        "coverage.csv": coverage_table(coverage),
         "summary.json": encode_json(document),
-        "report.html": html_report(document, manifest_inputs=inputs),
+        "report.html": html_report(document, coverage["cells"], manifest_inputs=inputs),
     }
     manifest = {
         "schema_version": 1,
@@ -405,7 +711,11 @@ def build_outputs(
             for name in IMPLEMENTATION_FILES
         },
         "output_sha256": {name: _sha(data) for name, data in outputs.items()},
-        "counts": {"simulated_models": len(rows), "true_scores": len(summary)},
+        "counts": {
+            "simulated_models": len(rows),
+            "true_scores": len(summary),
+            "coverage_cells": len(coverage["cells"]),
+        },
     }
     outputs["manifest.json"] = encode_json(manifest)
     return outputs

@@ -1,12 +1,14 @@
-"""Run issue #56's two-stage threshold decision on simulated LiveCodeBench models."""
+"""Run the two-stage threshold decision and the interval coverage study on simulated models."""
 
 import argparse
 import hashlib
+import os
 from collections.abc import Sequence
 from pathlib import Path
 
 from benchmark_reference.models import AnalysisError
 from benchmark_reference.reporting import validate_output_location, write_atomic
+from benchmark_reference.threshold_coverage import run_coverage_study, summarize_coverage
 from benchmark_reference.threshold_policy import authorize_real_replay, load_policy
 from benchmark_reference.threshold_report import OUTPUT_NAMES, build_outputs
 from benchmark_reference.threshold_study import (
@@ -35,6 +37,12 @@ def main(argv: Sequence[str] | None = None) -> None:
         action="store_true",
         help="Replay on real model grades; requires a frozen policy with a committed hash",
     )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=os.cpu_count() or 1,
+        help="Processes for the coverage study. The outputs do not change with this count.",
+    )
     args = parser.parse_args(argv)
     try:
         loaded = load_policy(args.policy)
@@ -48,10 +56,15 @@ def main(argv: Sequence[str] | None = None) -> None:
         rows = run_simulated_study(panel.references, loaded.policy)
         population = len(next(iter(panel.references.values())))
         summary = summarize(rows, population=population)
+        cells = run_coverage_study(panel.references, loaded.policy, workers=args.workers)
+        coverage = summarize_coverage(
+            cells, subsets=loaded.policy.coverage_subsets, alpha=loaded.policy.alpha
+        )
         outputs = build_outputs(
             loaded,
             rows,
             summary,
+            coverage,
             population=population,
             panel_name=args.panel.name,
             panel_sha256=panel.sha256,
@@ -65,6 +78,15 @@ def main(argv: Sequence[str] | None = None) -> None:
         print(
             f"true score {row['true_score']}: decisive {row['decisive_fraction']:.3f}, "
             f"wrong {row['wrong_decisions']}/{row['draws']}"
+        )
+    for method in coverage["methods"]:
+        if method["passes_every_cell"]:
+            verdict = "passes every cell"
+        else:
+            verdict = f"fails {method['cells_failed']} of {method['cells']} cells"
+        print(
+            f"{method['method']}: {verdict}, lowest coverage {method['min_coverage']:.4f}, "
+            f"mean width {method['mean_width']:.3f}"
         )
     manifest_sha256 = hashlib.sha256(outputs["manifest.json"]).hexdigest()
     print(f"Wrote {len(rows)} simulated decisions to {args.output_dir}")

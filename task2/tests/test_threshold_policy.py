@@ -46,6 +46,22 @@ def test_committed_draft_policy_holds_every_required_setting() -> None:
     assert policy.stratifier == "difficulty_stratified"
     assert policy.seeds == tuple(range(20))
     assert policy.simulation_seed == 56
+    assert policy.coverage_subsets == 2000
+    assert policy.coverage_stage_sizes == (32, 63, 95, 158, 221)
+
+
+@pytest.mark.parametrize(
+    "method",
+    [
+        "pooled_exact_hypergeometric",
+        "stratified_bonferroni_hypergeometric",
+        "stratified_wilson",
+        "stratified_bootstrap_percentile",
+    ],
+)
+def test_policy_file_can_name_each_interval_method(tmp_path: Path, method: str) -> None:
+    loaded = load_policy(_write(tmp_path / "policy.json", _policy(interval_method=method)))
+    assert loaded.policy.interval_method == method
 
 
 def test_spent_alpha_is_at_most_005_for_the_committed_policy() -> None:
@@ -69,6 +85,12 @@ def test_spent_alpha_is_at_most_005_for_the_committed_policy() -> None:
         ({"seeds": []}, "seeds"),
         ({"frozen": "yes"}, "frozen"),
         ({"extra": 1}, "keys"),
+        ({"schema_version": 1}, "schema_version"),
+        ({"coverage": {"subsets": 0, "stage_sizes": [32]}}, "subsets"),
+        ({"coverage": {"subsets": 10, "stage_sizes": []}}, "stage_sizes"),
+        ({"coverage": {"subsets": 10, "stage_sizes": [63, 32]}}, "stage_sizes"),
+        ({"coverage": {"subsets": 10, "stage_sizes": [0, 32]}}, "stage_sizes"),
+        ({"coverage": {"subsets": 10}}, "coverage keys"),
     ],
 )
 def test_invalid_policy_values_stop_loading(
