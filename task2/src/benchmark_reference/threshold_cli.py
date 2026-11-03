@@ -91,7 +91,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             model=model,
             point=tuple(cost_by_true_score(rows, model)),
             cells=cost_cells,
-            bands=band_costs(cost_cells, loaded.policy.cost_bands),
+            bands=band_costs(cost_cells, loaded.policy),
         )
         cells = run_coverage_study(
             panel.references, loaded.policy, costs=model, workers=args.workers
@@ -132,7 +132,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     for band in cost.bands:
         low, mean, high = (float(v) for v in band.fraction.values)
         print(
-            f"cost, true score {band.low:.2f} to {band.high:.2f}, {band.stage_size} questions: "
+            f"cost, true score {band.label}, {band.stage_size} questions: "
             f"{mean:.3f} of a full run (low {low:.3f}, high {high:.3f})"
         )
     for method in coverage["methods"]:

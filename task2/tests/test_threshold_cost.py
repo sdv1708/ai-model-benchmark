@@ -197,7 +197,8 @@ def test_band_cost_is_the_mean_fraction_of_its_true_scores() -> None:
         replace(high, true_score="0.50"),
         replace(low, true_score="0.90"),
     ]
-    bands = band_costs(cells, ((0.4, 0.5), (0.85, 0.9)))
+    policy = replace(DRAFT, true_scores=(0.4, 0.5, 0.9), cost_bands=((0.4, 0.5), (0.85, 0.9)))
+    bands = band_costs(cells, policy)
     assert [(b.low, b.high, b.stage_size, b.true_scores) for b in bands] == [
         (0.4, 0.5, 2, ("0.40", "0.50")),
         (0.85, 0.9, 2, ("0.90",)),
@@ -206,6 +207,20 @@ def test_band_cost_is_the_mean_fraction_of_its_true_scores() -> None:
     assert bands[0].fraction.mean == Fraction(1, 2)
     assert bands[1].fraction.mean == Fraction(3, 10)
     assert bands[0].escalation_rate == 0
+
+
+def test_band_membership_uses_the_exact_policy_score_not_its_label() -> None:
+    model = CostModel(_flat(10, 20, 30, 40))
+    cell = expected_cost([_row((0, 1), 0, escalated=False)], model)
+    # The label of 0.701 is "0.70", which is outside the band [0.701, 0.701].
+    policy = replace(DRAFT, true_scores=(0.5, 0.701), cost_bands=((0.5, 0.5), (0.701, 0.701)))
+    cells = [replace(cell, true_score="0.50"), replace(cell, true_score="0.70")]
+    bands = band_costs(cells, policy)
+    assert [(b.low, b.high, b.true_scores) for b in bands] == [
+        (0.5, 0.5, ("0.50",)),
+        (0.701, 0.701, ("0.70",)),
+    ]
+    assert [b.label for b in bands] == ["0.50", "0.701"]
 
 
 def test_coverage_cells_give_the_expected_cost_for_every_interval_method() -> None:

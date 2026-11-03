@@ -25,7 +25,11 @@ from itertools import repeat
 from benchmark_reference.models import AnalysisError
 from benchmark_reference.pruning import ReferenceScores, validate_references
 from benchmark_reference.threshold_policy import ThresholdPolicy, in_band
-from benchmark_reference.threshold_study import SimulatedDecision, run_simulated_study
+from benchmark_reference.threshold_study import (
+    SimulatedDecision,
+    run_simulated_study,
+    true_score_labels,
+)
 from benchmark_reference.threshold_tokens import QuestionCost, TokenTable
 from benchmark_reference.two_stage import TwoStageDecision
 
@@ -226,6 +230,12 @@ def run_cost_study(
     return tuple(cell for n in policy.cost_stage_sizes for cell in by_size[n])
 
 
+def _edge(value: float) -> str:
+    """A band edge with two decimals, or with more when two would round it."""
+    text = f"{value:.2f}"
+    return text if float(text) == value else repr(value)
+
+
 @dataclass(frozen=True, slots=True)
 class BandCost:
     """Mean cost over the true scores of one band, at one stage-1 size."""
@@ -240,24 +250,30 @@ class BandCost:
 
     @property
     def label(self) -> str:
-        """The band as text, for example ``0.30 to 0.50``."""
+        """The band as text, for example ``0.30 to 0.50`` or ``0.701``."""
         if self.low == self.high:
-            return f"{self.low:.2f}"
-        return f"{self.low:.2f} to {self.high:.2f}"
+            return _edge(self.low)
+        return f"{_edge(self.low)} to {_edge(self.high)}"
 
 
-def band_costs(
-    cells: Sequence[CostCell], bands: Sequence[tuple[float, float]]
-) -> tuple[BandCost, ...]:
-    """Each band at each stage size, ordered by band and then by stage size.
+def band_costs(cells: Sequence[CostCell], policy: ThresholdPolicy) -> tuple[BandCost, ...]:
+    """Each policy band at each stage size, ordered by band and then by stage size.
 
-    Each true score in the band has equal weight.
+    Each true score in the band has equal weight. Membership uses the exact
+    policy score, as the policy check does. A cell label has two decimals, so
+    the label of 0.701 is "0.70", which is outside the band [0.701, 0.701].
     """
+    exact = dict(zip(true_score_labels(policy), policy.true_scores, strict=True))
+    unknown = sorted({c.true_score for c in cells} - set(exact))
+    if unknown:
+        raise AnalysisError(f"Cost cells have true scores that the policy does not: {unknown}")
     sizes = sorted({cell.stage_size for cell in cells})
     result: list[BandCost] = []
-    for band in bands:
+    for band in policy.cost_bands:
         for size in sizes:
-            members = [c for c in cells if c.stage_size == size and in_band(c.true_score, band)]
+            members = [
+                c for c in cells if c.stage_size == size and in_band(exact[c.true_score], band)
+            ]
             if not members:
                 raise AnalysisError(f"Cost band {list(band)} has no cell at stage size {size}")
             result.append(
