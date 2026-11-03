@@ -94,6 +94,16 @@ def select_long_context(
     validated = select_baseline(
         references, strategy="uniform_random", keep_ratio=keep_ratio, seed=seed
     )
+    groups = long_context_strata(references, metadata=metadata, strategy=strategy)
+    return select_strata(groups, budget=len(validated), seed=seed)
+
+
+def long_context_strata(
+    references: ReferenceScores, *, metadata: Mapping[int, TaskMetadata], strategy: str
+) -> dict[str, list[int]]:
+    """Group questions by length band and by document-count or reference pass-count band."""
+    if strategy not in CANDIDATES:
+        raise AnalysisError(f"Unknown AA-LCR candidate {strategy!r}")
     ids = set(next(iter(references.values())))
     if set(metadata) != ids:
         raise AnalysisError("Metadata and reference sample identities differ")
@@ -117,4 +127,4 @@ def select_long_context(
             else f"passes:{sum(int(values[index]) for values in references.values())}"
         )
         groups[f"length:{lengths[index]}|{second}"].append(index)
-    return select_strata(groups, budget=len(validated), seed=seed)
+    return dict(groups)

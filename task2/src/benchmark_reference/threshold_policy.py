@@ -1,5 +1,9 @@
 """Versioned two-stage threshold policy files and the frozen-hash replay gate.
 
+A policy file has one section for each benchmark. Each section has its own
+threshold, stage-1 size, interval method, stratifier, and study settings. The
+file-level ``policy_id``, ``version``, and ``frozen`` apply to every section.
+
 The policy hash is the SHA-256 of the exact file bytes. A real-grade replay runs
 only for a policy that is marked frozen. Its hash must also match the lock file
 in git HEAD. An uncommitted edit to the lock file therefore authorizes nothing.
@@ -10,23 +14,20 @@ import hashlib
 import json
 import math
 import subprocess
+from collections.abc import Mapping
 from dataclasses import dataclass
 from fractions import Fraction
 from pathlib import Path
 
 from benchmark_reference.models import AnalysisError
-from benchmark_reference.pruning import CANDIDATES
+from benchmark_reference.threshold_benchmarks import BENCHMARKS
 from benchmark_reference.threshold_intervals import INTERVAL_METHODS
 from benchmark_reference.uncertainty import validate_threshold
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 FROZEN_LOCK = Path(__file__).resolve().parents[2] / "policies" / "frozen-policies.json"
+_FILE_KEYS = {"schema_version", "policy_id", "version", "frozen", "benchmarks"}
 _KEYS = {
-    "schema_version",
-    "policy_id",
-    "version",
-    "frozen",
-    "benchmark",
     "threshold",
     "alpha",
     "stage1_size",
@@ -45,7 +46,11 @@ MAX_COST_BANDS = 4
 
 @dataclass(frozen=True, slots=True)
 class ThresholdPolicy:
-    """Decide whether the full-set score is at or above ``threshold``."""
+    """Decide whether the full-set score of ``benchmark`` is at or above ``threshold``.
+
+    One section of a policy file. It repeats the file-level identity and
+    ``frozen``, so each benchmark study needs only its own section.
+    """
 
     policy_id: str
     version: str
@@ -68,16 +73,22 @@ class ThresholdPolicy:
 
 @dataclass(frozen=True, slots=True)
 class LoadedPolicy:
-    """A validated policy, its file name, and the SHA-256 of its exact bytes."""
+    """A validated policy file, its file name, and the SHA-256 of its exact bytes.
 
-    policy: ThresholdPolicy
+    ``benchmarks`` holds one section for each benchmark of the file, in report order.
+    """
+
+    policy_id: str
+    version: str
+    frozen: bool
+    benchmarks: Mapping[str, ThresholdPolicy]
     file_name: str
     sha256: str
 
     @property
     def key(self) -> str:
         """Lock-file identity; each frozen version has exactly one hash."""
-        return f"{self.policy.policy_id}@{self.policy.version}"
+        return f"{self.policy_id}@{self.version}"
 
 
 def _integer(value: object, name: str, *, minimum: int) -> int:
@@ -161,11 +172,42 @@ def load_policy(path: Path) -> LoadedPolicy:
         raw = json.loads(data.decode("utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise AnalysisError(f"Cannot read policy {path}: {exc}") from exc
-    value = _exact_keys(raw, _KEYS, "file")
+    value = _exact_keys(raw, _FILE_KEYS, "file")
     if value["schema_version"] != SCHEMA_VERSION:
         raise AnalysisError(f"Policy schema_version must be {SCHEMA_VERSION}")
     if not isinstance(value["frozen"], bool):
         raise AnalysisError("Policy frozen must be true or false")
+    policy_id = _text(value["policy_id"], "policy_id")
+    version = _text(value["version"], "version")
+    sections = value["benchmarks"]
+    if not isinstance(sections, dict) or not sections:
+        raise AnalysisError("Policy benchmarks must name at least one benchmark")
+    unknown = sorted(set(sections) - set(BENCHMARKS))
+    if unknown:
+        raise AnalysisError(
+            f"Unknown policy benchmark {unknown[0]!r}; choose one of {tuple(BENCHMARKS)}"
+        )
+    benchmarks: dict[str, ThresholdPolicy] = {}
+    for name in BENCHMARKS:
+        if name not in sections:
+            continue
+        try:
+            benchmarks[name] = _section(
+                name, sections[name], policy_id=policy_id, version=version, frozen=value["frozen"]
+            )
+        except AnalysisError as exc:
+            # The section name tells the reader which benchmark has the bad setting.
+            raise AnalysisError(f"Policy section {name}: {exc}") from exc
+    return LoadedPolicy(
+        policy_id, version, value["frozen"], benchmarks, path.name, hashlib.sha256(data).hexdigest()
+    )
+
+
+def _section(
+    benchmark: str, raw: object, *, policy_id: str, version: str, frozen: bool
+) -> ThresholdPolicy:
+    """Validate the section of one benchmark."""
+    value = _exact_keys(raw, _KEYS, "section")
     threshold, alpha = value["threshold"], value["alpha"]
     if isinstance(threshold, bool) or not isinstance(threshold, int | float):
         raise AnalysisError("Policy threshold must be a number")
@@ -179,8 +221,9 @@ def load_policy(path: Path) -> LoadedPolicy:
         raise AnalysisError("Policy alpha must be in (0, 1)")
     if value["interval_method"] not in INTERVAL_METHODS:
         raise AnalysisError(f"Policy interval_method must be one of {INTERVAL_METHODS}")
-    if value["stratifier"] not in CANDIDATES:
-        raise AnalysisError(f"Policy stratifier must be one of {CANDIDATES}")
+    stratifiers = BENCHMARKS[benchmark].stratifiers
+    if value["stratifier"] not in stratifiers:
+        raise AnalysisError(f"Policy stratifier must be one of {stratifiers}")
     seeds = value["seeds"]
     if (
         not isinstance(seeds, list)
@@ -204,11 +247,11 @@ def load_policy(path: Path) -> LoadedPolicy:
     cost = _exact_keys(value["cost"], _COST_KEYS, "cost")
     cost_sizes = _stage_sizes(cost["stage_sizes"], "cost stage_sizes")
     bands = _cost_bands(cost["bands"], scores)
-    policy = ThresholdPolicy(
-        policy_id=_text(value["policy_id"], "policy_id"),
-        version=_text(value["version"], "version"),
-        frozen=value["frozen"],
-        benchmark=_text(value["benchmark"], "benchmark"),
+    return ThresholdPolicy(
+        policy_id=policy_id,
+        version=version,
+        frozen=frozen,
+        benchmark=benchmark,
         threshold=float(threshold),
         alpha=float(alpha),
         stage1_size=_integer(value["stage1_size"], "stage1_size", minimum=1),
@@ -223,7 +266,6 @@ def load_policy(path: Path) -> LoadedPolicy:
         cost_stage_sizes=cost_sizes,
         cost_bands=bands,
     )
-    return LoadedPolicy(policy, path.name, hashlib.sha256(data).hexdigest())
 
 
 def alpha_spending(policy: ThresholdPolicy) -> tuple[float, float]:
@@ -254,7 +296,7 @@ def authorize_real_replay(loaded: LoadedPolicy, *, lock_text: str | None = None)
 
     ``lock_text`` replaces the committed lock file in tests only.
     """
-    if not loaded.policy.frozen:
+    if not loaded.frozen:
         raise AnalysisError(f"Policy {loaded.key} is not marked frozen; real replay refused")
     try:
         lock = json.loads(committed_lock_text() if lock_text is None else lock_text)

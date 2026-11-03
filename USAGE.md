@@ -296,17 +296,21 @@ The [benchmark reference](task2/README.md#operating-point-policy) explains the g
 
 ## Run a two-stage threshold decision
 
-From `task2/`, run the draft policy on simulated LiveCodeBench models:
+From `task2/`, run the draft policy on simulated LiveCodeBench and AA-LCR models:
 
 ```powershell
-uv run threshold-decision --policy policies/lcb-threshold-draft.json --output-dir output/threshold-decision
+uv run threshold-decision --policy policies/threshold-draft.json --output-dir output/threshold-decision
 ```
 
-The command writes `decisions.csv`, `coverage.csv`, `cost.csv`, `question_tokens.csv`, `summary.json`, `report.html`, and `manifest.json`.
+The policy file has one section for each benchmark.
+The command writes `decisions.csv`, `coverage.csv`, `cost.csv`, and `question_tokens.csv` in one folder for each benchmark: `live_code_bench_v5/` and `aa_lcr/`.
+It also writes `summary.json`, `report.html`, and `manifest.json` for both benchmarks.
+The report shows both benchmarks side by side, with the same charts for each.
+Every AA-LCR result states that judge noise is not measured.
 The command also runs the interval coverage study: 2,000 simulated draws for each cell.
 It reads the token counts of the saved answers from `../Evals/Part 1/predictions`.
 Use `--data-root` to read them from another folder.
-On 12 CPUs the full run takes about 3.5 minutes.
+On 12 CPUs the full run of both benchmarks takes about 5.5 minutes.
 Use `--workers` to set the number of processes.
 The outputs do not change with the number of processes.
 Open `report.html` directly from the file system.

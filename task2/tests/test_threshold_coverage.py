@@ -8,6 +8,7 @@ import pytest
 
 from benchmark_reference.models import AnalysisError
 from benchmark_reference.pruning import CANDIDATES
+from benchmark_reference.threshold_benchmarks import LIVE_CODE_BENCH, ReferencePanel
 from benchmark_reference.threshold_coverage import (
     coverage_pass_line,
     run_coverage_study,
@@ -16,10 +17,13 @@ from benchmark_reference.threshold_coverage import (
 from benchmark_reference.threshold_intervals import INTERVAL_METHODS
 from benchmark_reference.threshold_policy import ThresholdPolicy, load_policy
 
-DRAFT = load_policy(Path(__file__).parents[1] / "policies" / "lcb-threshold-draft.json").policy
+DRAFT = load_policy(Path(__file__).parents[1] / "policies" / "threshold-draft.json").benchmarks[
+    LIVE_CODE_BENCH
+]
 REFERENCES = {
     m: {i: float((i * (j + 2)) % 7 < 3 + j) for i in range(60)} for j, m in enumerate("abc")
 }
+PANEL = ReferencePanel(LIVE_CODE_BENCH, REFERENCES)
 
 
 def _policy(**changes: object) -> ThresholdPolicy:
@@ -37,7 +41,7 @@ def test_pass_line_is_nominal_coverage_minus_three_standard_errors() -> None:
 
 
 def test_study_draws_the_policy_subsets_for_every_cell_and_method() -> None:
-    cells = run_coverage_study(REFERENCES, SMALL)
+    cells = run_coverage_study(PANEL, SMALL)
     keys = {(c.stratifier, c.stage_size, c.true_score, c.method) for c in cells}
     assert len(keys) == len(cells) == len(CANDIDATES) * 2 * 3 * len(INTERVAL_METHODS)
     assert {c.stratifier for c in cells} == set(CANDIDATES)
@@ -51,7 +55,7 @@ def test_study_draws_the_policy_subsets_for_every_cell_and_method() -> None:
 
 
 def test_methods_in_one_cell_see_the_same_subsets() -> None:
-    cells = run_coverage_study(REFERENCES, SMALL)
+    cells = run_coverage_study(PANEL, SMALL)
     widths = {(c.stratifier, c.stage_size, c.true_score, c.method): c.mean_width for c in cells}
     for stratifier in CANDIDATES:
         for size in (12, 30):
@@ -66,12 +70,12 @@ def test_methods_in_one_cell_see_the_same_subsets() -> None:
 
 
 def test_study_is_repeatable() -> None:
-    assert run_coverage_study(REFERENCES, SMALL) == run_coverage_study(REFERENCES, SMALL)
+    assert run_coverage_study(PANEL, SMALL) == run_coverage_study(PANEL, SMALL)
 
 
 def test_exact_methods_keep_coverage_and_the_summary_applies_the_pass_line() -> None:
     policy = _policy(true_scores=(0.4, 0.7), coverage_subsets=200, coverage_stage_sizes=(20,))
-    cells = run_coverage_study(REFERENCES, policy)
+    cells = run_coverage_study(PANEL, policy)
     summary = summarize_coverage(cells, subsets=200, alpha=0.05)
     # 0.95 - 3 * sqrt(0.95 * 0.05 / 200) = 0.90377.
     assert summary["pass_line"] == 0.904
@@ -95,8 +99,8 @@ def test_exact_methods_keep_coverage_and_the_summary_applies_the_pass_line() -> 
 
 def test_a_stage_size_larger_than_the_population_is_rejected() -> None:
     with pytest.raises(AnalysisError, match="stage size"):
-        run_coverage_study(REFERENCES, _policy(coverage_stage_sizes=(61,)))
+        run_coverage_study(PANEL, _policy(coverage_stage_sizes=(61,)))
 
 
 def test_worker_processes_give_the_same_cells() -> None:
-    assert run_coverage_study(REFERENCES, SMALL, workers=3) == run_coverage_study(REFERENCES, SMALL)
+    assert run_coverage_study(PANEL, SMALL, workers=3) == run_coverage_study(PANEL, SMALL)

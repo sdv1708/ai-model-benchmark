@@ -1,4 +1,7 @@
-"""Run the two-stage decision, its token cost, and the coverage study on simulated models."""
+"""Run the two-stage decision, its token cost, and the coverage study on simulated models.
+
+The command runs every benchmark section of the policy file and writes one report.
+"""
 
 import argparse
 import hashlib
@@ -8,6 +11,7 @@ from pathlib import Path
 
 from benchmark_reference.models import AnalysisError
 from benchmark_reference.reporting import validate_output_location, write_atomic
+from benchmark_reference.threshold_benchmarks import BENCHMARKS, load_reference_panel
 from benchmark_reference.threshold_cost import (
     CostEvidence,
     CostModel,
@@ -16,17 +20,100 @@ from benchmark_reference.threshold_cost import (
     run_cost_study,
 )
 from benchmark_reference.threshold_coverage import run_coverage_study, summarize_coverage
-from benchmark_reference.threshold_policy import authorize_real_replay, load_policy
-from benchmark_reference.threshold_report import OUTPUT_NAMES, build_outputs
-from benchmark_reference.threshold_study import (
-    load_reference_panel,
-    run_simulated_study,
-    summarize,
+from benchmark_reference.threshold_policy import (
+    ThresholdPolicy,
+    authorize_real_replay,
+    load_policy,
 )
+from benchmark_reference.threshold_report import (
+    JUDGE_NOISE,
+    BenchmarkRun,
+    build_outputs,
+    output_names,
+)
+from benchmark_reference.threshold_study import run_simulated_study, summarize
 from benchmark_reference.threshold_tokens import estimate_question_costs, load_token_counts
 
-DEFAULT_PANEL = Path(__file__).resolve().parents[2] / "data" / "lcb-reference-panel.json"
+DEFAULT_PANEL_DIR = Path(__file__).resolve().parents[2] / "data"
 DEFAULT_DATA_ROOT = Path(__file__).resolve().parents[3] / "Evals"
+
+
+def run_benchmark(
+    policy: ThresholdPolicy, *, panel_dir: Path, data_root: Path, workers: int
+) -> BenchmarkRun:
+    """Every study of one policy section on its own reference panel."""
+    panel_file = BENCHMARKS[policy.benchmark].panel_file
+    panel = load_reference_panel(panel_dir / panel_file, benchmark=policy.benchmark)
+    tokens = load_token_counts(
+        data_root,
+        benchmark=policy.benchmark,
+        models=tuple(sorted(panel.references)),
+        questions=panel.questions,
+        source_sha256=panel.source_sha256,
+    )
+    question_costs = estimate_question_costs(tokens)
+    model = CostModel(question_costs)
+    rows = run_simulated_study(panel, policy)
+    population = len(panel.questions)
+    cost_cells = run_cost_study(panel, policy, model, base_rows=rows, workers=workers)
+    cost = CostEvidence(
+        tokens=tokens,
+        questions=question_costs,
+        model=model,
+        point=tuple(cost_by_true_score(rows, model)),
+        cells=cost_cells,
+        bands=band_costs(cost_cells, policy),
+    )
+    cells = run_coverage_study(panel, policy, costs=model, workers=workers)
+    coverage = summarize_coverage(
+        cells, subsets=policy.coverage_subsets, alpha=policy.alpha, full_tokens=model.full
+    )
+    return BenchmarkRun(
+        policy=policy,
+        panel_file=panel_file,
+        panel_sha256=panel.sha256,
+        population=population,
+        rows=rows,
+        summary=summarize(rows, population=population),
+        coverage=coverage,
+        cost=cost,
+    )
+
+
+def _print_run(run: BenchmarkRun) -> None:
+    title = run.benchmark.title
+    if run.benchmark.judge_graded:
+        print(f"{title}: {JUDGE_NOISE}")
+    for row in run.summary:
+        print(
+            f"{title}, true score {row['true_score']}: decisive "
+            f"{row['decisive_fraction']:.3f}, wrong {row['wrong_decisions']}/{row['draws']}"
+        )
+    for missing in run.cost.tokens.missing:
+        print(
+            f"{title}: missing token count: {missing.model} question {missing.index} "
+            f"({missing.field})"
+        )
+    full = run.cost.model.full
+    print(
+        f"{title}, full run: {float(full.mean):,.0f} tokens, mean estimate "
+        f"(low {float(full.low):,.0f}, high {float(full.high):,.0f})"
+    )
+    for band in run.cost.bands:
+        low, mean, high = (float(v) for v in band.fraction.values)
+        print(
+            f"{title}, cost, true score {band.label}, {band.stage_size} questions: "
+            f"{mean:.3f} of a full run (low {low:.3f}, high {high:.3f})"
+        )
+    for method in run.coverage["methods"]:
+        if method["passes_every_cell"]:
+            verdict = "passes every cell"
+        else:
+            verdict = f"fails {method['cells_failed']} of {method['cells']} cells"
+        print(
+            f"{title}, {method['method']}: {verdict}, lowest coverage "
+            f"{method['min_coverage']:.4f}, mean width {method['mean_width']:.3f}"
+        )
 
 
 def main(argv: Sequence[str] | None = None) -> None:
@@ -35,10 +122,11 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     parser.add_argument("--policy", type=Path, required=True, help="Versioned policy JSON file")
     parser.add_argument(
-        "--panel",
+        "--panel-dir",
         type=Path,
-        default=DEFAULT_PANEL,
-        help="Reference panel JSON; default: task2/data/lcb-reference-panel.json",
+        default=DEFAULT_PANEL_DIR,
+        help="Folder of the reference panels "
+        f"({', '.join(b.panel_file for b in BENCHMARKS.values())}); default: task2/data",
     )
     parser.add_argument(
         "--data-root",
@@ -64,88 +152,29 @@ def main(argv: Sequence[str] | None = None) -> None:
         if args.real_grades:
             authorize_real_replay(loaded)
             raise AnalysisError("The real-grade replay is not part of this command yet (#63)")
-        validate_output_location(args.output_dir, args.panel.parent, output_names=OUTPUT_NAMES)
-        validate_output_location(args.output_dir, args.data_root, output_names=OUTPUT_NAMES)
-        if args.policy.resolve() in {(args.output_dir / n).resolve() for n in OUTPUT_NAMES}:
+        names = output_names(loaded.benchmarks)
+        validate_output_location(args.output_dir, args.panel_dir, output_names=names)
+        validate_output_location(args.output_dir, args.data_root, output_names=names)
+        if args.policy.resolve() in {(args.output_dir / n).resolve() for n in names}:
             raise AnalysisError(f"An output path would overwrite the policy {args.policy}")
-        panel = load_reference_panel(args.panel, benchmark=loaded.policy.benchmark)
-        questions = tuple(sorted(next(iter(panel.references.values()))))
-        tokens = load_token_counts(
-            args.data_root,
-            benchmark=loaded.policy.benchmark,
-            models=tuple(sorted(panel.references)),
-            questions=questions,
-            source_sha256=panel.source_sha256,
-        )
-        question_costs = estimate_question_costs(tokens)
-        model = CostModel(question_costs)
-        rows = run_simulated_study(panel.references, loaded.policy)
-        population = len(questions)
-        summary = summarize(rows, population=population)
-        cost_cells = run_cost_study(
-            panel.references, loaded.policy, model, base_rows=rows, workers=args.workers
-        )
-        cost = CostEvidence(
-            tokens=tokens,
-            questions=question_costs,
-            model=model,
-            point=tuple(cost_by_true_score(rows, model)),
-            cells=cost_cells,
-            bands=band_costs(cost_cells, loaded.policy),
-        )
-        cells = run_coverage_study(
-            panel.references, loaded.policy, costs=model, workers=args.workers
-        )
-        coverage = summarize_coverage(
-            cells,
-            subsets=loaded.policy.coverage_subsets,
-            alpha=loaded.policy.alpha,
-            full_tokens=model.full,
-        )
-        outputs = build_outputs(
-            loaded,
-            rows,
-            summary,
-            coverage,
-            cost,
-            population=population,
-            panel_name=args.panel.name,
-            panel_sha256=panel.sha256,
-        )
-        args.output_dir.mkdir(parents=True, exist_ok=True)
-        for name in OUTPUT_NAMES:
-            write_atomic(args.output_dir / name, outputs[name])
+        runs = [
+            run_benchmark(
+                policy, panel_dir=args.panel_dir, data_root=args.data_root, workers=args.workers
+            )
+            for policy in loaded.benchmarks.values()
+        ]
+        outputs = build_outputs(loaded, runs)
+        for name in names:
+            path = args.output_dir / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            write_atomic(path, outputs[name])
     except (AnalysisError, OSError) as exc:
         parser.exit(2, f"threshold-decision: {exc}\n")
-    for row in summary:
-        print(
-            f"true score {row['true_score']}: decisive {row['decisive_fraction']:.3f}, "
-            f"wrong {row['wrong_decisions']}/{row['draws']}"
-        )
-    for missing in tokens.missing:
-        print(f"Missing token count: {missing.model} question {missing.index} ({missing.field})")
-    full = model.full
-    print(
-        f"Full run: {float(full.mean):,.0f} tokens, mean estimate "
-        f"(low {float(full.low):,.0f}, high {float(full.high):,.0f})"
-    )
-    for band in cost.bands:
-        low, mean, high = (float(v) for v in band.fraction.values)
-        print(
-            f"cost, true score {band.label}, {band.stage_size} questions: "
-            f"{mean:.3f} of a full run (low {low:.3f}, high {high:.3f})"
-        )
-    for method in coverage["methods"]:
-        if method["passes_every_cell"]:
-            verdict = "passes every cell"
-        else:
-            verdict = f"fails {method['cells_failed']} of {method['cells']} cells"
-        print(
-            f"{method['method']}: {verdict}, lowest coverage {method['min_coverage']:.4f}, "
-            f"mean width {method['mean_width']:.3f}"
-        )
+    for run in runs:
+        _print_run(run)
     manifest_sha256 = hashlib.sha256(outputs["manifest.json"]).hexdigest()
-    print(f"Wrote {len(rows)} simulated decisions to {args.output_dir}")
+    simulated = sum(len(run.rows) for run in runs)
+    print(f"Wrote {simulated} simulated decisions to {args.output_dir}")
     print(f"Manifest SHA-256: {manifest_sha256}")
 
 

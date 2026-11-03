@@ -1,54 +1,68 @@
-"""The threshold-decision command end to end on simulated LiveCodeBench models."""
+"""The threshold-decision command end to end on simulated LiveCodeBench and AA-LCR models."""
 
 import csv
 import hashlib
 import json
 import re
+import shutil
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 from benchmark_reference import threshold_policy
+from benchmark_reference.threshold_benchmarks import AA_LCR as AA_LCR_NAME
+from benchmark_reference.threshold_benchmarks import LIVE_CODE_BENCH
 from benchmark_reference.threshold_cli import main
 
 TASK2 = Path(__file__).parents[1]
-DRAFT = TASK2 / "policies" / "lcb-threshold-draft.json"
-PANEL = TASK2 / "data" / "lcb-reference-panel.json"
-OUTPUTS = {
-    "decisions.csv",
-    "coverage.csv",
-    "cost.csv",
-    "question_tokens.csv",
-    "summary.json",
-    "report.html",
-    "manifest.json",
-}
+DRAFT = TASK2 / "policies" / "threshold-draft.json"
+PANELS = TASK2 / "data"
+LCB, AA_LCR = LIVE_CODE_BENCH, AA_LCR_NAME
+BENCHMARK_FILES = {"decisions.csv", "coverage.csv", "cost.csv", "question_tokens.csv"}
+OUTPUTS = {"summary.json", "report.html", "manifest.json", LCB, AA_LCR}
 METHODS = (
     "pooled_exact_hypergeometric",
     "stratified_bonferroni_hypergeometric",
     "stratified_wilson",
     "stratified_bootstrap_percentile",
 )
+JUDGE_NOISE = 'class="judge-noise"'
 
 
 def _small_policy(tmp_path: Path, **changes: object) -> Path:
-    value = json.loads(DRAFT.read_text(encoding="utf-8"))
-    value["seeds"] = [0, 1]
-    value["simulation"] = {"seed": 56, "true_scores": [0.5, 0.7, 0.9], "models_per_seed": 5}
-    value["coverage"] = {"subsets": 20, "stage_sizes": [32, 63]}
-    value["cost"] = {"stage_sizes": [32, 63], "bands": [[0.5, 0.5], [0.7, 0.9]]}
+    value: dict[str, Any] = json.loads(DRAFT.read_text(encoding="utf-8"))
+    lcb, aa_lcr = value["benchmarks"][LCB], value["benchmarks"][AA_LCR]
+    lcb["seeds"] = aa_lcr["seeds"] = [0, 1]
+    lcb["simulation"] = {"seed": 56, "true_scores": [0.5, 0.7, 0.9], "models_per_seed": 5}
+    lcb["coverage"] = {"subsets": 20, "stage_sizes": [32, 63]}
+    lcb["cost"] = {"stage_sizes": [32, 63], "bands": [[0.5, 0.5], [0.7, 0.9]]}
+    aa_lcr["simulation"] = {"seed": 56, "true_scores": [0.4, 0.6, 0.8], "models_per_seed": 5}
+    aa_lcr["coverage"] = {"subsets": 20, "stage_sizes": [12, 20]}
+    aa_lcr["cost"] = {"stage_sizes": [12, 20], "bands": [[0.4, 0.4], [0.6, 0.8]]}
     value.update(changes)
     path = tmp_path / "policy.json"
     path.write_bytes((json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8"))
     return path
 
 
-def _run(policy: Path, output: Path, *extra: str) -> None:
-    main(["--policy", str(policy), "--panel", str(PANEL), "--output-dir", str(output), *extra])
+def _run(policy: Path, output: Path, *extra: str, panels: Path = PANELS) -> None:
+    main(["--policy", str(policy), "--panel-dir", str(panels), "--output-dir", str(output), *extra])
 
 
 def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _rows(path: Path) -> list[dict[str, str]]:
+    with path.open(encoding="utf-8", newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+def _section(html: str, benchmark: str) -> str:
+    found = re.search(rf'<section data-benchmark="{benchmark}"[^>]*>(.*?)</section>', html, re.S)
+    assert found is not None, benchmark
+    return found.group(1)
 
 
 def test_command_writes_decision_table_manifest_and_report(tmp_path: Path) -> None:
@@ -56,9 +70,10 @@ def test_command_writes_decision_table_manifest_and_report(tmp_path: Path) -> No
     output = tmp_path / "out"
     _run(policy, output)
     assert {p.name for p in output.iterdir()} == OUTPUTS
+    for benchmark in (LCB, AA_LCR):
+        assert {p.name for p in (output / benchmark).iterdir()} == BENCHMARK_FILES
 
-    with (output / "decisions.csv").open(encoding="utf-8", newline="") as handle:
-        rows = list(csv.DictReader(handle))
+    rows = _rows(output / LCB / "decisions.csv")
     # 3 true scores x 2 seeds x 5 simulated models per seed.
     assert len(rows) == 30
     assert {"true_score", "decision", "decided_stage", "stage1_result", "wrong"} <= set(rows[0])
@@ -83,8 +98,13 @@ def test_command_writes_decision_table_manifest_and_report(tmp_path: Path) -> No
     assert manifest["mode"] == "simulated"
     assert manifest["real_grades_used"] is False
     assert manifest["policy"]["sha256"] == _sha(policy)
-    assert manifest["inputs"]["reference_panel"]["sha256"] == _sha(PANEL)
-    for name in OUTPUTS - {"manifest.json"}:
+    for benchmark, panel in ((LCB, "lcb"), (AA_LCR, "aa-lcr")):
+        inputs = manifest["inputs"]["benchmarks"][benchmark]
+        assert inputs["reference_panel"]["sha256"] == _sha(PANELS / f"{panel}-reference-panel.json")
+        for name in BENCHMARK_FILES:
+            path = f"{benchmark}/{name}"
+            assert manifest["output_sha256"][path] == _sha(output / benchmark / name)
+    for name in ("summary.json", "report.html"):
         assert manifest["output_sha256"][name] == _sha(output / name)
     code = TASK2 / "src" / "benchmark_reference"
     for name, digest in manifest["implementation_sha256"].items():
@@ -93,10 +113,99 @@ def test_command_writes_decision_table_manifest_and_report(tmp_path: Path) -> No
     assert {
         "two_stage.py",
         "threshold_policy.py",
+        "threshold_benchmarks.py",
+        "long_context.py",
         "uncertainty.py",
         "threshold_intervals.py",
         "threshold_coverage.py",
     } <= set(manifest["implementation_sha256"])
+
+
+def test_aa_lcr_runs_on_its_own_questions_policy_and_probe(tmp_path: Path) -> None:
+    output = tmp_path / "out"
+    _run(_small_policy(tmp_path), output)
+    rows = _rows(output / AA_LCR / "decisions.csv")
+    assert len(rows) == 30
+    for row in rows:
+        graded = "100" if row["stage1_result"] == "ESCALATE" else "20"
+        assert (row["stage1_size"], row["questions_graded"]) == ("20", graded)
+    # 60 of 100 is exactly the threshold 0.60.
+    assert {(r["full_passes"], r["truth"]) for r in rows if r["true_score"] == "0.60"} == {
+        ("60", "GO")
+    }
+    coverage = _rows(output / AA_LCR / "coverage.csv")
+    assert {row["stratifier"] for row in coverage} == {
+        "metadata_stratified",
+        "length_difficulty_stratified",
+    }
+    summary = json.loads((output / "summary.json").read_text(encoding="utf-8"))
+    assert [b["benchmark"] for b in summary["benchmarks"]] == [LCB, AA_LCR]
+    aa_lcr = summary["benchmarks"][1]
+    assert (aa_lcr["threshold"], aa_lcr["stage1_size"], aa_lcr["population"]) == (0.6, 20, 100)
+    assert aa_lcr["stratifier"] == "length_difficulty_stratified"
+    assert "not measured" in aa_lcr["judge_noise"]
+    assert summary["benchmarks"][0]["judge_noise"] is None
+    full = aa_lcr["cost"]["full_run"]
+    # Input tokens dominate the AA-LCR cost, and they depend on the document: across
+    # the three reference models, the input count of one question differs by at most 3%.
+    assert full["input_tokens_mean"] / full["tokens"]["mean"] > 0.95
+    assert full["input_tokens_max_model_ratio"] == pytest.approx(1.029757, abs=1e-6)
+
+
+def test_report_shows_both_benchmarks_in_matching_sections_with_the_same_charts(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "out"
+    _run(_small_policy(tmp_path), output)
+    html = (output / "report.html").read_text(encoding="utf-8")
+    lcb, aa_lcr = _section(html, LCB), _section(html, AA_LCR)
+    assert html.index(f'data-benchmark="{LCB}"') < html.index(f'data-benchmark="{AA_LCR}"')
+
+    def charts(section: str) -> list[str]:
+        return re.findall(r'<svg[^>]*data-chart="([^"]+)"', section)
+
+    def headings(section: str) -> list[str]:
+        return re.findall(r"<h([34])>", section)
+
+    assert charts(lcb) == charts(aa_lcr) == ["decisive", "wrong", "cost", *["coverage"] * 4]
+    assert headings(lcb) == headings(aa_lcr)
+    # Element ids must stay unique when both sections are on one page.
+    ids = re.findall(r'\bid="([^"]+)"', html)
+    assert len(ids) == len(set(ids))
+    summary = json.loads((output / "summary.json").read_text(encoding="utf-8"))
+    for document in summary["benchmarks"]:
+        benchmark, overall = document["benchmark"], document["overall"]
+
+        def overview(name: str, key: str = benchmark) -> str:
+            cell = re.search(rf'<td data-overview="{key}-{name}">([^<]+)</td>', html)
+            assert cell is not None, (key, name)
+            return cell.group(1)
+
+        assert overview("threshold") == f"{document['threshold']:.2f}"
+        decided = overall["decided_at_stage1"] / overall["draws"]
+        assert overview("decided") == f"{decided:.3f}"
+        costs = [r["expected_cost_fraction"]["mean"] for r in document["true_scores"]]
+        assert overview("mean-cost") == f"{sum(costs) / len(costs):.3f}"
+
+
+def test_judge_noise_limit_appears_next_to_every_aa_lcr_result(tmp_path: Path) -> None:
+    output = tmp_path / "out"
+    _run(_small_policy(tmp_path), output)
+    html = (output / "report.html").read_text(encoding="utf-8")
+    section = _section(html, AA_LCR)
+    # A result is a chart or a table. Each one has the note under the same heading.
+    blocks = [b for b in re.split(r"<h[34]>", section) if "<svg" in b or "<table" in b]
+    assert len(blocks) >= 7
+    for block in blocks:
+        assert JUDGE_NOISE in block
+        assert "not measured" in block
+    assert JUDGE_NOISE not in _section(html, LCB)
+    overview = re.search(r'<td data-overview="aa_lcr-judge-noise">([^<]+)</td>', html)
+    assert overview is not None and "not measured" in overview.group(1)
+    # The AA-LCR column of the side-by-side table points to the judge-noise note under it.
+    assert "<th>AA-LCR *</th>" in html and "<th>LiveCodeBench</th>" in html
+    note = re.search(r'<p class="judge-noise" data-overview-note>([^<]+)</p>', html)
+    assert note is not None and note.group(1).startswith("* AA-LCR: Judge noise is not measured")
 
 
 def test_report_shows_decisive_fraction_and_wrong_rate_for_each_true_score(
@@ -106,18 +215,33 @@ def test_report_shows_decisive_fraction_and_wrong_rate_for_each_true_score(
     _run(_small_policy(tmp_path), output)
     summary = json.loads((output / "summary.json").read_text(encoding="utf-8"))
     html = (output / "report.html").read_text(encoding="utf-8")
-    assert [row["true_score"] for row in summary["true_scores"]] == ["0.50", "0.70", "0.90"]
-    for row in summary["true_scores"]:
-        assert row["draws"] == 10
-        if row["wrong_decisions"] == 0:
-            # Closed form for 0 of n: the bound p solves (1 - p) ** n = 0.05.
-            assert abs(row["wrong_rate_upper95"] - (1 - 0.05 ** (1 / 10))) < 1e-6
-        assert row["decisive_fraction"] == row["decided_at_stage1"] / 10
-        assert row["wrong_decision_rate"] == row["wrong_decisions"] / 10
-        cells = re.search(rf'<tr data-true-score="{row["true_score"]}">(.*?)</tr>', html, re.S)
-        assert cells is not None
-        assert f"{row['decisive_fraction']:.3f}" in cells.group(1)
-        assert f"{row['wrong_decision_rate']:.3f}" in cells.group(1)
+    for document in summary["benchmarks"]:
+        section = _section(html, document["benchmark"])
+        for row in document["true_scores"]:
+            assert row["draws"] == 10
+            if row["wrong_decisions"] == 0:
+                # Closed form for 0 of n: the bound p solves (1 - p) ** n = 0.05.
+                assert abs(row["wrong_rate_upper95"] - (1 - 0.05 ** (1 / 10))) < 1e-6
+            assert row["decisive_fraction"] == row["decided_at_stage1"] / 10
+            assert row["wrong_decision_rate"] == row["wrong_decisions"] / 10
+            pattern = rf'<tr data-true-score="{row["true_score"]}">(.*?)</tr>'
+            cells = re.search(pattern, section, re.S)
+            assert cells is not None
+            assert f"{row['decisive_fraction']:.3f}" in cells.group(1)
+            assert f"{row['wrong_decision_rate']:.3f}" in cells.group(1)
+
+
+def test_a_policy_with_one_benchmark_reports_only_that_benchmark(tmp_path: Path) -> None:
+    value = json.loads(_small_policy(tmp_path).read_text(encoding="utf-8"))
+    del value["benchmarks"][LCB]
+    policy = tmp_path / "aa-only.json"
+    policy.write_text(json.dumps(value), encoding="utf-8")
+    output = tmp_path / "out"
+    _run(policy, output)
+    assert {p.name for p in output.iterdir()} == OUTPUTS - {LCB}
+    html = (output / "report.html").read_text(encoding="utf-8")
+    assert 'data-benchmark="aa_lcr"' in html
+    assert f'data-benchmark="{LCB}"' not in html
 
 
 def test_report_is_self_contained_and_supports_light_and_dark(tmp_path: Path) -> None:
@@ -127,7 +251,7 @@ def test_report_is_self_contained_and_supports_light_and_dark(tmp_path: Path) ->
     assert html.startswith("<!doctype html>")
     assert "http://" not in html and "https://" not in html
     assert not re.search(r"<(script|link|img|iframe|object)\b", html, re.I)
-    assert not re.search(r"\b(src|href)\s*=", html, re.I)
+    assert not re.search(r"\b(src|href)\s*=\s*\"(?!#)", html, re.I)
     assert "@import" not in html and "url(" not in html
     assert "prefers-color-scheme: dark" in html
     assert "color-scheme: light dark" in html
@@ -158,7 +282,7 @@ def test_hash_mismatch_stops_the_command(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     policy = _small_policy(tmp_path, frozen=True)
-    lock = json.dumps({"schema_version": 1, "policies": {"lcb-threshold@draft-1": "0" * 64}})
+    lock = json.dumps({"schema_version": 1, "policies": {"threshold-policy@draft-1": "0" * 64}})
     monkeypatch.setattr(threshold_policy, "committed_lock_text", lambda: lock)
     output = tmp_path / "out"
     with pytest.raises(SystemExit) as stopped:
@@ -171,17 +295,23 @@ def test_hash_mismatch_stops_the_command(
 def test_panel_for_another_benchmark_is_rejected(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    panels = tmp_path / "panels"
+    panels.mkdir()
+    shutil.copy(PANELS / "aa-lcr-reference-panel.json", panels / "aa-lcr-reference-panel.json")
+    # The LiveCodeBench file name holds the AA-LCR panel.
+    shutil.copy(PANELS / "aa-lcr-reference-panel.json", panels / "lcb-reference-panel.json")
     with pytest.raises(SystemExit) as stopped:
-        _run(_small_policy(tmp_path, benchmark="aa_lcr"), tmp_path / "out")
+        _run(_small_policy(tmp_path), tmp_path / "out", panels=panels)
     assert stopped.value.code == 2
-    assert "benchmark" in capsys.readouterr().err
+    assert "not for policy benchmark" in capsys.readouterr().err
 
 
 def test_wrong_rate_chart_marks_the_one_tail_bound_alpha_over_two(tmp_path: Path) -> None:
     output = tmp_path / "out"
     _run(_small_policy(tmp_path), output)
     html = (output / "report.html").read_text(encoding="utf-8")
-    assert "one-tail bound 0.025" in html
+    for benchmark in (LCB, AA_LCR):
+        assert "one-tail bound 0.025" in _section(html, benchmark)
     assert "policy alpha 0.05" not in html
 
 
@@ -195,16 +325,24 @@ def test_draft_warning_appears_only_for_a_draft_policy(tmp_path: Path) -> None:
     assert warning not in (frozen / "summary.json").read_text(encoding="utf-8")
 
 
-def test_coverage_table_has_every_cell_and_method(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("benchmark", "stratifiers", "sizes"),
+    [
+        (LCB, {"difficulty_stratified", "response_stratified"}, {"32", "63"}),
+        (AA_LCR, {"metadata_stratified", "length_difficulty_stratified"}, {"12", "20"}),
+    ],
+)
+def test_coverage_table_has_every_cell_and_method(
+    tmp_path: Path, benchmark: str, stratifiers: set[str], sizes: set[str]
+) -> None:
     output = tmp_path / "out"
     _run(_small_policy(tmp_path), output, "--workers", "1")
-    with (output / "coverage.csv").open(encoding="utf-8", newline="") as handle:
-        rows = list(csv.DictReader(handle))
+    rows = _rows(output / benchmark / "coverage.csv")
     # 2 stratifiers x 2 stage sizes x 3 true scores x 4 methods.
     assert len(rows) == 48
     assert {row["method"] for row in rows} == set(METHODS)
-    assert {row["stratifier"] for row in rows} == {"difficulty_stratified", "response_stratified"}
-    assert {row["stage_size"] for row in rows} == {"32", "63"}
+    assert {row["stratifier"] for row in rows} == stratifiers
+    assert {row["stage_size"] for row in rows} == sizes
     for row in rows:
         assert row["subsets"] == "20"
         misses = int(row["truth_below_interval"]) + int(row["truth_above_interval"])
@@ -217,36 +355,47 @@ def test_report_has_a_coverage_chart_for_each_setting_and_a_width_table(tmp_path
     _run(_small_policy(tmp_path), output)
     summary = json.loads((output / "summary.json").read_text(encoding="utf-8"))
     html = (output / "report.html").read_text(encoding="utf-8")
-    coverage = summary["coverage"]
-    # 0.95 - 3 * sqrt(0.95 * 0.05 / 20) = 0.80379.
-    assert coverage["pass_line"] == 0.804
-    assert coverage["subsets_per_cell"] == 20
-    charts = re.findall(r'<svg[^>]*data-coverage="([^"]+)"(.*?)</svg>', html, re.S)
-    assert [name for name, _ in charts] == [
-        "difficulty_stratified-32",
-        "difficulty_stratified-63",
-        "response_stratified-32",
-        "response_stratified-63",
-    ]
-    for _, chart in charts:
-        lines = re.findall(r'<polyline class="method-(\d) series"', chart)
-        assert lines == ["1", "2", "3", "4"]
-        assert "pass line 0.804" in chart
-        assert "<title" in chart and "<desc" in chart
-    for group in coverage["groups"]:
-        key = f"{group['stratifier']}-{group['stage_size']}-{group['method']}"
-        cell = re.search(rf'<td data-width="{key}">([^<]+)</td>', html)
-        assert cell is not None
-        assert cell.group(1) == f"{group['mean_width']:.3f}"
-        verdict = re.search(rf'<td data-coverage-pass="{key}"[^>]*>([^<]+)</td>', html)
-        assert verdict is not None
-        assert verdict.group(1).startswith("pass" if group["passes"] else "fail")
-    assert [m["method"] for m in coverage["methods"]] == list(METHODS)
+    expected = {
+        LCB: [
+            f"{s}-{n}" for s in ("difficulty_stratified", "response_stratified") for n in (32, 63)
+        ],
+        AA_LCR: [
+            f"{s}-{n}"
+            for s in ("metadata_stratified", "length_difficulty_stratified")
+            for n in (12, 20)
+        ],
+    }
+    for document in summary["benchmarks"]:
+        section = _section(html, document["benchmark"])
+        coverage = document["coverage"]
+        # 0.95 - 3 * sqrt(0.95 * 0.05 / 20) = 0.80379.
+        assert coverage["pass_line"] == 0.804
+        assert coverage["subsets_per_cell"] == 20
+        charts = re.findall(r'<svg[^>]*data-coverage="([^"]+)"(.*?)</svg>', section, re.S)
+        assert [name for name, _ in charts] == expected[document["benchmark"]]
+        for _, chart in charts:
+            lines = re.findall(r'<polyline class="method-(\d) series"', chart)
+            assert lines == ["1", "2", "3", "4"]
+            assert "pass line 0.804" in chart
+            assert "<title" in chart and "<desc" in chart
+        for group in coverage["groups"]:
+            key = f"{group['stratifier']}-{group['stage_size']}-{group['method']}"
+            cell = re.search(rf'<td data-width="{key}">([^<]+)</td>', section)
+            assert cell is not None
+            assert cell.group(1) == f"{group['mean_width']:.3f}"
+            verdict = re.search(rf'<td data-coverage-pass="{key}"[^>]*>([^<]+)</td>', section)
+            assert verdict is not None
+            assert verdict.group(1).startswith("pass" if group["passes"] else "fail")
+        assert [m["method"] for m in coverage["methods"]] == list(METHODS)
 
 
 def test_worker_count_does_not_change_the_outputs(tmp_path: Path) -> None:
     policy = _small_policy(tmp_path)
     _run(policy, tmp_path / "one", "--workers", "1")
     _run(policy, tmp_path / "two", "--workers", "2")
-    for name in OUTPUTS:
+    for name in ("summary.json", "report.html", "manifest.json"):
         assert (tmp_path / "one" / name).read_bytes() == (tmp_path / "two" / name).read_bytes()
+    for benchmark in (LCB, AA_LCR):
+        for name in BENCHMARK_FILES:
+            one = (tmp_path / "one" / benchmark / name).read_bytes()
+            assert one == (tmp_path / "two" / benchmark / name).read_bytes()

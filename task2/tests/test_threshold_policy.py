@@ -4,10 +4,13 @@ import hashlib
 import json
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 from benchmark_reference.models import AnalysisError
+from benchmark_reference.threshold_benchmarks import AA_LCR as AA_LCR_NAME
+from benchmark_reference.threshold_benchmarks import LIVE_CODE_BENCH
 from benchmark_reference.threshold_policy import (
     alpha_spending,
     authorize_real_replay,
@@ -16,12 +19,16 @@ from benchmark_reference.threshold_policy import (
 )
 
 POLICY_DIR = Path(__file__).parents[1] / "policies"
-DRAFT = POLICY_DIR / "lcb-threshold-draft.json"
+DRAFT = POLICY_DIR / "threshold-draft.json"
+LCB, AA_LCR = LIVE_CODE_BENCH, AA_LCR_NAME
+_FILE_KEYS = {"schema_version", "policy_id", "version", "frozen", "benchmarks"}
 
 
-def _policy(**changes: object) -> dict[str, object]:
-    value: dict[str, object] = json.loads(DRAFT.read_text(encoding="utf-8"))
-    value.update(changes)
+def _policy(section: str = LCB, /, **changes: object) -> dict[str, Any]:
+    """The draft policy; file-level keys change the file, others the benchmark section."""
+    value: dict[str, Any] = json.loads(DRAFT.read_text(encoding="utf-8"))
+    for key, setting in changes.items():
+        (value if key in _FILE_KEYS else value["benchmarks"][section])[key] = setting
     return value
 
 
@@ -36,7 +43,13 @@ def _lock(policies: dict[str, str]) -> str:
 
 def test_committed_draft_policy_holds_every_required_setting() -> None:
     loaded = load_policy(DRAFT)
-    policy = loaded.policy
+    policy = loaded.benchmarks[LCB]
+    assert loaded.key == "threshold-policy@draft-1"
+    assert (policy.benchmark, policy.policy_id, policy.version) == (
+        LCB,
+        "threshold-policy",
+        "draft-1",
+    )
     assert loaded.sha256 == hashlib.sha256(DRAFT.read_bytes()).hexdigest()
     assert policy.frozen is False
     assert policy.threshold == 0.70
@@ -52,9 +65,65 @@ def test_committed_draft_policy_holds_every_required_setting() -> None:
     assert policy.cost_bands == ((0.3, 0.5), (0.55, 0.65), (0.7, 0.75), (0.8, 0.9))
 
 
+def test_committed_draft_policy_has_its_own_section_for_aa_lcr() -> None:
+    loaded = load_policy(DRAFT)
+    # LiveCodeBench comes first in every report, whatever the key order of the file.
+    assert tuple(loaded.benchmarks) == (LCB, AA_LCR)
+    policy = loaded.benchmarks[AA_LCR]
+    assert policy.benchmark == AA_LCR
+    assert policy.frozen is False
+    assert policy.threshold == 0.60
+    assert policy.alpha == 0.05
+    assert policy.stage1_size == 20
+    assert policy.interval_method == "pooled_exact_hypergeometric"
+    assert policy.stratifier == "length_difficulty_stratified"
+    assert policy.coverage_stage_sizes == (12, 20, 30, 50, 70)
+    assert policy.cost_stage_sizes == (12, 20, 30, 50, 70)
+    assert policy.cost_bands == ((0.3, 0.4), (0.45, 0.55), (0.6, 0.65), (0.7, 0.9))
+
+
+def test_a_policy_file_can_hold_one_benchmark(tmp_path: Path) -> None:
+    value = _policy()
+    del value["benchmarks"][LCB]
+    loaded = load_policy(_write(tmp_path / "policy.json", value))
+    assert tuple(loaded.benchmarks) == (AA_LCR,)
+
+
+@pytest.mark.parametrize(
+    ("benchmark", "stratifier"),
+    [
+        (LCB, "metadata_stratified"),
+        (LCB, "length_difficulty_stratified"),
+        (AA_LCR, "difficulty_stratified"),
+        (AA_LCR, "response_stratified"),
+    ],
+)
+def test_a_stratifier_of_another_benchmark_stops_loading(
+    tmp_path: Path, benchmark: str, stratifier: str
+) -> None:
+    value = _policy(benchmark, stratifier=stratifier)
+    with pytest.raises(AnalysisError, match=f"section {benchmark}: Policy stratifier"):
+        load_policy(_write(tmp_path / "policy.json", value))
+
+
+@pytest.mark.parametrize(
+    ("benchmarks", "message"),
+    [
+        ({}, "at least one benchmark"),
+        ({"mmmu": {}}, "Unknown policy benchmark"),
+        ([], "at least one benchmark"),
+    ],
+)
+def test_invalid_benchmark_sections_stop_loading(
+    tmp_path: Path, benchmarks: object, message: str
+) -> None:
+    with pytest.raises(AnalysisError, match=message):
+        load_policy(_write(tmp_path / "policy.json", _policy(benchmarks=benchmarks)))
+
+
 def test_cost_bands_group_every_true_score_into_exactly_one_band(tmp_path: Path) -> None:
     value = _policy(cost={"stage_sizes": [63], "bands": [[0.3, 0.45], [0.5, 0.9]]})
-    policy = load_policy(_write(tmp_path / "policy.json", value)).policy
+    policy = load_policy(_write(tmp_path / "policy.json", value)).benchmarks[LCB]
     assert policy.cost_bands == ((0.3, 0.45), (0.5, 0.9))
     assert policy.cost_stage_sizes == (63,)
 
@@ -70,11 +139,11 @@ def test_cost_bands_group_every_true_score_into_exactly_one_band(tmp_path: Path)
 )
 def test_policy_file_can_name_each_interval_method(tmp_path: Path, method: str) -> None:
     loaded = load_policy(_write(tmp_path / "policy.json", _policy(interval_method=method)))
-    assert loaded.policy.interval_method == method
+    assert loaded.benchmarks[LCB].interval_method == method
 
 
 def test_spent_alpha_is_at_most_005_for_the_committed_policy() -> None:
-    spending = alpha_spending(load_policy(DRAFT).policy)
+    spending = alpha_spending(load_policy(DRAFT).benchmarks[LCB])
     # Stage 1 spends the policy alpha; the census has no sampling error.
     assert spending == (0.05, 0.0)
     assert sum(spending) <= 0.05
@@ -95,6 +164,8 @@ def test_spent_alpha_is_at_most_005_for_the_committed_policy() -> None:
         ({"frozen": "yes"}, "frozen"),
         ({"extra": 1}, "keys"),
         ({"schema_version": 1}, "schema_version"),
+        ({"schema_version": 3}, "schema_version"),
+        ({"benchmark": LCB}, "keys"),
         ({"coverage": {"subsets": 0, "stage_sizes": [32]}}, "subsets"),
         ({"coverage": {"subsets": 10, "stage_sizes": []}}, "stage_sizes"),
         ({"coverage": {"subsets": 10, "stage_sizes": [63, 32]}}, "stage_sizes"),
@@ -136,8 +207,15 @@ def test_invalid_policy_values_stop_loading(
 
 def test_missing_policy_key_stops_loading(tmp_path: Path) -> None:
     value = _policy()
-    del value["alpha"]
+    del value["benchmarks"][LCB]["alpha"]
     with pytest.raises(AnalysisError, match="keys"):
+        load_policy(_write(tmp_path / "policy.json", value))
+
+
+def test_unknown_file_key_stops_loading(tmp_path: Path) -> None:
+    value = _policy()
+    value["threshold"] = 0.7
+    with pytest.raises(AnalysisError, match="file keys"):
         load_policy(_write(tmp_path / "policy.json", value))
 
 
@@ -174,7 +252,7 @@ def test_gate_reads_the_committed_lock_not_an_uncommitted_edit(tmp_path: Path) -
     git("add", lock.name)
     git("-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-qm", "lock")
     # An edit that is not committed must not authorize anything.
-    lock.write_text(_lock({"lcb-threshold@draft-1": "0" * 64}), encoding="utf-8")
+    lock.write_text(_lock({"threshold-policy@draft-1": "0" * 64}), encoding="utf-8")
     assert json.loads(committed_lock_text(lock)) == {"schema_version": 1, "policies": {}}
 
 
