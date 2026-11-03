@@ -1,22 +1,22 @@
 """Run the two-stage policy on simulated models and summarize each true score.
 
 Each true score gets ``len(seeds) * models_per_seed`` simulated models. The probe
-for a selector seed depends on reference grades only. It is therefore the same
-for every simulated model that uses that seed. A wrong decision is a final
+for a selector seed depends on the reference panel only: the reference grades
+and, for AA-LCR, the question metadata. It is therefore the same for every
+simulated model that uses that seed. A wrong decision is a final
 decision that differs from the decision on the simulated model's full set.
 """
 
 import hashlib
-import json
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from fractions import Fraction
-from pathlib import Path
 from typing import Any
 
 from benchmark_reference.models import AnalysisError
-from benchmark_reference.pruning import ReferenceScores, SelectedSample, validate_references
+from benchmark_reference.pruning import ReferenceScores, SelectedSample, select_strata
+from benchmark_reference.threshold_benchmarks import ReferencePanel
 from benchmark_reference.threshold_policy import ThresholdPolicy
 from benchmark_reference.threshold_simulation import SimulationGenerator, target_pass_count
 from benchmark_reference.two_stage import (
@@ -24,7 +24,6 @@ from benchmark_reference.two_stage import (
     TwoStageDecision,
     decide_two_stage,
     full_set_decision,
-    select_stage1,
 )
 from benchmark_reference.uncertainty import clopper_pearson_upper
 
@@ -46,56 +45,6 @@ class SimulatedDecision:
         return self.result.decision != self.truth
 
 
-@dataclass(frozen=True, slots=True)
-class ReferencePanel:
-    """Reference grades, the SHA-256 of the panel bytes, and the hashes of its sources.
-
-    ``source_sha256`` maps each source file, relative to the data root, to the
-    SHA-256 recorded when the panel was exported.
-    """
-
-    references: ReferenceScores
-    sha256: str
-    source_sha256: Mapping[str, str]
-
-
-def load_reference_panel(path: Path, *, benchmark: str) -> ReferencePanel:
-    """Read the committed reference panel; reject another benchmark or bad grades."""
-    try:
-        data = path.read_bytes()
-        panel = json.loads(data.decode("utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise AnalysisError(f"Cannot read reference panel {path}: {exc}") from exc
-    if not isinstance(panel, dict) or panel.get("schema_version") != 1:
-        raise AnalysisError(f"Reference panel {path} must have schema_version 1")
-    provenance = panel.get("provenance")
-    if not isinstance(provenance, dict) or provenance.get("benchmark") != benchmark:
-        raise AnalysisError(f"Reference panel {path} is not for policy benchmark {benchmark!r}")
-    sources = provenance.get("source_sha256", {})
-    if not isinstance(sources, dict) or not all(
-        isinstance(k, str) and isinstance(v, str) for k, v in sources.items()
-    ):
-        raise AnalysisError(f"Reference panel {path} has invalid source hashes")
-    tasks = panel.get("tasks")
-    if not isinstance(tasks, list) or not tasks:
-        raise AnalysisError(f"Reference panel {path} has no tasks")
-    references: dict[str, dict[int, float]] = {}
-    for task in tasks:
-        index = task.get("index") if isinstance(task, dict) else None
-        scores = task.get("scores") if isinstance(task, dict) else None
-        if isinstance(index, bool) or not isinstance(index, int) or not isinstance(scores, dict):
-            raise AnalysisError(f"Reference panel {path} has an invalid task")
-        for model, score in scores.items():
-            if index in references.setdefault(model, {}):
-                raise AnalysisError(f"Reference panel {path} repeats task {index}")
-            references[model][index] = score
-    validate_references(references)
-    grades = {
-        model: {i: float(s) for i, s in scores.items()} for model, scores in references.items()
-    }
-    return ReferencePanel(grades, hashlib.sha256(data).hexdigest(), dict(sources))
-
-
 def _model_seed(simulation_seed: int, true_score: str, selector_seed: int, replicate: int) -> int:
     text = f"threshold-sim-v1:{simulation_seed}:{true_score}:{selector_seed}:{replicate}"
     return int.from_bytes(hashlib.sha256(text.encode("ascii")).digest()[:8], "big")
@@ -109,20 +58,33 @@ def true_score_labels(policy: ThresholdPolicy) -> list[str]:
     return labels
 
 
+def check_benchmark(panel: ReferencePanel, policy: ThresholdPolicy) -> None:
+    """Stop when the policy section is for another benchmark than the panel."""
+    if policy.benchmark != panel.benchmark:
+        raise AnalysisError(
+            f"Policy section for benchmark {policy.benchmark!r} cannot run on the "
+            f"{panel.benchmark!r} reference panel"
+        )
+
+
 def run_simulated_study(
-    references: ReferenceScores, policy: ThresholdPolicy
+    panel: ReferencePanel, policy: ThresholdPolicy
 ) -> tuple[SimulatedDecision, ...]:
     """Decide every simulated model in the policy grid; real grades are not used."""
+    check_benchmark(panel, policy)
+    references = panel.references
     generator = SimulationGenerator(references)
     population = len(generator.ids)
     labels = true_score_labels(policy)
+    groups = panel.strata(policy.stratifier)
     probes: dict[int, tuple[SelectedSample, ...]] = {}
 
     def cached_probe(
         references: ReferenceScores, *, stratifier: str, size: int, seed: int
     ) -> tuple[SelectedSample, ...]:
+        # The panel strata replace the reference-only strata of ``select_stage1``.
         if seed not in probes:
-            probes[seed] = select_stage1(references, stratifier=stratifier, size=size, seed=seed)
+            probes[seed] = select_strata(groups, budget=size, seed=seed)
         return probes[seed]
 
     threshold = Fraction(str(policy.threshold))

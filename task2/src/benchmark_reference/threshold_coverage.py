@@ -1,6 +1,7 @@
 """Coverage study: how often each interval method holds the full-set score.
 
-A cell is one stratifier, one stage size, and one true score. Each cell has
+A cell is one stratifier, one stage size, and one true score. The study runs
+every stratifier of the benchmark of the reference panel. Each cell has
 ``coverage_subsets`` draws. A draw is a new simulated model and a new
 stratified subset, so the draws are independent and a coverage count is
 binomial. Every interval method sees the same draws.
@@ -27,13 +28,8 @@ from fractions import Fraction
 from typing import Any
 
 from benchmark_reference.models import AnalysisError
-from benchmark_reference.pruning import (
-    CANDIDATES,
-    ReferenceScores,
-    reference_strata,
-    select_strata,
-    validate_references,
-)
+from benchmark_reference.pruning import select_strata
+from benchmark_reference.threshold_benchmarks import ReferencePanel
 from benchmark_reference.threshold_cost import CostModel, Estimates
 from benchmark_reference.threshold_intervals import (
     INTERVAL_METHODS,
@@ -42,7 +38,7 @@ from benchmark_reference.threshold_intervals import (
 )
 from benchmark_reference.threshold_policy import ThresholdPolicy
 from benchmark_reference.threshold_simulation import SimulationGenerator, target_pass_count
-from benchmark_reference.threshold_study import true_score_labels
+from benchmark_reference.threshold_study import check_benchmark, true_score_labels
 from benchmark_reference.two_stage import classify_stage1
 
 type CellKey = tuple[str, int, float, str]
@@ -93,10 +89,10 @@ class _CellRunner:
     """Run the draws of one cell. The constructor builds the generator and strata once."""
 
     def __init__(
-        self, references: ReferenceScores, policy: ThresholdPolicy, costs: CostModel | None
+        self, panel: ReferencePanel, policy: ThresholdPolicy, costs: CostModel | None
     ) -> None:
-        self.generator = SimulationGenerator(references)
-        self.groups = {s: reference_strata(references, strategy=s) for s in CANDIDATES}
+        self.generator = SimulationGenerator(panel.references)
+        self.groups = {s: panel.strata(s) for s in panel.stratifiers}
         self.policy = policy
         self.alpha = Fraction(str(policy.alpha))
         self.threshold = Fraction(str(policy.threshold))
@@ -165,11 +161,9 @@ class _CellRunner:
 _WORKER_RUNNER: _CellRunner | None = None
 
 
-def _start_worker(
-    references: ReferenceScores, policy: ThresholdPolicy, costs: CostModel | None
-) -> None:
+def _start_worker(panel: ReferencePanel, policy: ThresholdPolicy, costs: CostModel | None) -> None:
     global _WORKER_RUNNER
-    _WORKER_RUNNER = _CellRunner(references, policy, costs)
+    _WORKER_RUNNER = _CellRunner(panel, policy, costs)
 
 
 def _run_in_worker(key: CellKey) -> tuple[CoverageCell, ...]:
@@ -179,16 +173,17 @@ def _run_in_worker(key: CellKey) -> tuple[CoverageCell, ...]:
 
 
 def run_coverage_study(
-    references: ReferenceScores,
+    panel: ReferencePanel,
     policy: ThresholdPolicy,
     *,
     costs: CostModel | None = None,
     workers: int = 1,
 ) -> tuple[CoverageCell, ...]:
-    """Run every method in every cell: each stratifier, stage size, and true score."""
+    """Run every method in every cell: each panel stratifier, stage size, and true score."""
     if isinstance(workers, bool) or not isinstance(workers, int) or workers < 1:
         raise AnalysisError("Coverage workers must be an integer of at least 1")
-    population = len(validate_references(references))
+    check_benchmark(panel, policy)
+    population = len(panel.questions)
     if policy.coverage_stage_sizes[-1] > population:
         raise AnalysisError(
             f"Coverage stage size {policy.coverage_stage_sizes[-1]} exceeds the "
@@ -197,18 +192,17 @@ def run_coverage_study(
     labels = true_score_labels(policy)
     keys = [
         (stratifier, size, score, label)
-        for stratifier in CANDIDATES
+        for stratifier in panel.stratifiers
         for size in policy.coverage_stage_sizes
         for score, label in zip(policy.true_scores, labels, strict=True)
     ]
     if workers == 1:
-        runner = _CellRunner(references, policy, costs)
+        runner = _CellRunner(panel, policy, costs)
         return tuple(cell for key in keys for cell in runner(key))
-    plain = {model: dict(scores) for model, scores in references.items()}
     with ProcessPoolExecutor(
         max_workers=min(workers, len(keys)),
         initializer=_start_worker,
-        initargs=(plain, policy, costs),
+        initargs=(panel, policy, costs),
     ) as pool:
         return tuple(cell for cells in pool.map(_run_in_worker, keys) for cell in cells)
 
@@ -269,9 +263,11 @@ def summarize_coverage(
     by_key: dict[tuple[str, int, str], list[dict[str, Any]]] = {}
     for c, record in zip(cells, records, strict=True):
         by_key.setdefault((c.stratifier, c.stage_size, c.method), []).append(record)
+    # Stratifiers keep the order of the cells, which is the order of the panel.
+    stratifiers = list(dict.fromkeys(c.stratifier for c in cells))
     keys = sorted(
         {(c.stratifier, c.stage_size, c.method) for c in cells},
-        key=lambda k: (CANDIDATES.index(k[0]), k[1], INTERVAL_METHODS.index(k[2])),
+        key=lambda k: (stratifiers.index(k[0]), k[1], INTERVAL_METHODS.index(k[2])),
     )
     groups: list[dict[str, Any]] = []
     for stratifier, size, method in keys:

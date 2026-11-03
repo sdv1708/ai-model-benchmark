@@ -153,3 +153,43 @@ def test_a_selected_question_without_a_grade_is_rejected() -> None:
     grades = {item.index: 1.0 for item in selection[1:]}
     with pytest.raises(AnalysisError, match="no grade"):
         stratum_counts(selection, grades)
+
+
+# AA-LCR strata can be small: the committed panel has strata of 2 and 3 questions,
+# and a 12-question probe samples one question from each length x difficulty stratum.
+# Worked example: a census of a one-question stratum with 1 pass, and one sampled
+# question (a failure) from a stratum of 9. Exact bounds at alpha 0.05:
+# - Pooled: N = 10, n = 2, 1 pass. P(X >= 1 | K = 1) = 1 - C(9,2)/C(10,2) = 0.2 and
+#   P(X <= 1 | K = 9) = 1 - C(9,2)/C(10,2) = 0.2, both >= 0.025. So K is 1 to 9.
+# - Bonferroni: the census stratum gives exactly 1 pass. The other gives 0 to 8 passes,
+#   because P(X = 0 | K = 8) = 1/9 >= 0.0125 and P(X = 0 | K = 9) = 0. So K is 1 to 9.
+# - Wilson: point 0.1, Kish size 1 / (0.9^2 * 8 / 8) = 1.2346. The lower bound 0.003
+#   is below the floor 1/10 of the passes already seen, so the clip raises it to 0.1.
+# - Bootstrap: no stratum has two sampled questions, so it adds no width.
+SMALL_STRATA = [StratumCount(1, 1, 1), StratumCount(9, 1, 0)]
+
+
+@pytest.mark.parametrize(
+    ("method", "lower", "upper"),
+    [
+        ("pooled_exact_hypergeometric", Fraction(1, 10), Fraction(9, 10)),
+        ("stratified_bonferroni_hypergeometric", Fraction(1, 10), Fraction(9, 10)),
+        ("stratified_bootstrap_percentile", Fraction(1, 10), Fraction(1, 10)),
+    ],
+)
+def test_strata_with_one_question_give_the_worked_exact_bounds(
+    method: str, lower: Fraction, upper: Fraction
+) -> None:
+    assert interval_bounds(method, SMALL_STRATA, alpha=ALPHA) == (lower, upper)
+
+
+def test_wilson_with_one_sampled_question_per_stratum_matches_the_worked_example() -> None:
+    lower, upper = interval_bounds("stratified_wilson", SMALL_STRATA, alpha=ALPHA)
+    assert lower == Fraction(1, 10)
+    assert abs(float(upper) - 0.8024) < 1e-3
+
+
+@pytest.mark.parametrize("method", INTERVAL_METHODS)
+def test_a_probe_of_one_question_strata_is_a_census_with_width_zero(method: str) -> None:
+    strata = [StratumCount(1, 1, 1), StratumCount(1, 1, 0), StratumCount(1, 1, 1)]
+    assert interval_bounds(method, strata, alpha=ALPHA) == (Fraction(2, 3), Fraction(2, 3))

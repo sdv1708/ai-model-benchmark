@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from benchmark_reference.models import AnalysisError
+from benchmark_reference.threshold_benchmarks import LIVE_CODE_BENCH, ReferencePanel
 from benchmark_reference.threshold_cost import (
     CostModel,
     Estimates,
@@ -21,10 +22,13 @@ from benchmark_reference.threshold_study import SimulatedDecision, run_simulated
 from benchmark_reference.threshold_tokens import QuestionCost
 from benchmark_reference.two_stage import TwoStageDecision
 
-DRAFT = load_policy(Path(__file__).parents[1] / "policies" / "lcb-threshold-draft.json").policy
+DRAFT = load_policy(Path(__file__).parents[1] / "policies" / "threshold-draft.json").benchmarks[
+    LIVE_CODE_BENCH
+]
 REFERENCES = {
     m: {i: float((i * (j + 2)) % 7 < 3 + j) for i in range(60)} for j, m in enumerate("abc")
 }
+PANEL = ReferencePanel(LIVE_CODE_BENCH, REFERENCES)
 
 
 def _flat(*totals: int) -> dict[int, QuestionCost]:
@@ -115,7 +119,7 @@ def test_expected_cost_equals_the_mean_of_the_tokens_of_each_run() -> None:
     policy = replace(DRAFT, true_scores=(0.4, 0.6, 0.8), seeds=(0, 1, 2), models_per_seed=7)
     policy = replace(policy, stage1_size=15)
     model = CostModel(_flat(*[(7 * i) % 11 + 1 for i in range(60)]))
-    rows = run_simulated_study(REFERENCES, policy)
+    rows = run_simulated_study(PANEL, policy)
     for score in ("0.40", "0.60", "0.80"):
         mine = [r for r in rows if r.true_score == score]
         uses = [run_tokens(r.result, model) for r in mine]
@@ -128,7 +132,7 @@ def test_a_census_probe_costs_one_full_run() -> None:
     policy = replace(DRAFT, true_scores=(0.4, 0.8), seeds=(0,), models_per_seed=3, stage1_size=60)
     model = CostModel(_flat(*range(1, 61)))
     for score in ("0.40", "0.80"):
-        rows = [r for r in run_simulated_study(REFERENCES, policy) if r.true_score == score]
+        rows = [r for r in run_simulated_study(PANEL, policy) if r.true_score == score]
         cell = expected_cost(rows, model)
         assert cell.escalated == 0
         assert cell.fraction == Estimates(Fraction(1), Fraction(1), Fraction(1))
@@ -157,8 +161,8 @@ def test_cost_study_has_one_cell_for_each_stage_size_and_true_score() -> None:
         cost_bands=((0.4, 0.6), (0.8, 0.8)),
     )
     model = CostModel(_flat(*[i % 5 + 1 for i in range(60)]))
-    base = run_simulated_study(REFERENCES, policy)
-    cells = run_cost_study(REFERENCES, policy, model, base_rows=base)
+    base = run_simulated_study(PANEL, policy)
+    cells = run_cost_study(PANEL, policy, model, base_rows=base)
     assert [(c.stage_size, c.true_score) for c in cells] == [
         (n, s) for n in (6, 15, 30) for s in ("0.40", "0.60", "0.80")
     ]
@@ -182,10 +186,10 @@ def test_cost_study_gives_the_same_cells_for_every_worker_count() -> None:
         cost_bands=((0.4, 0.8),),
     )
     model = CostModel(_flat(*[i % 3 + 1 for i in range(60)]))
-    base = run_simulated_study(REFERENCES, policy)
+    base = run_simulated_study(PANEL, policy)
     # Three sizes other than the policy size, so the worker pool runs.
-    serial = run_cost_study(REFERENCES, policy, model, base_rows=base, workers=1)
-    assert run_cost_study(REFERENCES, policy, model, base_rows=base, workers=3) == serial
+    serial = run_cost_study(PANEL, policy, model, base_rows=base, workers=1)
+    assert run_cost_study(PANEL, policy, model, base_rows=base, workers=3) == serial
 
 
 def test_band_cost_is_the_mean_fraction_of_its_true_scores() -> None:
@@ -229,10 +233,10 @@ def test_coverage_cells_give_the_expected_cost_for_every_interval_method() -> No
     )
     # Every question costs one token, so a draw costs its stage size or 60 questions.
     model = CostModel(_flat(*[1] * 60))
-    for cell in run_coverage_study(REFERENCES, policy, costs=model):
+    for cell in run_coverage_study(PANEL, policy, costs=model):
         assert cell.expected is not None
         decisive = cell.subsets - cell.escalated
         tokens = Fraction(decisive * cell.stage_size + cell.escalated * 60, cell.subsets)
         assert cell.expected == Estimates(tokens, tokens, tokens)
-    without = run_coverage_study(REFERENCES, policy)
+    without = run_coverage_study(PANEL, policy)
     assert all(cell.expected is None for cell in without)
