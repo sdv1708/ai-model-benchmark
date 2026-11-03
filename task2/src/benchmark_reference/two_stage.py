@@ -44,7 +44,11 @@ class Stage1Selector(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class TwoStageDecision:
-    """Stage-1 evidence and the final decision. A census has equal final bounds."""
+    """Stage-1 evidence and the final decision. A census has equal final bounds.
+
+    ``stage1_questions`` holds the probe in selector order. The token cost of a
+    run is the cost of these questions, or of the full set after ESCALATE.
+    """
 
     stage1_size: int
     stage1_successes: int
@@ -56,6 +60,7 @@ class TwoStageDecision:
     final_lower: Fraction
     final_upper: Fraction
     questions_graded: int
+    stage1_questions: tuple[int, ...]
 
 
 def select_stage1(
@@ -77,7 +82,8 @@ def _grade(target: Mapping[int, float], index: int) -> int:
     return int(score)
 
 
-def _classify(lower: Fraction, upper: Fraction, threshold: Fraction) -> Stage1Result:
+def classify_stage1(lower: Fraction, upper: Fraction, threshold: Fraction) -> Stage1Result:
+    """GO, NO GO, or ESCALATE for one stage-1 interval."""
     if lower >= threshold:
         return "GO"
     if upper < threshold:
@@ -114,7 +120,7 @@ def decide_two_stage(
         raise AnalysisError("Selector strata must partition exactly the reference questions")
     successes = sum(count.successes for count in counts)
     lower, upper = interval_bounds(policy.interval_method, counts, alpha=alpha)
-    result = _classify(lower, upper, threshold)
+    result = classify_stage1(lower, upper, threshold)
     if result != "ESCALATE":
         return TwoStageDecision(
             stage1_size=len(chosen),
@@ -127,6 +133,7 @@ def decide_two_stage(
             final_lower=lower,
             final_upper=upper,
             questions_graded=len(chosen),
+            stage1_questions=tuple(chosen),
         )
     # Census: the remaining questions complete the full set, so the score is exact.
     chosen_set = set(chosen)
@@ -143,4 +150,5 @@ def decide_two_stage(
         final_lower=score,
         final_upper=score,
         questions_graded=len(population),
+        stage1_questions=tuple(chosen),
     )

@@ -302,9 +302,11 @@ From `task2/`, run the draft policy on simulated LiveCodeBench models:
 uv run threshold-decision --policy policies/lcb-threshold-draft.json --output-dir output/threshold-decision
 ```
 
-The command writes `decisions.csv`, `coverage.csv`, `summary.json`, `report.html`, and `manifest.json`.
+The command writes `decisions.csv`, `coverage.csv`, `cost.csv`, `question_tokens.csv`, `summary.json`, `report.html`, and `manifest.json`.
 The command also runs the interval coverage study: 2,000 simulated draws for each cell.
-On 12 CPUs the full run takes about 3 minutes.
+It reads the token counts of the saved answers from `../Evals/Part 1/predictions`.
+Use `--data-root` to read them from another folder.
+On 12 CPUs the full run takes about 3.5 minutes.
 Use `--workers` to set the number of processes.
 The outputs do not change with the number of processes.
 Open `report.html` directly from the file system.

@@ -48,6 +48,15 @@ def test_committed_draft_policy_holds_every_required_setting() -> None:
     assert policy.simulation_seed == 56
     assert policy.coverage_subsets == 2000
     assert policy.coverage_stage_sizes == (32, 63, 95, 158, 221)
+    assert policy.cost_stage_sizes == (32, 63, 95, 158, 221)
+    assert policy.cost_bands == ((0.3, 0.5), (0.55, 0.65), (0.7, 0.75), (0.8, 0.9))
+
+
+def test_cost_bands_group_every_true_score_into_exactly_one_band(tmp_path: Path) -> None:
+    value = _policy(cost={"stage_sizes": [63], "bands": [[0.3, 0.45], [0.5, 0.9]]})
+    policy = load_policy(_write(tmp_path / "policy.json", value)).policy
+    assert policy.cost_bands == ((0.3, 0.45), (0.5, 0.9))
+    assert policy.cost_stage_sizes == (63,)
 
 
 @pytest.mark.parametrize(
@@ -91,6 +100,31 @@ def test_spent_alpha_is_at_most_005_for_the_committed_policy() -> None:
         ({"coverage": {"subsets": 10, "stage_sizes": [63, 32]}}, "stage_sizes"),
         ({"coverage": {"subsets": 10, "stage_sizes": [0, 32]}}, "stage_sizes"),
         ({"coverage": {"subsets": 10}}, "coverage keys"),
+        ({"schema_version": 2}, "schema_version"),
+        ({"cost": {"stage_sizes": [63]}}, "cost keys"),
+        ({"cost": {"stage_sizes": [], "bands": [[0.3, 0.9]]}}, "cost stage_sizes"),
+        ({"cost": {"stage_sizes": [63, 32], "bands": [[0.3, 0.9]]}}, "cost stage_sizes"),
+        ({"cost": {"stage_sizes": [63], "bands": []}}, "cost bands"),
+        # A band must be a [low, high] pair with low <= high.
+        ({"cost": {"stage_sizes": [63], "bands": [[0.9, 0.3]]}}, "cost bands"),
+        ({"cost": {"stage_sizes": [63], "bands": [[0.3]]}}, "cost bands"),
+        ({"cost": {"stage_sizes": [63], "bands": [[True, 0.9]]}}, "cost bands"),
+        # Bands must be ascending and must not overlap.
+        ({"cost": {"stage_sizes": [63], "bands": [[0.3, 0.6], [0.6, 0.9]]}}, "cost bands"),
+        ({"cost": {"stage_sizes": [63], "bands": [[0.6, 0.9], [0.3, 0.5]]}}, "cost bands"),
+        (
+            {
+                "cost": {
+                    "stage_sizes": [63],
+                    "bands": [[0.3, 0.4], [0.45, 0.5], [0.55, 0.6], [0.65, 0.7], [0.75, 0.9]],
+                }
+            },
+            "at most 4",
+        ),
+        # 0.85 and 0.90 fall in no band.
+        ({"cost": {"stage_sizes": [63], "bands": [[0.3, 0.8]]}}, "every true score"),
+        # The band 0.91 to 0.95 holds no policy true score.
+        ({"cost": {"stage_sizes": [63], "bands": [[0.3, 0.9], [0.91, 0.95]]}}, "no true score"),
     ],
 )
 def test_invalid_policy_values_stop_loading(

@@ -48,10 +48,15 @@ class SimulatedDecision:
 
 @dataclass(frozen=True, slots=True)
 class ReferencePanel:
-    """Reference grades and the SHA-256 of the exact bytes they were parsed from."""
+    """Reference grades, the SHA-256 of the panel bytes, and the hashes of its sources.
+
+    ``source_sha256`` maps each source file, relative to the data root, to the
+    SHA-256 recorded when the panel was exported.
+    """
 
     references: ReferenceScores
     sha256: str
+    source_sha256: Mapping[str, str]
 
 
 def load_reference_panel(path: Path, *, benchmark: str) -> ReferencePanel:
@@ -66,6 +71,11 @@ def load_reference_panel(path: Path, *, benchmark: str) -> ReferencePanel:
     provenance = panel.get("provenance")
     if not isinstance(provenance, dict) or provenance.get("benchmark") != benchmark:
         raise AnalysisError(f"Reference panel {path} is not for policy benchmark {benchmark!r}")
+    sources = provenance.get("source_sha256", {})
+    if not isinstance(sources, dict) or not all(
+        isinstance(k, str) and isinstance(v, str) for k, v in sources.items()
+    ):
+        raise AnalysisError(f"Reference panel {path} has invalid source hashes")
     tasks = panel.get("tasks")
     if not isinstance(tasks, list) or not tasks:
         raise AnalysisError(f"Reference panel {path} has no tasks")
@@ -83,7 +93,7 @@ def load_reference_panel(path: Path, *, benchmark: str) -> ReferencePanel:
     grades = {
         model: {i: float(s) for i, s in scores.items()} for model, scores in references.items()
     }
-    return ReferencePanel(grades, hashlib.sha256(data).hexdigest())
+    return ReferencePanel(grades, hashlib.sha256(data).hexdigest(), dict(sources))
 
 
 def _model_seed(simulation_seed: int, true_score: str, selector_seed: int, replicate: int) -> int:

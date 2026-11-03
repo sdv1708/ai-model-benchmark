@@ -228,9 +228,15 @@ A versioned JSON file in `policies/` holds every setting:
 | `seeds`           | Selector seeds `0` through `19`                                    |
 | `simulation`      | Seed `56`, true scores `0.30` to `0.90` by `0.05`, 50 per seed     |
 | `coverage`        | 2,000 draws per cell, stage sizes `32`, `63`, `95`, `158`, `221`   |
+| `cost`            | Stage sizes `32` to `221` as above; four true-score bands          |
 
-Policy files use `schema_version` 2.
+Policy files use `schema_version` 3.
 Schema 2 adds the `coverage` section.
+Schema 3 adds the `cost` section.
+The draft bands are `0.30` to `0.50`, `0.55` to `0.65`, `0.70` to `0.75`, and `0.80` to `0.90`.
+Each band is an inclusive `[low, high]` pair.
+The bands must be ascending and separate, and each policy true score must be in exactly one band.
+A policy can have at most 4 bands, so that each band has its own color, dash pattern, and marker.
 The manifest records the SHA-256 of the exact policy file bytes.
 `.gitattributes` keeps policy files at LF line endings, so the hash is the same on every platform.
 
@@ -273,6 +279,65 @@ It also gives the lowest coverage and the mean interval width for each method an
 Coverage is measured over simulated models, not for one fixed model.
 The coverage study uses the same generator as the decision study.
 
+### Token cost
+
+A saving in questions is not the same as a saving in tokens.
+The command therefore gives every operating point a cost in tokens.
+The unit is input plus output tokens of the model answers.
+
+The loader reads the `usage` record of each saved answer in `Evals/Part 1/predictions/`.
+It reads no grade.
+Each predictions file must have the SHA-256 that the reference panel records, so the counts come from the same run as the reference grades.
+A count is missing when the answer is absent, when `usage` is null, or when `input_tokens` or `output_tokens` is absent or null.
+The command reports each missing count and never treats it as zero.
+Any other bad value, such as a negative count, stops the command.
+The committed predictions have no missing count.
+
+An unseen model has no counts.
+For each question, the estimate is the low, mean, and high total across the reference models that have a count.
+A set of questions sums each estimate.
+Low and high are therefore an envelope of the reference models, not a confidence interval.
+
+A run decided at stage 1 uses the tokens of its probe.
+A run that escalates keeps its stage-1 answers and grades the remaining questions, so it uses one full run.
+For one probe, the expected cost is `T1 + p * (T - T1)`.
+`T1` is the stage-1 tokens, `p` is the escalation probability, and `T` is the full-set tokens.
+The cost for a true score is the mean over the selector seeds, weighted by the runs of each seed.
+That value is equal to the mean tokens of the runs.
+The cost fraction is the expected cost as a share of a full run.
+Each estimate divides by its own `T`.
+
+The policy `cost` section sets the stage sizes and the true-score bands of the cost curve.
+For each cost stage size, the command runs the decision study with that stage-1 size.
+The band cost is the mean over its true scores, each with equal weight.
+The coverage draws also give the expected cost of every interval method.
+The summary compares the two estimates for the policy method as a cross-check.
+
+Result on the draft policy, mean estimate:
+
+- A full LiveCodeBench run uses 4,532,328 tokens (low 1,555,578, high 7,177,805). That is 14,388 tokens for each answer. Output tokens are 96% of the total.
+- A full AA-LCR run uses 9,616,201 tokens under the mean estimate. That is 96,162 tokens for each answer, 98% of them input.
+- The 63-question probe uses 901,365 tokens, 0.199 of a full run.
+- At 63 questions, the expected cost is 0.199 of a full run far from the threshold and 0.985 at true score 0.70.
+- The band means at 63 questions are 0.204 (true score 0.30 to 0.50), 0.650 (0.55 to 0.65), 0.944 (0.70 to 0.75), and 0.338 (0.80 to 0.90).
+- The low and high token totals differ by a factor of 4.6, but the cost fraction changes by less than 0.006. The ratio cancels most of the difference in answer length between the models.
+- The two cost estimates for the policy method differ by at most 0.022 over 65 cells.
+
+Near the threshold, a larger probe costs less, because fewer runs escalate.
+Far from the threshold, a smaller probe costs less.
+The comparison below uses 63 questions and `difficulty_stratified`.
+The value is the mean cost fraction over the true scores.
+
+- Stratified Wilson costs 0.444 of a full run. It passes every coverage cell.
+- Pooled exact costs 0.453. It passes every coverage cell.
+- Bonferroni exact costs 0.790. It passes every coverage cell.
+- The bootstrap costs 0.400, but it fails coverage at 95 questions or fewer.
+
+Issue #58 gave about 73,000 input tokens for an AA-LCR answer and about 1,700 tokens for a LiveCodeBench task.
+The saved predictions do not agree.
+The mean is 94,319 input tokens for an AA-LCR answer and 14,388 total tokens for a LiveCodeBench answer.
+The token loader test checks the totals of all six predictions files.
+
 ### Run the decision
 
 ```powershell
@@ -281,17 +346,21 @@ uv run threshold-decision --policy policies/lcb-threshold-draft.json --output-di
 
 | File            | Content                                                                     |
 | --------------- | --------------------------------------------------------------------------- |
-| `decisions.csv` | One row per simulated model: true score, stage-1 result, decision, stage.   |
+| `decisions.csv` | One row per simulated model: true score, stage-1 result, decision, stage, and tokens used. |
 | `coverage.csv`  | One row per coverage cell and method: coverage, misses on each side, width. |
+| `cost.csv`      | One row per cost stage size and true score: escalation rate and token cost. |
+| `question_tokens.csv` | One row per question: its estimate and the counts of each reference model. |
 | `summary.json`  | Decision summary for each true score, coverage verdicts, and limits.        |
 | `report.html`   | Self-contained report with charts and tables, in light and dark modes.      |
 | `manifest.json` | Policy hash, input hashes, and output hashes.                               |
 
 The command prints the manifest SHA-256.
 Two runs with the same policy file give identical bytes.
-`--workers` sets the number of processes for the coverage study.
+`--workers` sets the number of processes for the cost and coverage studies.
 The default is the number of CPUs.
 The outputs are the same for every worker count.
+`--data-root` sets the folder that holds `Part 1/predictions`.
+The default is the `Evals` folder at the repository root.
 
 ## Commands and reports
 

@@ -11,6 +11,7 @@ import json
 import math
 import subprocess
 from dataclasses import dataclass
+from fractions import Fraction
 from pathlib import Path
 
 from benchmark_reference.models import AnalysisError
@@ -18,7 +19,7 @@ from benchmark_reference.pruning import CANDIDATES
 from benchmark_reference.threshold_intervals import INTERVAL_METHODS
 from benchmark_reference.uncertainty import validate_threshold
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 FROZEN_LOCK = Path(__file__).resolve().parents[2] / "policies" / "frozen-policies.json"
 _KEYS = {
     "schema_version",
@@ -34,9 +35,12 @@ _KEYS = {
     "seeds",
     "simulation",
     "coverage",
+    "cost",
 }
 _SIMULATION_KEYS = {"seed", "true_scores", "models_per_seed"}
 _COVERAGE_KEYS = {"subsets", "stage_sizes"}
+_COST_KEYS = {"stage_sizes", "bands"}
+MAX_COST_BANDS = 4
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,6 +62,8 @@ class ThresholdPolicy:
     models_per_seed: int
     coverage_subsets: int
     coverage_stage_sizes: tuple[int, ...]
+    cost_stage_sizes: tuple[int, ...]
+    cost_bands: tuple[tuple[float, float], ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,6 +96,62 @@ def _exact_keys(value: object, expected: set[str], name: str) -> dict[str, objec
     if not isinstance(value, dict) or set(value) != expected:
         raise AnalysisError(f"Policy {name} keys must be exactly {sorted(expected)}")
     return value
+
+
+def _stage_sizes(value: object, name: str) -> tuple[int, ...]:
+    if (
+        not isinstance(value, list)
+        or not value
+        or any(isinstance(n, bool) or not isinstance(n, int) or n < 1 for n in value)
+        or value != sorted(set(value))
+    ):
+        raise AnalysisError(f"Policy {name} must be unique, ascending integers >= 1")
+    return tuple(value)
+
+
+def _number(value: object) -> bool:
+    return (
+        not isinstance(value, bool)
+        and isinstance(value, int | float)
+        and math.isfinite(value)
+        and 0 <= value <= 1
+    )
+
+
+def in_band(score: float | str, band: tuple[float, float]) -> bool:
+    """True when ``score`` is in the inclusive band.
+
+    Decimal text, not binary floats, decides membership: 0.55 is in [0.55, 0.65].
+    """
+    return Fraction(str(band[0])) <= Fraction(str(score)) <= Fraction(str(band[1]))
+
+
+def _cost_bands(value: object, true_scores: list[float]) -> tuple[tuple[float, float], ...]:
+    """Ascending ``[low, high]`` true-score ranges; each true score is in exactly one."""
+    message = "Policy cost bands must be ascending, separate [low, high] pairs in [0, 1]"
+    if not isinstance(value, list) or not value:
+        raise AnalysisError(message)
+    # The cost chart gives each band one of four colors, dash patterns, and markers.
+    if len(value) > MAX_COST_BANDS:
+        raise AnalysisError(f"Policy cost bands must number at most {MAX_COST_BANDS}")
+    bands: list[tuple[float, float]] = []
+    for band in value:
+        if (
+            not isinstance(band, list)
+            or len(band) != 2
+            or not all(_number(edge) for edge in band)
+            or band[0] > band[1]
+            or (bands and band[0] <= bands[-1][1])
+        ):
+            raise AnalysisError(message)
+        bands.append((float(band[0]), float(band[1])))
+    for score in true_scores:
+        if not any(in_band(score, band) for band in bands):
+            raise AnalysisError(f"Policy cost bands must hold every true score; {score} is in none")
+    for band in bands:
+        if not any(in_band(score, band) for score in true_scores):
+            raise AnalysisError(f"Policy cost band {list(band)} holds no true score")
+    return tuple(bands)
 
 
 def load_policy(path: Path) -> LoadedPolicy:
@@ -138,14 +200,10 @@ def load_policy(path: Path) -> LoadedPolicy:
     ):
         raise AnalysisError("Policy true_scores must be unique, ascending values in [0, 1]")
     coverage = _exact_keys(value["coverage"], _COVERAGE_KEYS, "coverage")
-    sizes = coverage["stage_sizes"]
-    if (
-        not isinstance(sizes, list)
-        or not sizes
-        or any(isinstance(n, bool) or not isinstance(n, int) or n < 1 for n in sizes)
-        or sizes != sorted(set(sizes))
-    ):
-        raise AnalysisError("Policy coverage stage_sizes must be unique, ascending integers >= 1")
+    sizes = _stage_sizes(coverage["stage_sizes"], "coverage stage_sizes")
+    cost = _exact_keys(value["cost"], _COST_KEYS, "cost")
+    cost_sizes = _stage_sizes(cost["stage_sizes"], "cost stage_sizes")
+    bands = _cost_bands(cost["bands"], scores)
     policy = ThresholdPolicy(
         policy_id=_text(value["policy_id"], "policy_id"),
         version=_text(value["version"], "version"),
@@ -161,7 +219,9 @@ def load_policy(path: Path) -> LoadedPolicy:
         true_scores=tuple(float(s) for s in scores),
         models_per_seed=_integer(simulation["models_per_seed"], "models_per_seed", minimum=1),
         coverage_subsets=_integer(coverage["subsets"], "coverage subsets", minimum=1),
-        coverage_stage_sizes=tuple(sizes),
+        coverage_stage_sizes=sizes,
+        cost_stage_sizes=cost_sizes,
+        cost_bands=bands,
     )
     return LoadedPolicy(policy, path.name, hashlib.sha256(data).hexdigest())
 
