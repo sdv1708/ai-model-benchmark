@@ -10,6 +10,10 @@ score. A method passes a cell when its coverage is at least the pass line: the
 nominal coverage minus 3 standard errors, rounded to 3 decimals. For 2,000
 draws at 95%, the pass line is 0.935. The study uses simulated models only.
 
+With a cost model, each method also gets the expected token cost of a cell. A
+draw that the method decides at stage 1 costs the tokens of its subset. A draw
+that it escalates costs the tokens of the full set.
+
 Every cell has its own seeds. Worker processes can therefore run the cells in
 any order, and the result is the same for every worker count.
 """
@@ -30,6 +34,7 @@ from benchmark_reference.pruning import (
     select_strata,
     validate_references,
 )
+from benchmark_reference.threshold_cost import CostModel, Estimates
 from benchmark_reference.threshold_intervals import (
     INTERVAL_METHODS,
     interval_bounds,
@@ -38,13 +43,18 @@ from benchmark_reference.threshold_intervals import (
 from benchmark_reference.threshold_policy import ThresholdPolicy
 from benchmark_reference.threshold_simulation import SimulationGenerator, target_pass_count
 from benchmark_reference.threshold_study import true_score_labels
+from benchmark_reference.two_stage import classify_stage1
 
 type CellKey = tuple[str, int, float, str]
 
 
 @dataclass(frozen=True, slots=True)
 class CoverageCell:
-    """Coverage of one method in one cell. Misses are split by side."""
+    """Coverage of one method in one cell. Misses are split by side.
+
+    ``escalated`` counts the draws whose interval holds the threshold.
+    ``expected`` is the mean tokens of a draw, or None without a cost model.
+    """
 
     stratifier: str
     stage_size: int
@@ -56,6 +66,8 @@ class CoverageCell:
     truth_below: int
     truth_above: int
     mean_width: float
+    escalated: int
+    expected: Estimates | None
 
     @property
     def coverage(self) -> float:
@@ -80,11 +92,15 @@ def _seeds(
 class _CellRunner:
     """Run the draws of one cell. The constructor builds the generator and strata once."""
 
-    def __init__(self, references: ReferenceScores, policy: ThresholdPolicy) -> None:
+    def __init__(
+        self, references: ReferenceScores, policy: ThresholdPolicy, costs: CostModel | None
+    ) -> None:
         self.generator = SimulationGenerator(references)
         self.groups = {s: reference_strata(references, strategy=s) for s in CANDIDATES}
         self.policy = policy
         self.alpha = Fraction(str(policy.alpha))
+        self.threshold = Fraction(str(policy.threshold))
+        self.costs = costs
 
     def __call__(self, key: CellKey) -> tuple[CoverageCell, ...]:
         stratifier, size, score, label = key
@@ -95,6 +111,9 @@ class _CellRunner:
         below = dict.fromkeys(INTERVAL_METHODS, 0)
         above = dict.fromkeys(INTERVAL_METHODS, 0)
         width = dict.fromkeys(INTERVAL_METHODS, Fraction(0))
+        escalated = dict.fromkeys(INTERVAL_METHODS, 0)
+        # Low, mean, and high subset tokens, summed over the draws decided at stage 1.
+        decided = dict.fromkeys(INTERVAL_METHODS, Estimates.zero())
         for replicate in range(policy.coverage_subsets):
             model_seed, selector_seed = _seeds(
                 policy.simulation_seed, stratifier, size, label, replicate
@@ -102,9 +121,16 @@ class _CellRunner:
             grades = self.generator.draw(score, seed=model_seed)
             selection = select_strata(self.groups[stratifier], budget=size, seed=selector_seed)
             counts = stratum_counts(selection, grades)
+            subset = None
+            if self.costs is not None:
+                subset = self.costs.tokens(item.index for item in selection)
             for method in INTERVAL_METHODS:
                 lower, upper = interval_bounds(method, counts, alpha=self.alpha)
                 width[method] += upper - lower
+                if classify_stage1(lower, upper, self.threshold) == "ESCALATE":
+                    escalated[method] += 1
+                elif subset is not None:
+                    decided[method] += subset
                 if truth < lower:
                     below[method] += 1
                 elif truth > upper:
@@ -123,17 +149,27 @@ class _CellRunner:
                 below[method],
                 above[method],
                 float(width[method] / policy.coverage_subsets),
+                escalated[method],
+                self._expected(decided[method], escalated[method]),
             )
             for method in INTERVAL_METHODS
         )
+
+    def _expected(self, decided: Estimates, escalated: int) -> Estimates | None:
+        if self.costs is None:
+            return None
+        total = decided + self.costs.full.scale(escalated)
+        return total.scale(Fraction(1, self.policy.coverage_subsets))
 
 
 _WORKER_RUNNER: _CellRunner | None = None
 
 
-def _start_worker(references: ReferenceScores, policy: ThresholdPolicy) -> None:
+def _start_worker(
+    references: ReferenceScores, policy: ThresholdPolicy, costs: CostModel | None
+) -> None:
     global _WORKER_RUNNER
-    _WORKER_RUNNER = _CellRunner(references, policy)
+    _WORKER_RUNNER = _CellRunner(references, policy, costs)
 
 
 def _run_in_worker(key: CellKey) -> tuple[CoverageCell, ...]:
@@ -143,7 +179,11 @@ def _run_in_worker(key: CellKey) -> tuple[CoverageCell, ...]:
 
 
 def run_coverage_study(
-    references: ReferenceScores, policy: ThresholdPolicy, *, workers: int = 1
+    references: ReferenceScores,
+    policy: ThresholdPolicy,
+    *,
+    costs: CostModel | None = None,
+    workers: int = 1,
 ) -> tuple[CoverageCell, ...]:
     """Run every method in every cell: each stratifier, stage size, and true score."""
     if isinstance(workers, bool) or not isinstance(workers, int) or workers < 1:
@@ -162,26 +202,45 @@ def run_coverage_study(
         for score, label in zip(policy.true_scores, labels, strict=True)
     ]
     if workers == 1:
-        runner = _CellRunner(references, policy)
+        runner = _CellRunner(references, policy, costs)
         return tuple(cell for key in keys for cell in runner(key))
     plain = {model: dict(scores) for model, scores in references.items()}
     with ProcessPoolExecutor(
         max_workers=min(workers, len(keys)),
         initializer=_start_worker,
-        initargs=(plain, policy),
+        initargs=(plain, policy, costs),
     ) as pool:
         return tuple(cell for cells in pool.map(_run_in_worker, keys) for cell in cells)
 
 
+def _cost_fraction(cell: CoverageCell, full: Estimates | None) -> dict[str, float] | None:
+    if cell.expected is None or full is None:
+        return None
+    return cell.expected.ratio(full).rounded(6)
+
+
+def _mean_cost(records: Sequence[dict[str, Any]]) -> float | None:
+    """Mean of the mean-estimate cost fraction, each true score with equal weight."""
+    fractions = [r["expected_cost_fraction"] for r in records]
+    if not fractions or any(f is None for f in fractions):
+        return None
+    return round(math.fsum(f["mean"] for f in fractions) / len(fractions), 6)
+
+
 def summarize_coverage(
-    cells: Sequence[CoverageCell], *, subsets: int, alpha: float
+    cells: Sequence[CoverageCell],
+    *,
+    subsets: int,
+    alpha: float,
+    full_tokens: Estimates | None = None,
 ) -> dict[str, Any]:
     """Summarize each cell, each method in each setting, and each method overall.
 
     A setting is one stratifier and one stage size. A method passes a setting
     when it passes every true score. The summary rounds widths to 6 decimals. As
     a result, platform differences in the last bit of a bound cannot change the
-    bytes.
+    bytes. With ``full_tokens``, each cell also gets its expected cost as a
+    fraction of one full run.
     """
     line = coverage_pass_line(subsets, alpha=alpha)
 
@@ -202,9 +261,14 @@ def summarize_coverage(
             "truth_above_interval": c.truth_above,
             "mean_width": round(c.mean_width, 6),
             "passes": passes(c),
+            "escalated": c.escalated,
+            "expected_cost_fraction": _cost_fraction(c, full_tokens),
         }
         for c in cells
     ]
+    by_key: dict[tuple[str, int, str], list[dict[str, Any]]] = {}
+    for c, record in zip(cells, records, strict=True):
+        by_key.setdefault((c.stratifier, c.stage_size, c.method), []).append(record)
     keys = sorted(
         {(c.stratifier, c.stage_size, c.method) for c in cells},
         key=lambda k: (CANDIDATES.index(k[0]), k[1], INTERVAL_METHODS.index(k[2])),
@@ -225,6 +289,7 @@ def summarize_coverage(
                 "failing_true_scores": [c.true_score for c in members if not passes(c)],
                 "passes": all(passes(c) for c in members),
                 "mean_width": round(math.fsum(c.mean_width for c in members) / len(members), 6),
+                "mean_expected_cost_fraction": _mean_cost(by_key[(stratifier, size, method)]),
             }
         )
     methods = []

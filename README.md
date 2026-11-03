@@ -280,6 +280,7 @@ Errors include source paths and line numbers.
 | `threshold_policy.py`                                           | Load a policy file, record its hash, and enforce the frozen lock.   |
 | `threshold_simulation.py`                                       | Draw simulated models with a known full-set score.                  |
 | `two_stage.py`                                                  | Apply the stage-1 interval rule and the census on ESCALATE.         |
+| `threshold_tokens.py`, `threshold_cost.py`                      | Read token counts of saved answers and compute the expected cost.   |
 | `threshold_study.py`, `threshold_report.py`, `threshold_cli.py` | Write the decision table, summary, HTML report, and manifest.       |
 | Reporting modules                                               | Write scores, selections, summaries, and manifests.                 |
 | `mmmu_images.py`                                                | Build normalized original images and controlled variants.           |
@@ -377,15 +378,33 @@ The probe decides at least 96.9% of models that are 0.20 or more from the thresh
 Near the threshold, most models escalate to the full set.
 The highest wrong-decision rate is 7 of 1,000, at true score 0.70.
 
-This result has three limits:
+This result has two limits:
 
 - The models are simulated. The generator uses the same reference difficulty as the stratifier, and this favors stratification.
 - The policy is a draft, not a frozen policy.
-- The cost is in questions, not tokens.
 
 The published claim therefore stays full retention.
-Issues [#58](https://github.com/sdv1708/ai-model-benchmark/issues/58) to [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) address these limits.
+Issues [#59](https://github.com/sdv1708/ai-model-benchmark/issues/59) to [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) address these limits.
 To reproduce the table, run the command in the [usage guide](USAGE.md#run-a-two-stage-threshold-decision).
+
+### Token cost on simulated models
+
+The same command gives every operating point a cost in tokens, from the saved answers of the three reference models.
+A full LiveCodeBench run uses 4,532,328 tokens under the mean estimate (low 1,555,578, high 7,177,805), or 14,388 tokens for each answer.
+A full AA-LCR run uses 96,162 tokens for each answer, 98% of them input.
+These measured values replace the estimates in issue #58 (about 73,000 and 1,700 tokens), which the saved predictions do not support.
+A run decided at stage 1 uses its probe; a run that escalates uses one full run.
+
+| True scores  | Expected cost at 63 questions (share of a full run) |
+| ------------ | --------------------------------------------------: |
+| 0.30 to 0.50 |                                               0.204 |
+| 0.55 to 0.65 |                                               0.650 |
+| 0.70 to 0.75 |                                               0.944 |
+| 0.80 to 0.90 |                                               0.338 |
+
+The probe alone costs 0.199 of a full run.
+Near the threshold, most runs escalate, so the rule costs almost a full run.
+The [benchmark reference](task2/README.md#token-cost) gives the estimate, the cost curve for each stage size, and the cost of each interval method.
 
 ### Interval coverage on simulated models
 
@@ -543,7 +562,6 @@ All issues are in the [issue tracker](https://github.com/sdv1708/ai-model-benchm
 
 | Gap                                                                                                                                             | Planned work                                                                                                                                                        |
 | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Savings are counted in questions, not tokens. One AA-LCR answer uses about 73,000 input tokens. One LiveCodeBench task uses about 1,700 tokens. | [#58](https://github.com/sdv1708/ai-model-benchmark/issues/58) reports the expected token cost of every operating point.                                            |
 | The two-stage rule covers LiveCodeBench only.                                                                                                   | [#59](https://github.com/sdv1708/ai-model-benchmark/issues/59) runs AA-LCR through the same pipeline and states the judge-noise limit beside each result.           |
 | The error rate for an unseen model is not known. The current generator favors stratification.                                                   | [#60](https://github.com/sdv1708/ai-model-benchmark/issues/60) adds a second generator and reports the minimum distance from `t` at which the probe decides.        |
 | The selectors do not use token cost.                                                                                                            | [#61](https://github.com/sdv1708/ai-model-benchmark/issues/61) adds cost-aware Neyman allocation as a selector.                                                     |
@@ -562,7 +580,7 @@ In that case, full retention stays the published claim.
 ```mermaid
 flowchart LR
     I56["#56 Two-stage slice (done)"] --> I57["#57 Intervals (done)"]
-    I56 --> I58["#58 Token cost"]
+    I56 --> I58["#58 Token cost (done)"]
     I58 --> I59["#59 AA-LCR"]
     I57 --> I60["#60 Unseen-model error"]
     I58 --> I61["#61 Neyman selector"]

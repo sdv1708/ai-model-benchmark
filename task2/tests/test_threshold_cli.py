@@ -14,7 +14,15 @@ from benchmark_reference.threshold_cli import main
 TASK2 = Path(__file__).parents[1]
 DRAFT = TASK2 / "policies" / "lcb-threshold-draft.json"
 PANEL = TASK2 / "data" / "lcb-reference-panel.json"
-OUTPUTS = {"decisions.csv", "coverage.csv", "summary.json", "report.html", "manifest.json"}
+OUTPUTS = {
+    "decisions.csv",
+    "coverage.csv",
+    "cost.csv",
+    "question_tokens.csv",
+    "summary.json",
+    "report.html",
+    "manifest.json",
+}
 METHODS = (
     "pooled_exact_hypergeometric",
     "stratified_bonferroni_hypergeometric",
@@ -28,6 +36,7 @@ def _small_policy(tmp_path: Path, **changes: object) -> Path:
     value["seeds"] = [0, 1]
     value["simulation"] = {"seed": 56, "true_scores": [0.5, 0.7, 0.9], "models_per_seed": 5}
     value["coverage"] = {"subsets": 20, "stage_sizes": [32, 63]}
+    value["cost"] = {"stage_sizes": [32, 63], "bands": [[0.5, 0.5], [0.7, 0.9]]}
     value.update(changes)
     path = tmp_path / "policy.json"
     path.write_bytes((json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8"))

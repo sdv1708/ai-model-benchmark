@@ -11,10 +11,15 @@ import html
 import io
 import math
 from collections.abc import Callable, Mapping, Sequence
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
 from benchmark_reference.long_context_reporting import encode_json
+from benchmark_reference.threshold_cost import (
+    CostEvidence,
+    run_tokens,
+)
 from benchmark_reference.threshold_intervals import (
     BONFERRONI,
     BOOTSTRAP,
@@ -26,8 +31,16 @@ from benchmark_reference.threshold_intervals import (
 from benchmark_reference.threshold_policy import LoadedPolicy, alpha_spending
 from benchmark_reference.threshold_study import SimulatedDecision
 
-ANALYSIS_VERSION = "threshold-two-stage-v2"
-OUTPUT_NAMES = ("decisions.csv", "coverage.csv", "summary.json", "report.html", "manifest.json")
+ANALYSIS_VERSION = "threshold-two-stage-v3"
+OUTPUT_NAMES = (
+    "decisions.csv",
+    "coverage.csv",
+    "cost.csv",
+    "question_tokens.csv",
+    "summary.json",
+    "report.html",
+    "manifest.json",
+)
 METHOD_LABELS = {
     POOLED_EXACT: "Pooled exact",
     BONFERRONI: "Bonferroni exact",
@@ -73,6 +86,17 @@ LIMITATIONS = (
     "interval can be too narrow when strata are small.",
     "The coverage study uses the same generator as the decision study, so it has the "
     "same match between strata and simulated difficulty. Issue #60 adds a second generator.",
+    "Token cost counts the input and output tokens of the model answers. It does not "
+    "count judge or grader tokens, and it is not a price: input and output tokens "
+    "usually have different prices. The summary gives the input and output split.",
+    "An unseen model has no token counts, so the cost of each question comes from the "
+    "reference models. The low and high estimates are the sums of the per-question "
+    "minimum and maximum across those models. They are an envelope, not a confidence "
+    "interval: an unseen model can use fewer or more tokens than every reference model.",
+    "The cost assumes that ESCALATE keeps the stage-1 answers and grades only the "
+    "remaining questions, so an escalated run costs one full run.",
+    "The cost at each stage size and band is a Monte Carlo estimate. The decision study "
+    "has one probe for each selector seed, so the probes limit its precision.",
 )
 DRAFT_LIMITATION = "The policy is a draft. It is not frozen and must not be used on real grades."
 IMPLEMENTATION_FILES = (
@@ -84,6 +108,9 @@ IMPLEMENTATION_FILES = (
     "threshold_simulation.py",
     "two_stage.py",
     "threshold_study.py",
+    "inputs.py",
+    "threshold_tokens.py",
+    "threshold_cost.py",
     "threshold_coverage.py",
     "threshold_report.py",
     "threshold_cli.py",
@@ -101,6 +128,29 @@ _COVERAGE_COLUMNS = (
     "truth_above_interval",
     "mean_width",
     "passes",
+    "escalated",
+    "expected_cost_fraction_low",
+    "expected_cost_fraction_mean",
+    "expected_cost_fraction_high",
+)
+_COST_COLUMNS = (
+    "stage_size",
+    "true_score",
+    "draws",
+    "escalated",
+    "escalation_rate",
+    "stage1_tokens_low",
+    "stage1_tokens_mean",
+    "stage1_tokens_high",
+    "expected_tokens_low",
+    "expected_tokens_mean",
+    "expected_tokens_high",
+    "full_tokens_low",
+    "full_tokens_mean",
+    "full_tokens_high",
+    "expected_cost_fraction_low",
+    "expected_cost_fraction_mean",
+    "expected_cost_fraction_high",
 )
 _COLUMNS = (
     "true_score",
@@ -119,6 +169,9 @@ _COLUMNS = (
     "decided_stage",
     "questions_graded",
     "wrong",
+    "tokens_low",
+    "tokens_mean",
+    "tokens_high",
 )
 
 
@@ -126,12 +179,25 @@ def _sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def decision_table(rows: Sequence[SimulatedDecision], *, population: int) -> bytes:
+def _tokens(value: Fraction) -> str:
+    """Tokens with one decimal; a mean across models need not be whole."""
+    return f"{float(value):.1f}"
+
+
+def _share(value: float | None) -> str:
+    """A cost fraction with 3 decimals, or a dash when no cost model ran."""
+    return "-" if value is None else f"{value:.3f}"
+
+
+def decision_table(
+    rows: Sequence[SimulatedDecision], *, population: int, cost: CostEvidence
+) -> bytes:
     stream = io.StringIO(newline="")
     writer = csv.writer(stream, lineterminator="\n")
     writer.writerow(_COLUMNS)
     for row in rows:
         result = row.result
+        used = run_tokens(result, cost.model)
         writer.writerow(
             (
                 row.true_score,
@@ -150,6 +216,9 @@ def decision_table(rows: Sequence[SimulatedDecision], *, population: int) -> byt
                 result.decided_stage,
                 result.questions_graded,
                 int(row.wrong),
+                used.low,
+                _tokens(used.mean),
+                used.high,
             )
         )
     return stream.getvalue().encode("utf-8")
@@ -169,20 +238,173 @@ def coverage_table(coverage: Mapping[str, Any]) -> bytes:
                 cell["truth_above_interval"],
                 f"{cell['mean_width']:.6f}",
                 int(cell["passes"]),
+                cell["escalated"],
+                *(
+                    ("", "", "")
+                    if cell["expected_cost_fraction"] is None
+                    else (
+                        f"{cell['expected_cost_fraction'][k]:.6f}" for k in ("low", "mean", "high")
+                    )
+                ),
             )
         )
     return stream.getvalue().encode("utf-8")
+
+
+def cost_table(cost: CostEvidence) -> bytes:
+    """One row for each cost stage size and true score."""
+    stream = io.StringIO(newline="")
+    writer = csv.writer(stream, lineterminator="\n")
+    writer.writerow(_COST_COLUMNS)
+    for cell in cost.cells:
+        fraction = cell.fraction
+        writer.writerow(
+            (
+                cell.stage_size,
+                cell.true_score,
+                cell.draws,
+                cell.escalated,
+                f"{float(cell.escalation_rate):.6f}",
+                *(_tokens(v) for v in cell.stage1.values),
+                *(_tokens(v) for v in cell.expected.values),
+                *(_tokens(v) for v in cell.full.values),
+                *(f"{float(v):.6f}" for v in fraction.values),
+            )
+        )
+    return stream.getvalue().encode("utf-8")
+
+
+def question_token_table(cost: CostEvidence) -> bytes:
+    """Each question: its estimate and the counts of every reference model.
+
+    An empty count cell is a missing count. It is never a zero.
+    """
+    models = sorted(cost.tokens.counts)
+    stream = io.StringIO(newline="")
+    writer = csv.writer(stream, lineterminator="\n")
+    writer.writerow(
+        (
+            "index",
+            "models_with_counts",
+            "tokens_low",
+            "tokens_mean",
+            "tokens_high",
+            "input_tokens_mean",
+            "output_tokens_mean",
+            *(f"{m}_{kind}_tokens" for m in models for kind in ("input", "output")),
+        )
+    )
+    for index, estimate in sorted(cost.questions.items()):
+        counts: list[int | str] = []
+        for model in models:
+            count = cost.tokens.counts[model].get(index)
+            counts.extend(("", "") if count is None else (count.input, count.output))
+        writer.writerow(
+            (
+                index,
+                estimate.models,
+                estimate.low,
+                _tokens(estimate.mean),
+                estimate.high,
+                _tokens(estimate.input_mean),
+                _tokens(estimate.output_mean),
+                *counts,
+            )
+        )
+    return stream.getvalue().encode("utf-8")
+
+
+def _cross_check(
+    cost: CostEvidence, coverage: Mapping[str, Any], *, stratifier: str, method: str
+) -> dict[str, Any]:
+    """Compare the decision-study cost with the coverage-study cost of the policy method.
+
+    The decision study reuses one probe for each selector seed. The coverage
+    study draws a new subset for every draw. Both estimate the same expected cost.
+    """
+    by_key = {
+        (c["stage_size"], c["true_score"]): c["expected_cost_fraction"]["mean"]
+        for c in coverage["cells"]
+        if c["stratifier"] == stratifier
+        and c["method"] == method
+        and c["expected_cost_fraction"] is not None
+    }
+    pairs = [
+        (cell, by_key[(cell.stage_size, cell.true_score)])
+        for cell in cost.cells
+        if (cell.stage_size, cell.true_score) in by_key
+    ]
+    if not pairs:
+        return {"cells": 0, "max_abs_difference": None, "stage_sizes": []}
+    gaps = [(abs(float(cell.fraction.mean) - other), cell) for cell, other in pairs]
+    gap, worst = max(gaps, key=lambda item: (item[0], item[1].stage_size, item[1].true_score))
+    return {
+        "cells": len(pairs),
+        "stage_sizes": sorted({cell.stage_size for cell, _ in pairs}),
+        "max_abs_difference": round(gap, 6),
+        "max_at": {"stage_size": worst.stage_size, "true_score": worst.true_score},
+    }
+
+
+def cost_document(
+    cost: CostEvidence, coverage: Mapping[str, Any], *, stratifier: str, method: str
+) -> dict[str, Any]:
+    model, full = cost.model, cost.model.full
+    population = len(model.questions)
+    return {
+        "unit": "input plus output tokens of the model answers",
+        "estimate": "For each question: the low, mean, and high total across the reference "
+        "models with a count. A set of questions sums each estimate.",
+        "expected_cost": "stage-1 tokens + escalation probability x remaining tokens, "
+        "divided by the full-set tokens of the same estimate",
+        "reference_models": sorted(cost.tokens.counts),
+        "missing_counts": [
+            {"model": m.model, "index": m.index, "field": m.field} for m in cost.tokens.missing
+        ],
+        "full_run": {
+            "questions": population,
+            "tokens": full.rounded(1),
+            "input_tokens_mean": round(float(model.full_input_mean), 1),
+            "output_tokens_mean": round(float(model.full_output_mean), 1),
+            "tokens_per_question_mean": round(float(full.mean) / population, 1),
+        },
+        "stage_sizes": sorted({c.stage_size for c in cost.cells}),
+        "bands": [
+            {
+                "band": b.label,
+                "low": b.low,
+                "high": b.high,
+                "stage_size": b.stage_size,
+                "true_scores": list(b.true_scores),
+                "escalation_rate": round(float(b.escalation_rate), 6),
+                "expected_tokens": b.expected.rounded(1),
+                "expected_cost_fraction": b.fraction.rounded(6),
+            }
+            for b in cost.bands
+        ],
+        "cross_check": _cross_check(cost, coverage, stratifier=stratifier, method=method),
+    }
 
 
 def summary_document(
     loaded: LoadedPolicy,
     summary: Sequence[Mapping[str, Any]],
     coverage: Mapping[str, Any],
+    cost: CostEvidence,
     *,
     population: int,
     panel_sha256: str,
 ) -> dict[str, Any]:
     policy = loaded.policy
+    point = {cell.true_score: cell for cell in cost.point}
+    summary = [
+        {
+            **row,
+            "expected_tokens": point[row["true_score"]].expected.rounded(1),
+            "expected_cost_fraction": point[row["true_score"]].fraction.rounded(6),
+        }
+        for row in summary
+    ]
     draws = sum(row["draws"] for row in summary)
     wrong = sum(row["wrong_decisions"] for row in summary)
     decided = sum(row["decided_at_stage1"] for row in summary)
@@ -213,6 +435,9 @@ def summary_document(
         },
         "true_scores": list(summary),
         "coverage": {key: value for key, value in coverage.items() if key != "cells"},
+        "cost": cost_document(
+            cost, coverage, stratifier=policy.stratifier, method=policy.interval_method
+        ),
         "limitations": [*LIMITATIONS, *(() if policy.frozen else (DRAFT_LIMITATION,))],
     }
 
@@ -437,13 +662,215 @@ def _coverage_chart(
     return "\n".join(parts)
 
 
-def _legend() -> str:
+def _legend(labels: Sequence[str]) -> str:
+    """One legend entry for each slot: line, dash pattern, marker, and label."""
     items = "\n".join(
         f'<li><svg viewBox="0 0 36 14" aria-hidden="true">{_series_line(slot, "2,7 34,7")}'
-        f"{_marker(slot, 18, 7)}</svg>{html.escape(METHOD_LABELS[method])}</li>"
-        for slot, method in enumerate(INTERVAL_METHODS, start=1)
+        f"{_marker(slot, 18, 7)}</svg>{html.escape(label)}</li>"
+        for slot, label in enumerate(labels, start=1)
     )
     return f'<ul class="legend">\n{items}\n</ul>'
+
+
+def _cost_chart(cost: CostEvidence, *, policy_size: int) -> str:
+    """Expected cost against stage-1 size, one line for each true-score band.
+
+    The whisker at each point spans the low, mean, and high estimates.
+    """
+    width, height, left, right, top, bottom = 640, 280, 56, 16, 16, 44
+    population = len(cost.model.questions)
+    labels = list(dict.fromkeys(b.label for b in cost.bands))
+    sizes = sorted({b.stage_size for b in cost.bands})
+
+    def px(n: float) -> float:
+        return left + n / population * (width - left - right)
+
+    def py(y: float) -> float:
+        return top + (1 - min(max(y, 0.0), 1.0)) * (height - top - bottom)
+
+    e = html.escape
+    at_policy = [float(b.fraction.mean) for b in cost.bands if b.stage_size == policy_size]
+    if at_policy:
+        title = (
+            f"At {policy_size} questions, the expected cost is {min(at_policy):.2f} to "
+            f"{max(at_policy):.2f} of a full run, by true-score band"
+        )
+    else:
+        title = "Expected token cost against stage-1 size, by true-score band"
+    description = (
+        "Expected cost as a share of a full run, mean estimate, for each band and stage size: "
+        + "; ".join(
+            f"true score {label}: "
+            + ", ".join(
+                f"{b.stage_size} questions {float(b.fraction.mean):.3f}"
+                for b in cost.bands
+                if b.label == label
+            )
+            for label in labels
+        )
+        + ". The dashed diagonal is the cost when no run escalates."
+    )
+    parts = [
+        f'<svg viewBox="0 0 {width} {height}" role="img" data-cost="curve" '
+        'aria-labelledby="cost-t cost-d">',
+        f'<title id="cost-t">{e(title)}</title>',
+        f'<desc id="cost-d">{e(description)}</desc>',
+        f'<line class="axis" x1="{left}" y1="{py(0):.1f}" x2="{width - right}" y2="{py(0):.1f}"/>',
+        f'<line class="axis" x1="{left}" y1="{top}" x2="{left}" y2="{py(0):.1f}"/>',
+    ]
+    for tick in (0.0, 0.25, 0.5, 0.75, 1.0):
+        parts.append(
+            f'<text x="{left - 6}" y="{py(tick) + 4:.1f}" text-anchor="end">{tick:.2f}</text>'
+        )
+    for n in (*sizes, population):
+        parts.append(f'<text x="{px(n):.1f}" y="{py(0) + 16:.1f}" text-anchor="middle">{n}</text>')
+    parts.append(
+        f'<line class="mark" x1="{px(0):.1f}" y1="{py(0):.1f}" x2="{px(population):.1f}" '
+        f'y2="{py(1):.1f}"/>'
+        f'<text class="halo" x="{px(population) - 4:.1f}" y="{py(1) + 28:.1f}" '
+        'text-anchor="end">no escalation</text>'
+    )
+    if policy_size in sizes:
+        parts.append(
+            f'<line class="mark" x1="{px(policy_size):.1f}" y1="{top}" '
+            f'x2="{px(policy_size):.1f}" y2="{py(0):.1f}"/>'
+            f'<text class="halo" x="{px(policy_size) + 4:.1f}" y="{py(0) - 8:.1f}">'
+            f"policy {policy_size}</text>"
+        )
+    for slot, label in enumerate(labels, start=1):
+        mine = [b for b in cost.bands if b.label == label]
+        path = " ".join(f"{px(b.stage_size):.1f},{py(float(b.fraction.mean)):.1f}" for b in mine)
+        parts.append(_series_line(slot, path))
+        for b in mine:
+            values = [float(v) for v in b.fraction.values]
+            parts.append(
+                f'<line class="method-{slot} series" x1="{px(b.stage_size):.1f}" '
+                f'y1="{py(min(values)):.1f}" x2="{px(b.stage_size):.1f}" '
+                f'y2="{py(max(values)):.1f}"/>'
+            )
+            parts.append(
+                _marker(
+                    slot,
+                    px(b.stage_size),
+                    py(float(b.fraction.mean)),
+                    f"True score {label}, {b.stage_size} questions: expected cost "
+                    f"{float(b.fraction.mean):.3f} of a full run (low {values[0]:.3f}, high "
+                    f"{values[2]:.3f}), escalation rate {float(b.escalation_rate):.3f}",
+                )
+            )
+    parts.append(
+        f'<text x="{(left + width - right) / 2:.1f}" y="{height - 6}" text-anchor="middle">'
+        "stage-1 size (questions)</text>"
+        f'<text transform="translate(14 {(top + py(0)) / 2:.1f}) rotate(-90)" '
+        'text-anchor="middle">expected cost (share of a full run)</text></svg>'
+    )
+    return "\n".join(parts)
+
+
+def _cost_section(cost: CostEvidence, document: Mapping[str, Any]) -> str:
+    e = html.escape
+    summary = document["cost"]
+    full = summary["full_run"]
+    policy_size = int(document["stage1_size"])
+    labels = list(dict.fromkeys(b.label for b in cost.bands))
+    sizes = sorted({b.stage_size for b in cost.bands})
+    models = ", ".join(summary["reference_models"])
+    missing = cost.tokens.missing
+    if missing:
+        listed = ", ".join(f"{m.model} question {m.index} ({m.field})" for m in missing[:10])
+        more = f", and {len(missing) - 10} more" if len(missing) > 10 else ""
+        missing_text = (
+            f"{len(missing)} counts are missing: {e(listed)}{more}. "
+            "<code>question_tokens.csv</code> leaves them empty. They are not zeros: the "
+            "estimate for those questions uses only the models with a count."
+        )
+    else:
+        missing_text = "Every reference answer has an input and an output count."
+    point = [float(c.fraction.mean) for c in cost.point]
+    head = "".join(f"<th>{n} questions</th>" for n in sizes)
+    band_rows = []
+    by_key = {(b.label, b.stage_size): b for b in cost.bands}
+    for label in labels:
+        values = []
+        for n in sizes:
+            b = by_key[(label, n)]
+            spread = [float(v) for v in b.fraction.values]
+            values.append(
+                f'<td data-cost="{e(label)}-{n}">{spread[1]:.3f}<br>'
+                f"<small>{min(spread):.3f} to {max(spread):.3f}</small></td>"
+            )
+        band_rows.append(f"<tr><td>{e(label)}</td>{''.join(values)}</tr>")
+    groups = {
+        (g["stratifier"], g["stage_size"], g["method"]): g for g in document["coverage"]["groups"]
+    }
+    settings = sorted({(s, n) for s, n, _ in groups})
+    method_head = "".join(f"<th>{e(METHOD_LABELS[m])}</th>" for m in INTERVAL_METHODS)
+    method_rows = []
+    for stratifier, n in settings:
+        cells = "".join(
+            f'<td data-method-cost="{e(stratifier)}-{n}-{e(m)}">'
+            f"{_share(groups[(stratifier, n, m)]['mean_expected_cost_fraction'])}</td>"
+            for m in INTERVAL_METHODS
+        )
+        method_rows.append(f"<tr><td><code>{e(stratifier)}</code>, {n}</td>{cells}</tr>")
+    check = summary["cross_check"]
+    check_text = (
+        f"For the policy method and stratifier, the two studies share {check['cells']} cells. "
+        f"Their mean-estimate costs differ by at most {check['max_abs_difference']:.3f}."
+        if check["cells"]
+        else "The two studies share no stage size, so no cross-check is possible."
+    )
+    return f"""<h2>Token cost</h2>
+<p>A saving in questions is not the same as a saving in tokens. The token counts come from
+the saved answers of the reference models ({e(models)}). An unseen model has no counts, so
+each question gets a low, a mean, and a high estimate across those models. A full run of
+{full["questions"]} questions uses {full["tokens"]["mean"]:,.0f} tokens under the mean estimate
+({full["tokens"]["low"]:,.0f} low, {full["tokens"]["high"]:,.0f} high). Of the mean,
+{full["input_tokens_mean"]:,.0f} are input tokens and {full["output_tokens_mean"]:,.0f} are
+output tokens. {missing_text}</p>
+<p>A run decided at stage 1 uses the tokens of its probe. A run that escalates uses one full
+run. The expected cost is the stage-1 tokens plus the escalation probability times the
+remaining tokens, divided by the full-run tokens. Each estimate divides by its own full-run
+total. At the policy size of {policy_size} questions, the expected cost is
+{min(point):.3f} to {max(point):.3f} of a full run across the true scores.</p>
+<ul class="facts">
+<li>Full run, mean estimate<b>{full["tokens"]["mean"]:,.0f} tokens</b></li>
+<li>Mean tokens per question<b>{full["tokens_per_question_mean"]:,.0f}</b></li>
+<li>Output share of tokens<b>{full["output_tokens_mean"] / full["tokens"]["mean"]:.0%}</b></li>
+<li>Missing counts<b>{len(missing)}</b></li>
+</ul>
+<h3>Expected cost against stage-1 size</h3>
+<p>Each line is one band of true scores; each true score in a band has equal weight. The
+marker is the mean estimate and the whisker spans the low, mean, and high estimates. The dashed
+diagonal is the cost when no run escalates.</p>
+{_legend([f"true score {label}" for label in labels])}
+{_cost_chart(cost, policy_size=policy_size)}
+<h3>Expected cost for each band</h3>
+<p>The share of a full run under the mean estimate. Below it is the range of the share
+across the low, mean, and high estimates. Each estimate divides by its own full-run total,
+so the low estimate can give the larger share. <code>cost.csv</code> holds every stage size
+and true score.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>True scores</th>{head}</tr></thead>
+<tbody>
+{chr(10).join(band_rows)}
+</tbody>
+</table>
+</div>
+<h3>Expected cost for each interval method</h3>
+<p>The coverage draws give the same cost for every method: a draw that the method decides at
+stage 1 costs its subset, and an escalated draw costs a full run. The value is the mean
+estimate over every true score, each with equal weight. A narrower interval escalates less,
+so it costs less, but only a method that keeps its coverage is safe to use. {check_text}</p>
+<div class="scroll">
+<table>
+<thead><tr><th>Stratifier, stage size</th>{method_head}</tr></thead>
+<tbody>
+{chr(10).join(method_rows)}
+</tbody>
+</table>
+</div>"""
 
 
 def _coverage_section(coverage: Mapping[str, Any], cells: Sequence[Mapping[str, Any]]) -> str:
@@ -514,7 +941,7 @@ coverage minus 3 standard errors. {e(finding)}</p>
 <ul>
 {notes}
 </ul>
-{_legend()}
+{_legend([METHOD_LABELS[m] for m in INTERVAL_METHODS])}
 <div class="panels">
 {chr(10).join(panels)}
 </div>
@@ -545,10 +972,12 @@ the setting.</p>
 def html_report(
     document: Mapping[str, Any],
     coverage_cells: Sequence[Mapping[str, Any]],
+    cost: CostEvidence,
     *,
     manifest_inputs: Mapping[str, str],
 ) -> bytes:
     rows, overall, policy = document["true_scores"], document["overall"], document["policy"]
+    costs = [float(r["expected_cost_fraction"]["mean"]) for r in rows]
     threshold, alpha = float(document["threshold"]), float(document["alpha"])
     size, population = document["stage1_size"], document["population"]
     decisive = [(float(r["true_score"]), float(r["decisive_fraction"])) for r in rows]
@@ -564,7 +993,8 @@ def html_report(
         f"<td>{r['escalate']}</td><td>{float(r['decisive_fraction']):.3f}</td>"
         f"<td>{r['wrong_decisions']}</td><td>{float(r['wrong_decision_rate']):.3f}</td>"
         f"<td>{float(r['wrong_rate_upper95']):.3f}</td>"
-        f"<td>{float(r['mean_questions_graded']):.1f}</td></tr>"
+        f"<td>{float(r['mean_questions_graded']):.1f}</td>"
+        f"<td>{float(r['expected_cost_fraction']['mean']):.3f}</td></tr>"
         for r in rows
     )
     limitations = "\n".join(f"<li>{e(str(item))}</li>" for item in document["limitations"])
@@ -612,7 +1042,8 @@ def html_report(
 <p>Question: is the full-set score of a model at or above the threshold
 {threshold:.2f}? A {size}-question probe decided {overall["decided_at_stage1"]} of
 {overall["draws"]} simulated models. The census decided the rest. The highest
-wrong-decision rate at any true score is {worst:.3f}.</p>
+wrong-decision rate at any true score is {worst:.3f}. The expected token cost is
+{min(costs):.3f} to {max(costs):.3f} of a full run, by true score.</p>
 <ul class="facts">
 <li>Threshold<b>{threshold:.2f}</b></li>
 <li>Stage-1 size<b>{size} of {population}</b></li>
@@ -645,12 +1076,16 @@ go one way for a given model.</p>
 <table>
 <thead><tr><th>True score</th><th>Full set</th><th>Truth</th><th>Models</th>
 <th>Stage-1 GO</th><th>Stage-1 NO GO</th><th>ESCALATE</th><th>Decisive fraction</th>
-<th>Wrong</th><th>Wrong rate</th><th>Wrong rate 95% upper</th><th>Mean graded</th></tr></thead>
+<th>Wrong</th><th>Wrong rate</th><th>Wrong rate 95% upper</th><th>Mean graded</th>
+<th>Expected token cost</th></tr></thead>
 <tbody>
 {table}
 </tbody>
 </table>
 </div>
+<p>Expected token cost is the share of a full run under the mean estimate. The token cost
+section below explains it.</p>
+{_cost_section(cost, document)}
 {_coverage_section(document["coverage"], coverage_cells)}
 <h2>Limits</h2>
 <ul>
@@ -675,22 +1110,25 @@ def build_outputs(
     rows: Sequence[SimulatedDecision],
     summary: Sequence[Mapping[str, Any]],
     coverage: Mapping[str, Any],
+    cost: CostEvidence,
     *,
     population: int,
     panel_name: str,
     panel_sha256: str,
 ) -> dict[str, bytes]:
-    """All report files, with the manifest hashing the other three."""
+    """All report files, with the manifest hashing the others."""
     document = summary_document(
-        loaded, summary, coverage, population=population, panel_sha256=panel_sha256
+        loaded, summary, coverage, cost, population=population, panel_sha256=panel_sha256
     )
-    inputs = {loaded.file_name: loaded.sha256, panel_name: panel_sha256}
+    inputs = {loaded.file_name: loaded.sha256, panel_name: panel_sha256, **cost.tokens.files}
     code_root = Path(__file__).parent
     outputs = {
-        "decisions.csv": decision_table(rows, population=population),
+        "decisions.csv": decision_table(rows, population=population, cost=cost),
         "coverage.csv": coverage_table(coverage),
+        "cost.csv": cost_table(cost),
+        "question_tokens.csv": question_token_table(cost),
         "summary.json": encode_json(document),
-        "report.html": html_report(document, coverage["cells"], manifest_inputs=inputs),
+        "report.html": html_report(document, coverage["cells"], cost, manifest_inputs=inputs),
     }
     manifest = {
         "schema_version": 1,
@@ -704,7 +1142,11 @@ def build_outputs(
             "sha256": loaded.sha256,
             "frozen": loaded.policy.frozen,
         },
-        "inputs": {"reference_panel": {"file": panel_name, "sha256": panel_sha256}},
+        "inputs": {
+            "reference_panel": {"file": panel_name, "sha256": panel_sha256},
+            # Only the usage records of these files are read, never a grade.
+            "token_counts": dict(cost.tokens.files),
+        },
         "implementation_hash_policy": "SHA256 of source bytes after CRLF-to-LF normalization",
         "implementation_sha256": {
             name: _sha((code_root / name).read_bytes().replace(b"\r\n", b"\n"))
@@ -715,6 +1157,8 @@ def build_outputs(
             "simulated_models": len(rows),
             "true_scores": len(summary),
             "coverage_cells": len(coverage["cells"]),
+            "cost_cells": len(cost.cells),
+            "missing_token_counts": len(cost.tokens.missing),
         },
     }
     outputs["manifest.json"] = encode_json(manifest)
