@@ -170,8 +170,9 @@ The policy is retrospective and does not certify deployment performance.
 ## Two-stage threshold decision
 
 `threshold-decision` answers one question for each model: is the full-set score at or above the customer threshold `t`?
+One command runs LiveCodeBench and AA-LCR, and one report shows both benchmarks side by side.
 
-1. Select a stage-1 probe with the policy stratifier. The selector uses reference grades only.
+1. Select a stage-1 probe with the policy stratifier. The selector uses the reference panel only: reference grades and, for AA-LCR, the question metadata.
 2. Compute a `1 - alpha` interval for the full-set score with the policy `interval_method`. At alpha `0.05`, this is a 95% interval.
 3. If the lower bound is at or above `t`, decide GO and stop.
 4. If the upper bound is below `t`, decide NO GO and stop.
@@ -216,24 +217,37 @@ Bonferroni with one stratum is the exact interval.
 
 ### Policy files
 
-A versioned JSON file in `policies/` holds every setting:
+A versioned JSON file in `policies/` holds every setting.
+The file has a `benchmarks` object with one section for each benchmark.
+Each section has its own threshold, stage size, interval method, stratifier, and study settings.
+The file-level `policy_id`, `version`, and `frozen` apply to every section.
+A file can hold one benchmark or both.
+The draft is [`threshold-draft.json`](policies/threshold-draft.json):
 
-| Setting           | Draft value                                                        |
-| ----------------- | ------------------------------------------------------------------ |
-| `threshold`       | `0.70`                                                             |
-| `alpha`           | `0.05`                                                             |
-| `stage1_size`     | `63` of 315 questions                                              |
-| `interval_method` | `pooled_exact_hypergeometric`                                      |
-| `stratifier`      | `difficulty_stratified`                                            |
-| `seeds`           | Selector seeds `0` through `19`                                    |
-| `simulation`      | Seed `56`, true scores `0.30` to `0.90` by `0.05`, 50 per seed     |
-| `coverage`        | 2,000 draws per cell, stage sizes `32`, `63`, `95`, `158`, `221`   |
-| `cost`            | Stage sizes `32` to `221` as above; four true-score bands          |
+| Setting           | `live_code_bench_v5`                                             | `aa_lcr`                                                       |
+| ----------------- | ---------------------------------------------------------------- | -------------------------------------------------------------- |
+| `threshold`       | `0.70`                                                           | `0.60`                                                         |
+| `alpha`           | `0.05`                                                           | `0.05`                                                         |
+| `stage1_size`     | `63` of 315 questions                                            | `20` of 100 questions                                          |
+| `interval_method` | `pooled_exact_hypergeometric`                                    | `pooled_exact_hypergeometric`                                  |
+| `stratifier`      | `difficulty_stratified`                                          | `length_difficulty_stratified`                                 |
+| `seeds`           | Selector seeds `0` through `19`                                  | Selector seeds `0` through `19`                                |
+| `simulation`      | Seed `56`, true scores `0.30` to `0.90` by `0.05`, 50 per seed   | The same                                                       |
+| `coverage`        | 2,000 draws per cell, stage sizes `32`, `63`, `95`, `158`, `221` | 2,000 draws per cell, stage sizes `12`, `20`, `30`, `50`, `70` |
+| `cost`            | Stage sizes as for coverage; four true-score bands               | Stage sizes as for coverage; four true-score bands             |
 
-Policy files use `schema_version` 3.
+The stratifier must belong to its benchmark.
+LiveCodeBench uses `difficulty_stratified` or `response_stratified`.
+AA-LCR uses `metadata_stratified` or `length_difficulty_stratified`, the stratifiers of the AA-LCR subset study.
+The AA-LCR threshold `0.60` is the threshold of the recorded operating-point analysis.
+The smallest AA-LCR stage size is `12`, because `length_difficulty_stratified` has 12 occupied strata and each stratum needs one question.
+
+Policy files use `schema_version` 4.
 Schema 2 adds the `coverage` section.
 Schema 3 adds the `cost` section.
-The draft bands are `0.30` to `0.50`, `0.55` to `0.65`, `0.70` to `0.75`, and `0.80` to `0.90`.
+Schema 4 puts the settings in one section for each benchmark.
+The LiveCodeBench draft bands are `0.30` to `0.50`, `0.55` to `0.65`, `0.70` to `0.75`, and `0.80` to `0.90`.
+The AA-LCR draft bands are `0.30` to `0.40`, `0.45` to `0.55`, `0.60` to `0.65`, and `0.70` to `0.90`.
 Each band is an inclusive `[low, high]` pair.
 The bands must be ascending and separate, and each policy true score must be in exactly one band.
 A policy can have at most 4 bands, so that each band has its own color, dash pattern, and marker.
@@ -251,13 +265,26 @@ The real replay itself is issue #63.
 
 Each question's difficulty is its pass rate among the three reference models.
 A simulated model passes question `i` with odds proportional to `(p + 0.5) / (m + 0.5 - p)`, where `p` of `m` reference models pass it.
-The draw has exactly `ceil(true_score * 315)` passes.
+The draw has exactly `ceil(true_score * N)` passes, where `N` is 315 for LiveCodeBench and 100 for AA-LCR.
 The full-set score is therefore known: it is the smallest score at or above the true score.
 A wrong decision differs from the decision on that full-set score.
 
-The generator and the stratifier use the same reference difficulty.
-This favors stratification.
+A simulated AA-LCR model answers the 100 AA-LCR questions.
+Its pass probability uses the AA-LCR reference difficulty.
+The AA-LCR metadata gives the input length and the source document count of each question.
+This metadata defines the strata of both AA-LCR stratifiers.
+The metadata also sets the token cost, because input tokens are most of an AA-LCR answer.
+The metadata does not change the simulated pass probability.
+
+The generator and the stratifiers `difficulty_stratified`, `response_stratified`, and `length_difficulty_stratified` use the same reference difficulty.
+This favors those stratifiers.
+The `metadata_stratified` strata do not use reference grades, so the generator does not favor them.
 Issue #60 adds a second generator.
+
+AA-LCR grades come from an LLM judge, and the saved data has one judgment for each answer.
+Judge noise is therefore not measured.
+The simulated grades have no judge noise, so the AA-LCR results do not include it.
+The report states this limit beside every AA-LCR result.
 
 ### Interval coverage study
 
@@ -338,27 +365,60 @@ The saved predictions do not agree.
 The mean is 94,319 input tokens for an AA-LCR answer and 14,388 total tokens for a LiveCodeBench answer.
 The token loader test checks the totals of all six predictions files.
 
+### AA-LCR on the draft policy
+
+The draft AA-LCR section uses threshold `0.60`, a 20-question probe, the pooled exact interval, and `length_difficulty_stratified`.
+The run draws 1,000 simulated AA-LCR models at each true score, 13,000 models in total.
+Judge noise is not measured: the saved data has one judgment for each answer, and the simulated grades have none.
+
+| Result                                | LiveCodeBench, 63 of 315 |  AA-LCR, 20 of 100 |
+| ------------------------------------- | -----------------------: | -----------------: |
+| Share decided at stage 1              |                    0.684 |              0.314 |
+| Wrong decisions                       |                 8/13,000 |           6/13,000 |
+| Highest wrong-decision rate           |       0.007 at true 0.70 | 0.006 at true 0.60 |
+| Mean expected cost across true scores |                    0.452 |              0.749 |
+| Input share of tokens                 |                       4% |                98% |
+| Largest input ratio between models    |                    1.352 |              1.030 |
+
+- Every wrong-decision rate is below the one-tail bound `0.025`. The 6 AA-LCR wrong decisions are all at true score `0.60`, which is exactly the threshold.
+- A 20-question AA-LCR probe gives a wide interval. The probe decides 86.6% of models at true score `0.30` and 86.0% at `0.90`, but fewer than 10% from `0.50` to `0.75`.
+- For one AA-LCR question, the input counts of the three reference models differ by at most 3.0%. The input cost therefore depends on the documents, not on the model. At each true score, the low and high cost fractions differ by less than 0.0003.
+- The band mean of the AA-LCR cost is 0.815 at 12 questions, 0.775 at 20, 0.670 at 30, 0.692 at 50, and 0.784 at 70. The 30-question probe is the cheapest tested size. Issue #62 sets the frozen stage size.
+- Pooled exact and Bonferroni exact pass all 130 AA-LCR coverage cells; pooled exact has the lowest coverage `0.948`.
+- Stratified Wilson fails 1 of 130 cells: `metadata_stratified`, 20 questions, true score `0.85`, coverage `0.933`.
+- The bootstrap fails 79 of 130 cells, with the lowest coverage `0.013`. Most AA-LCR strata have one or two sampled questions at these sizes, and such a stratum adds no bootstrap width.
+
 ### Run the decision
 
 ```powershell
-uv run threshold-decision --policy policies/lcb-threshold-draft.json --output-dir output/threshold-decision
+uv run threshold-decision --policy policies/threshold-draft.json --output-dir output/threshold-decision
 ```
 
-| File            | Content                                                                     |
-| --------------- | --------------------------------------------------------------------------- |
-| `decisions.csv` | One row per simulated model: true score, stage-1 result, decision, stage, and tokens used. |
-| `coverage.csv`  | One row per coverage cell and method: coverage, misses on each side, width. |
-| `cost.csv`      | One row per cost stage size and true score: escalation rate and token cost. |
-| `question_tokens.csv` | One row per question: its estimate and the counts of each reference model. |
-| `summary.json`  | Decision summary for each true score, coverage verdicts, and limits.        |
-| `report.html`   | Self-contained report with charts and tables, in light and dark modes.      |
-| `manifest.json` | Policy hash, input hashes, and output hashes.                               |
+The command runs every benchmark section of the policy file.
+It writes one folder of tables for each benchmark and three shared files:
+
+| File                             | Content                                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------------------------ |
+| `<benchmark>/decisions.csv`      | One row per simulated model: true score, stage-1 result, decision, stage, and tokens used. |
+| `<benchmark>/coverage.csv`       | One row per coverage cell and method: coverage, misses on each side, width.                |
+| `<benchmark>/cost.csv`           | One row per cost stage size and true score: escalation rate and token cost.                |
+| `<benchmark>/question_tokens.csv` | One row per question: its estimate and the counts of each reference model.                |
+| `summary.json`                   | For each benchmark: decision summary for each true score, coverage verdicts, and limits.   |
+| `report.html`                    | Self-contained report with charts and tables, in light and dark modes.                     |
+| `manifest.json`                  | Policy hash, input hashes for each benchmark, and output hashes.                           |
+
+`<benchmark>` is `live_code_bench_v5` or `aa_lcr`.
+The report starts with a side-by-side table of both benchmarks.
+Each benchmark then has its own section with the same charts and tables.
+Every AA-LCR chart and table has the judge-noise limit beside it.
 
 The command prints the manifest SHA-256.
 Two runs with the same policy file give identical bytes.
 `--workers` sets the number of processes for the cost and coverage studies.
 The default is the number of CPUs.
 The outputs are the same for every worker count.
+`--panel-dir` sets the folder that holds the reference panels `lcb-reference-panel.json` and `aa-lcr-reference-panel.json`.
+The default is `task2/data`.
 `--data-root` sets the folder that holds `Part 1/predictions`.
 The default is the `Evals` folder at the repository root.
 

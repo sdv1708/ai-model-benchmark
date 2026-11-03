@@ -9,6 +9,7 @@ import pytest
 
 from benchmark_reference.models import AnalysisError
 from benchmark_reference.pruning import ReferenceScores, SelectedSample
+from benchmark_reference.threshold_benchmarks import LIVE_CODE_BENCH
 from benchmark_reference.threshold_intervals import (
     INTERVAL_METHODS,
     interval_bounds,
@@ -18,7 +19,9 @@ from benchmark_reference.threshold_policy import ThresholdPolicy, load_policy
 from benchmark_reference.threshold_simulation import SimulationGenerator
 from benchmark_reference.two_stage import decide_two_stage, select_stage1
 
-DRAFT = load_policy(Path(__file__).parents[1] / "policies" / "lcb-threshold-draft.json").policy
+DRAFT = load_policy(Path(__file__).parents[1] / "policies" / "threshold-draft.json").benchmarks[
+    LIVE_CODE_BENCH
+]
 # Ten questions in one reference stratum: every reference model passes all of them.
 ONE_STRATUM = {m: dict.fromkeys(range(10), 1.0) for m in ("a", "b")}
 

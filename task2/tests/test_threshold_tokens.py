@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from benchmark_reference.models import AnalysisError
-from benchmark_reference.threshold_study import load_reference_panel
+from benchmark_reference.threshold_benchmarks import load_reference_panel
 from benchmark_reference.threshold_tokens import (
     MissingCount,
     TokenCount,

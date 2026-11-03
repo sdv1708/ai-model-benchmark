@@ -9,9 +9,10 @@ Decision question: is the full-set score at or above threshold ``t``?
 5. Otherwise ESCALATE: grade the remaining questions and decide on the census.
    The census has no sampling error.
 
-The selector receives reference grades only. It runs before any target grade is
-read. Bounds are fractions. For the exact methods a boundary tie therefore
-cannot flip on rounding.
+The selector reads the reference panel only: the reference grades and, for
+AA-LCR, the question metadata. It runs before the decision reads a target grade.
+Bounds are fractions. For the exact methods a boundary tie therefore cannot flip
+on rounding.
 """
 
 from collections.abc import Mapping
@@ -35,7 +36,7 @@ type FinalDecision = Literal["GO", "NO GO"]
 
 
 class Stage1Selector(Protocol):
-    """Choose the stage-1 questions. Only reference grades are an input."""
+    """Choose the stage-1 questions from the reference panel; target grades are no input."""
 
     def __call__(
         self, references: ReferenceScores, *, stratifier: str, size: int, seed: int

@@ -23,7 +23,7 @@ from fractions import Fraction
 from itertools import repeat
 
 from benchmark_reference.models import AnalysisError
-from benchmark_reference.pruning import ReferenceScores, validate_references
+from benchmark_reference.threshold_benchmarks import ReferencePanel
 from benchmark_reference.threshold_policy import ThresholdPolicy, in_band
 from benchmark_reference.threshold_study import (
     SimulatedDecision,
@@ -186,14 +186,14 @@ def cost_by_true_score(rows: Sequence[SimulatedDecision], model: CostModel) -> l
 
 
 def _cells_for_size(
-    references: ReferenceScores, policy: ThresholdPolicy, model: CostModel, size: int
+    panel: ReferencePanel, policy: ThresholdPolicy, model: CostModel, size: int
 ) -> list[CostCell]:
-    rows = run_simulated_study(references, replace(policy, stage1_size=size))
+    rows = run_simulated_study(panel, replace(policy, stage1_size=size))
     return cost_by_true_score(rows, model)
 
 
 def run_cost_study(
-    references: ReferenceScores,
+    panel: ReferencePanel,
     policy: ThresholdPolicy,
     model: CostModel,
     *,
@@ -208,7 +208,7 @@ def run_cost_study(
     """
     if isinstance(workers, bool) or not isinstance(workers, int) or workers < 1:
         raise AnalysisError("Cost workers must be an integer of at least 1")
-    population = len(validate_references(references))
+    population = len(panel.questions)
     if policy.cost_stage_sizes[-1] > population:
         raise AnalysisError(
             f"Cost stage size {policy.cost_stage_sizes[-1]} exceeds the {population} questions"
@@ -217,12 +217,11 @@ def run_cost_study(
         raise AnalysisError("The base decision rows must use the policy stage1_size")
     sizes = [n for n in policy.cost_stage_sizes if n != policy.stage1_size]
     if workers == 1 or len(sizes) < 2:
-        computed = [_cells_for_size(references, policy, model, n) for n in sizes]
+        computed = [_cells_for_size(panel, policy, model, n) for n in sizes]
     else:
-        plain = {name: dict(scores) for name, scores in references.items()}
         with ProcessPoolExecutor(max_workers=min(workers, len(sizes))) as pool:
             computed = list(
-                pool.map(_cells_for_size, repeat(plain), repeat(policy), repeat(model), sizes)
+                pool.map(_cells_for_size, repeat(panel), repeat(policy), repeat(model), sizes)
             )
     by_size = dict(zip(sizes, computed, strict=True))
     if policy.stage1_size in policy.cost_stage_sizes:

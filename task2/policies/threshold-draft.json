@@ -1,0 +1,178 @@
+{
+  "benchmarks": {
+    "aa_lcr": {
+      "alpha": 0.05,
+      "cost": {
+        "bands": [
+          [
+            0.3,
+            0.4
+          ],
+          [
+            0.45,
+            0.55
+          ],
+          [
+            0.6,
+            0.65
+          ],
+          [
+            0.7,
+            0.9
+          ]
+        ],
+        "stage_sizes": [
+          12,
+          20,
+          30,
+          50,
+          70
+        ]
+      },
+      "coverage": {
+        "stage_sizes": [
+          12,
+          20,
+          30,
+          50,
+          70
+        ],
+        "subsets": 2000
+      },
+      "interval_method": "pooled_exact_hypergeometric",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "simulation": {
+        "models_per_seed": 50,
+        "seed": 56,
+        "true_scores": [
+          0.3,
+          0.35,
+          0.4,
+          0.45,
+          0.5,
+          0.55,
+          0.6,
+          0.65,
+          0.7,
+          0.75,
+          0.8,
+          0.85,
+          0.9
+        ]
+      },
+      "stage1_size": 20,
+      "stratifier": "length_difficulty_stratified",
+      "threshold": 0.6
+    },
+    "live_code_bench_v5": {
+      "alpha": 0.05,
+      "cost": {
+        "bands": [
+          [
+            0.3,
+            0.5
+          ],
+          [
+            0.55,
+            0.65
+          ],
+          [
+            0.7,
+            0.75
+          ],
+          [
+            0.8,
+            0.9
+          ]
+        ],
+        "stage_sizes": [
+          32,
+          63,
+          95,
+          158,
+          221
+        ]
+      },
+      "coverage": {
+        "stage_sizes": [
+          32,
+          63,
+          95,
+          158,
+          221
+        ],
+        "subsets": 2000
+      },
+      "interval_method": "pooled_exact_hypergeometric",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "simulation": {
+        "models_per_seed": 50,
+        "seed": 56,
+        "true_scores": [
+          0.3,
+          0.35,
+          0.4,
+          0.45,
+          0.5,
+          0.55,
+          0.6,
+          0.65,
+          0.7,
+          0.75,
+          0.8,
+          0.85,
+          0.9
+        ]
+      },
+      "stage1_size": 63,
+      "stratifier": "difficulty_stratified",
+      "threshold": 0.7
+    }
+  },
+  "frozen": false,
+  "policy_id": "threshold-policy",
+  "schema_version": 4,
+  "version": "draft-1"
+}

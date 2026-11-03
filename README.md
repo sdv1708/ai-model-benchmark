@@ -278,6 +278,7 @@ Errors include source paths and line numbers.
 | `judge_noise.py`                                                | Report sensitivity to hypothetical changed judgments.               |
 | `operating_points.py`                                           | Apply score, ordering, uncertainty, and decision gates.             |
 | `threshold_policy.py`                                           | Load a policy file, record its hash, and enforce the frozen lock.   |
+| `threshold_benchmarks.py`                                       | Load each benchmark panel and give the strata of its stratifiers.   |
 | `threshold_simulation.py`                                       | Draw simulated models with a known full-set score.                  |
 | `two_stage.py`                                                  | Apply the stage-1 interval rule and the census on ESCALATE.         |
 | `threshold_tokens.py`, `threshold_cost.py`                      | Read token counts of saved answers and compute the expected cost.   |
@@ -353,7 +354,8 @@ These results do not establish a generally sufficient benchmark size.
 
 ### Draft two-stage result on simulated models
 
-The draft policy [`lcb-threshold-draft.json`](task2/policies/lcb-threshold-draft.json) uses threshold 0.70 and a 63-question probe (20% of 315).
+The draft policy [`threshold-draft.json`](task2/policies/threshold-draft.json) has one section for each benchmark.
+Its LiveCodeBench section uses threshold 0.70 and a 63-question probe (20% of 315).
 The run draws 1,000 simulated LiveCodeBench models at each true score, 13,000 models in total.
 "Decided at stage 1" is the fraction of models that got GO or NO GO from the probe alone.
 A wrong decision differs from the decision on the full-set score.
@@ -383,8 +385,15 @@ This result has two limits:
 - The models are simulated. The generator uses the same reference difficulty as the stratifier, and this favors stratification.
 - The policy is a draft, not a frozen policy.
 
+The same command runs the AA-LCR section: threshold 0.60 and a 20-question probe (20% of 100).
+The probe decides 31.4% of 13,000 simulated AA-LCR models at stage 1, with 6 wrong decisions, all at true score 0.60.
+The mean expected cost is 0.749 of a full run, against 0.452 for LiveCodeBench.
+AA-LCR has only 100 questions, so its probe interval is wide and most models near the threshold escalate.
+AA-LCR grades come from an LLM judge with one judgment for each answer, so judge noise is not measured.
+The [benchmark reference](task2/README.md#aa-lcr-on-the-draft-policy) gives the full AA-LCR result.
+
 The published claim therefore stays full retention.
-Issues [#59](https://github.com/sdv1708/ai-model-benchmark/issues/59) to [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) address these limits.
+Issues [#60](https://github.com/sdv1708/ai-model-benchmark/issues/60) to [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) address these limits.
 To reproduce the table, run the command in the [usage guide](USAGE.md#run-a-two-stage-threshold-decision).
 
 ### Token cost on simulated models
@@ -562,7 +571,6 @@ All issues are in the [issue tracker](https://github.com/sdv1708/ai-model-benchm
 
 | Gap                                                                                                                                             | Planned work                                                                                                                                                        |
 | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The two-stage rule covers LiveCodeBench only.                                                                                                   | [#59](https://github.com/sdv1708/ai-model-benchmark/issues/59) runs AA-LCR through the same pipeline and states the judge-noise limit beside each result.           |
 | The error rate for an unseen model is not known. The current generator favors stratification.                                                   | [#60](https://github.com/sdv1708/ai-model-benchmark/issues/60) adds a second generator and reports the minimum distance from `t` at which the probe decides.        |
 | The selectors do not use token cost.                                                                                                            | [#61](https://github.com/sdv1708/ai-model-benchmark/issues/61) adds cost-aware Neyman allocation as a selector.                                                     |
 | A policy chosen after a look at real grades can be biased.                                                                                      | [#62](https://github.com/sdv1708/ai-model-benchmark/issues/62) freezes policy v1 with fixed rules from simulated results only.                                      |
@@ -581,7 +589,7 @@ In that case, full retention stays the published claim.
 flowchart LR
     I56["#56 Two-stage slice (done)"] --> I57["#57 Intervals (done)"]
     I56 --> I58["#58 Token cost (done)"]
-    I58 --> I59["#59 AA-LCR"]
+    I58 --> I59["#59 AA-LCR (done)"]
     I57 --> I60["#60 Unseen-model error"]
     I58 --> I61["#61 Neyman selector"]
     I59 --> I61
