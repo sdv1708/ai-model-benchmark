@@ -24,6 +24,17 @@ LCB, AA_LCR = LIVE_CODE_BENCH, AA_LCR_NAME
 _FILE_KEYS = {"schema_version", "policy_id", "version", "frozen", "benchmarks"}
 
 
+# The error-rate grid: every true score from 0.30 to 0.90 in steps of 0.01.
+EVERY_POINT = tuple(k / 100 for k in range(30, 91))
+# The draft LiveCodeBench section: stage-1 size 63 and coverage sizes 32 to 221.
+SIZES = [32, 63, 95, 158, 221]
+ERROR = {"draws": 10, "stage_sizes": SIZES, "true_scores": {"start": 0.3, "stop": 0.9, "step": 0.1}}
+
+
+def _error(**changes: object) -> dict[str, object]:
+    return {**ERROR, **changes}
+
+
 def _policy(section: str = LCB, /, **changes: object) -> dict[str, Any]:
     """The draft policy; file-level keys change the file, others the benchmark section."""
     value: dict[str, Any] = json.loads(DRAFT.read_text(encoding="utf-8"))
@@ -63,6 +74,9 @@ def test_committed_draft_policy_holds_every_required_setting() -> None:
     assert policy.coverage_stage_sizes == (32, 63, 95, 158, 221)
     assert policy.cost_stage_sizes == (32, 63, 95, 158, 221)
     assert policy.cost_bands == ((0.3, 0.5), (0.55, 0.65), (0.7, 0.75), (0.8, 0.9))
+    assert policy.error_draws == 1000
+    assert policy.error_stage_sizes == (32, 63, 95, 158, 221)
+    assert policy.error_true_scores == EVERY_POINT
 
 
 def test_committed_draft_policy_has_its_own_section_for_aa_lcr() -> None:
@@ -80,6 +94,9 @@ def test_committed_draft_policy_has_its_own_section_for_aa_lcr() -> None:
     assert policy.coverage_stage_sizes == (12, 20, 30, 50, 70)
     assert policy.cost_stage_sizes == (12, 20, 30, 50, 70)
     assert policy.cost_bands == ((0.3, 0.4), (0.45, 0.55), (0.6, 0.65), (0.7, 0.9))
+    assert policy.error_draws == 1000
+    assert policy.error_stage_sizes == (12, 20, 30, 50, 70)
+    assert policy.error_true_scores == EVERY_POINT
 
 
 def test_a_policy_file_can_hold_one_benchmark(tmp_path: Path) -> None:
@@ -165,6 +182,26 @@ def test_spent_alpha_is_at_most_005_for_the_committed_policy() -> None:
         ({"extra": 1}, "keys"),
         ({"schema_version": 1}, "schema_version"),
         ({"schema_version": 3}, "schema_version"),
+        ({"schema_version": 4}, "schema_version"),
+        ({"error_rate": {"draws": 10, "stage_sizes": SIZES}}, "error_rate keys"),
+        # The study must hold the stage-1 size and every coverage size, because #62 chooses
+        # among them.
+        ({"error_rate": _error(stage_sizes=[32, 95, 158, 221])}, "stage1_size"),
+        ({"error_rate": _error(stage_sizes=[32, 63, 95, 158])}, "coverage stage size"),
+        ({"error_rate": _error(true_scores={"start": 0.305, "stop": 0.905, "step": 0.1})}, "2 dec"),
+        ({"error_rate": _error(draws=0)}, "error_rate draws"),
+        ({"error_rate": _error(stage_sizes=[])}, "error_rate stage_sizes"),
+        ({"error_rate": _error(stage_sizes=[63, 32])}, "error_rate stage_sizes"),
+        ({"error_rate": _error(true_scores=[0.3, 0.9])}, "error_rate true_scores keys"),
+        ({"error_rate": _error(true_scores={"start": 0.3, "stop": 0.9})}, "true_scores keys"),
+        ({"error_rate": _error(true_scores={"start": 0.9, "stop": 0.3, "step": 0.1})}, "start"),
+        ({"error_rate": _error(true_scores={"start": 0.3, "stop": 1.2, "step": 0.1})}, "stop"),
+        ({"error_rate": _error(true_scores={"start": 0.3, "stop": 0.9, "step": 0})}, "step"),
+        ({"error_rate": _error(true_scores={"start": True, "stop": 0.9, "step": 0.1})}, "start"),
+        # 0.25 does not divide the span from 0.3 to 0.9.
+        ({"error_rate": _error(true_scores={"start": 0.3, "stop": 0.9, "step": 0.25})}, "step"),
+        # Steps below 0.01 give true scores that share a two-decimal label.
+        ({"error_rate": _error(true_scores={"start": 0.3, "stop": 0.31, "step": 0.005})}, "step"),
         ({"benchmark": LCB}, "keys"),
         ({"coverage": {"subsets": 0, "stage_sizes": [32]}}, "subsets"),
         ({"coverage": {"subsets": 10, "stage_sizes": []}}, "stage_sizes"),
@@ -267,3 +304,18 @@ def test_committed_lock_file_records_no_frozen_policy_yet() -> None:
     assert lock == {"schema_version": 1, "policies": {}}
     with pytest.raises(AnalysisError, match="not marked frozen"):
         authorize_real_replay(load_policy(DRAFT))
+
+
+def test_error_rate_grid_is_exact_decimal_steps(tmp_path: Path) -> None:
+    grid = {"start": 0.3, "stop": 0.9, "step": 0.01}
+    path = _write(tmp_path / "policy.json", _policy(error_rate=_error(true_scores=grid)))
+    scores = load_policy(path).benchmarks[LCB].error_true_scores
+    # Decimal steps: no float drift such as 0.30000000000000004 or 0.8999999999999999.
+    assert scores == EVERY_POINT
+    assert [f"{s:.2f}" for s in scores][:3] == ["0.30", "0.31", "0.32"]
+
+
+def test_error_rate_grid_of_one_point_is_allowed(tmp_path: Path) -> None:
+    grid = {"start": 0.7, "stop": 0.7, "step": 0.01}
+    path = _write(tmp_path / "policy.json", _policy(error_rate=_error(true_scores=grid)))
+    assert load_policy(path).benchmarks[LCB].error_true_scores == (0.7,)

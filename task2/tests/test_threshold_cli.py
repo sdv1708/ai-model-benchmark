@@ -19,7 +19,13 @@ TASK2 = Path(__file__).parents[1]
 DRAFT = TASK2 / "policies" / "threshold-draft.json"
 PANELS = TASK2 / "data"
 LCB, AA_LCR = LIVE_CODE_BENCH, AA_LCR_NAME
-BENCHMARK_FILES = {"decisions.csv", "coverage.csv", "cost.csv", "question_tokens.csv"}
+# The four tables of the earlier studies keep their names, columns, and rows.
+EARLIER_FILES = {"decisions.csv", "coverage.csv", "cost.csv", "question_tokens.csv"}
+BENCHMARK_FILES = EARLIER_FILES | {
+    "error_rate.csv",
+    "error_rate_settings.csv",
+    "error_rate_combined.csv",
+}
 OUTPUTS = {"summary.json", "report.html", "manifest.json", LCB, AA_LCR}
 METHODS = (
     "pooled_exact_hypergeometric",
@@ -37,9 +43,19 @@ def _small_policy(tmp_path: Path, **changes: object) -> Path:
     lcb["simulation"] = {"seed": 56, "true_scores": [0.5, 0.7, 0.9], "models_per_seed": 5}
     lcb["coverage"] = {"subsets": 20, "stage_sizes": [32, 63]}
     lcb["cost"] = {"stage_sizes": [32, 63], "bands": [[0.5, 0.5], [0.7, 0.9]]}
+    lcb["error_rate"] = {
+        "draws": 20,
+        "stage_sizes": [32, 63],
+        "true_scores": {"start": 0.5, "stop": 0.9, "step": 0.1},
+    }
     aa_lcr["simulation"] = {"seed": 56, "true_scores": [0.4, 0.6, 0.8], "models_per_seed": 5}
     aa_lcr["coverage"] = {"subsets": 20, "stage_sizes": [12, 20]}
     aa_lcr["cost"] = {"stage_sizes": [12, 20], "bands": [[0.4, 0.4], [0.6, 0.8]]}
+    aa_lcr["error_rate"] = {
+        "draws": 20,
+        "stage_sizes": [12, 20],
+        "true_scores": {"start": 0.4, "stop": 0.8, "step": 0.1},
+    }
     value.update(changes)
     path = tmp_path / "policy.json"
     path.write_bytes((json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8"))
@@ -167,7 +183,11 @@ def test_report_shows_both_benchmarks_in_matching_sections_with_the_same_charts(
     def headings(section: str) -> list[str]:
         return re.findall(r"<h([34])>", section)
 
-    assert charts(lcb) == charts(aa_lcr) == ["decisive", "wrong", "cost", *["coverage"] * 4]
+    assert (
+        charts(lcb)
+        == charts(aa_lcr)
+        == ["decisive", "wrong", "cost", *["coverage"] * 4, *["error"] * 4, *["distance"] * 2]
+    )
     assert headings(lcb) == headings(aa_lcr)
     # Element ids must stay unique when both sections are on one page.
     ids = re.findall(r'\bid="([^"]+)"', html)
@@ -399,3 +419,116 @@ def test_worker_count_does_not_change_the_outputs(tmp_path: Path) -> None:
         for name in BENCHMARK_FILES:
             one = (tmp_path / "one" / benchmark / name).read_bytes()
             assert one == (tmp_path / "two" / benchmark / name).read_bytes()
+
+
+# Each benchmark: its stratifiers, its error-rate stage sizes, and its count of true scores.
+ERROR_SETTINGS = {
+    LCB: (("difficulty_stratified", "response_stratified"), (32, 63), 5),
+    AA_LCR: (("metadata_stratified", "length_difficulty_stratified"), (12, 20), 5),
+}
+
+
+@pytest.mark.parametrize("benchmark", [LCB, AA_LCR])
+def test_error_rate_tables_hold_every_generator_setting_true_score_and_method(
+    tmp_path: Path, benchmark: str
+) -> None:
+    output = tmp_path / "out"
+    _run(_small_policy(tmp_path), output)
+    stratifiers, sizes, scores = ERROR_SETTINGS[benchmark]
+    rows = _rows(output / benchmark / "error_rate.csv")
+    # 2 generators x 2 stratifiers x 2 stage sizes x 5 true scores x 4 methods.
+    assert len(rows) == 2 * 2 * 2 * scores * 4
+    assert {r["generator"] for r in rows} == {"rasch", "reference_flip"}
+    assert {r["stratifier"] for r in rows} == set(stratifiers)
+    assert {r["stage_size"] for r in rows} == {str(n) for n in sizes}
+    assert {r["method"] for r in rows} == set(METHODS)
+    for row in rows:
+        assert row["draws"] == "20"
+        counts = int(row["stage1_go"]) + int(row["stage1_no_go"]) + int(row["escalated"])
+        assert counts == 20
+        wrong = row["stage1_no_go"] if row["truth"] == "GO" else row["stage1_go"]
+        assert row["wrong"] == wrong
+        # 0.05 + 3 * sqrt(0.05 * 0.95 / 20) = 0.1962, stated as 0.196.
+        assert row["passes"] == str(int(int(row["wrong"]) / 20 <= 0.196))
+        assert row["expected_cost_fraction_mean"] != ""
+    settings = _rows(output / benchmark / "error_rate_settings.csv")
+    assert len(settings) == 2 * 2 * 2 * 4
+    for setting in settings:
+        mine = [
+            r
+            for r in rows
+            if all(r[k] == setting[k] for k in ("generator", "stratifier", "stage_size", "method"))
+        ]
+        assert setting["passes"] == str(int(all(r["passes"] == "1" for r in mine)))
+        assert setting["max_wrong_rate"] == f"{max(int(r['wrong']) for r in mine) / 20:.6f}"
+    combined = _rows(output / benchmark / "error_rate_combined.csv")
+    assert len(combined) == 2 * 2 * 4
+    for row in combined:
+        mine = [
+            s
+            for s in settings
+            if all(s[k] == row[k] for k in ("stratifier", "stage_size", "method"))
+        ]
+        assert {s["generator"] for s in mine} == {"rasch", "reference_flip"}
+        assert row["passes_both_generators"] == str(int(all(s["passes"] == "1" for s in mine)))
+        by_generator = {s["generator"]: s["d95"] for s in mine}
+        assert (row["d95_rasch"], row["d95_reference_flip"]) == (
+            by_generator["rasch"],
+            by_generator["reference_flip"],
+        )
+
+
+def test_summary_and_report_give_the_d95_sentence_for_each_benchmark(tmp_path: Path) -> None:
+    output = tmp_path / "out"
+    _run(_small_policy(tmp_path), output)
+    summary = json.loads((output / "summary.json").read_text(encoding="utf-8"))
+    html = (output / "report.html").read_text(encoding="utf-8")
+    for document in summary["benchmarks"]:
+        error = document["error_rate"]
+        assert error["pass_line"] == 0.196
+        assert error["draws_per_cell"] == 20
+        assert error["generators"] == ["rasch", "reference_flip"]
+        assert "cells" not in error
+        claim = error["claim"]
+        assert claim["stage_size"] == document["stage1_size"]
+        assert claim["stratifier"] == document["stratifier"]
+        assert claim["method"] == document["interval_method"]
+        assert f"{document['stage1_size']}-question probe" in claim["sentence"]
+        section = _section(html, document["benchmark"])
+        found = re.search(r'<p class="claim" data-d95-claim>(.*?)</p>', section, re.S)
+        assert found is not None
+        assert claim["sentence"] in " ".join(found.group(1).split())
+
+
+def test_report_has_an_error_rate_chart_for_each_method_and_a_distance_chart(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "out"
+    _run(_small_policy(tmp_path), output)
+    summary = json.loads((output / "summary.json").read_text(encoding="utf-8"))
+    html = (output / "report.html").read_text(encoding="utf-8")
+    for document in summary["benchmarks"]:
+        stratifiers, sizes, _ = ERROR_SETTINGS[document["benchmark"]]
+        section = _section(html, document["benchmark"])
+        errors = re.findall(r'<svg[^>]*data-error="([^"]+)"(.*?)</svg>', section, re.S)
+        assert [name for name, _ in errors] == list(METHODS)
+        for _, chart in errors:
+            # One line for each generator, a line at alpha 0.05, and the pass line.
+            assert re.findall(r'<polyline class="method-(\d) series"', chart) == ["1", "2"]
+            assert "alpha 0.05" in chart and "pass line 0.196" in chart
+        distances = re.findall(r'<svg[^>]*data-distance="([^"]+)"(.*?)</svg>', section, re.S)
+        assert [name for name, _ in distances] == list(stratifiers)
+        for _, chart in distances:
+            assert "stage-1 size" in chart and "d95" in chart
+        for setting in document["error_rate"]["combined"]:
+            key = f"{setting['stratifier']}-{setting['stage_size']}-{setting['method']}"
+            verdict = re.search(rf'<td data-error-pass="{key}"[^>]*>([^<]+)</td>', section)
+            assert verdict is not None
+            word = "pass" if setting["passes_both_generators"] else "fail"
+            assert verdict.group(1).startswith(word)
+            d95 = re.search(rf'<td data-d95="{key}"[^>]*>([^<]+)', section)
+            assert d95 is not None
+            expected = "not reached" if setting["d95"] is None else f"{setting['d95'] * 100:.0f}"
+            assert d95.group(1) == expected
+        sizes_seen = {setting["stage_size"] for setting in document["error_rate"]["combined"]}
+        assert sizes_seen == set(sizes)

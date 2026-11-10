@@ -26,6 +26,7 @@ from benchmark_reference.threshold_cost import (
     CostEvidence,
     run_tokens,
 )
+from benchmark_reference.threshold_error_rate import FLIP, GENERATORS, RASCH
 from benchmark_reference.threshold_intervals import (
     BONFERRONI,
     BOOTSTRAP,
@@ -37,8 +38,16 @@ from benchmark_reference.threshold_intervals import (
 from benchmark_reference.threshold_policy import LoadedPolicy, ThresholdPolicy, alpha_spending
 from benchmark_reference.threshold_study import SimulatedDecision
 
-ANALYSIS_VERSION = "threshold-two-stage-v4"
-BENCHMARK_OUTPUTS = ("decisions.csv", "coverage.csv", "cost.csv", "question_tokens.csv")
+ANALYSIS_VERSION = "threshold-two-stage-v5"
+BENCHMARK_OUTPUTS = (
+    "decisions.csv",
+    "coverage.csv",
+    "cost.csv",
+    "question_tokens.csv",
+    "error_rate.csv",
+    "error_rate_settings.csv",
+    "error_rate_combined.csv",
+)
 SHARED_OUTPUTS = ("summary.json", "report.html", "manifest.json")
 METHOD_LABELS = {
     POOLED_EXACT: "Pooled exact",
@@ -57,6 +66,13 @@ METHOD_NOTES = {
     "bootstrap resamples. Its variance is the unbiased stratified variance with the "
     "finite-population correction.",
 }
+GENERATOR_LABELS = {RASCH: "Rasch", FLIP: "Reference flip"}
+GENERATOR_NOTES = {
+    RASCH: "A Rasch-style model. Each question passes with odds from its reference pass "
+    "rate, conditioned on the exact pass count of the chosen true score.",
+    FLIP: "The real grades of one reference model, with random grades flipped until the "
+    "pass count reaches the chosen true score. Draws rotate through the reference models.",
+}
 # The line dash and the marker shape give each method a second encoding beside color.
 _DASHES = ("", "7 4", "2 3", "9 3 2 3")
 LIMITATIONS = (
@@ -64,7 +80,8 @@ LIMITATIONS = (
     "The generator takes question difficulty from the reference grades. The strata of "
     "difficulty_stratified, response_stratified, and length_difficulty_stratified use "
     "the same grades, so they match the simulated difficulty exactly. This favors those "
-    "stratifiers. A second generator is planned in issue #60.",
+    "stratifiers. The error-rate study adds a second generator that does not use this "
+    "difficulty model.",
     "The pooled exact interval treats the stratified probe as one simple random "
     "sample. The allocation in each stratum differs from the proportional share "
     "by less than one question. Stratification with that allocation usually "
@@ -85,7 +102,20 @@ LIMITATIONS = (
     "with only passes or only failures. Such a stratum adds no width, so the bootstrap "
     "interval can be too narrow when strata are small.",
     "The coverage study uses the same generator as the decision study, so the strata "
-    "that use reference difficulty have the same advantage. Issue #60 adds a second generator.",
+    "that use reference difficulty have the same advantage. The error-rate study uses "
+    "this generator and a second one.",
+    "The reference-flip generator starts from the real grades of a reference model. The "
+    "strata use the grades of the same models, so a reference-flip model is not unseen. It "
+    "tests a real pattern of grades across questions, not a new model.",
+    "The distance to decide (d95) uses the share of draws decided at stage 1. With 1,000 "
+    "draws, that share has a standard error of about 0.007 near 0.95, so d95 can move by "
+    "one grid step between seeds. It holds only at the true scores of the grid.",
+    "The distance to decide uses the grid true score, not the full-set score. The full-set "
+    "score is the smallest score at or above the grid value. It can be up to one question "
+    "above the grid value.",
+    "In the error-rate study, every stratifier and stage size sees the same simulated models "
+    "and selection seeds. The comparison of two settings is therefore paired. The settings "
+    "are not independent of each other.",
     "Token cost counts the input and output tokens of the model answers. It does not "
     "count judge or grader tokens, and it is not a price: input and output tokens "
     "usually have different prices. The summary gives the input and output split.",
@@ -142,6 +172,7 @@ IMPLEMENTATION_FILES = (
     "threshold_tokens.py",
     "threshold_cost.py",
     "threshold_coverage.py",
+    "threshold_error_rate.py",
     "threshold_report.py",
     "threshold_cli.py",
 )
@@ -182,6 +213,57 @@ _COST_COLUMNS = (
     "expected_cost_fraction_mean",
     "expected_cost_fraction_high",
 )
+_ERROR_COLUMNS = (
+    "generator",
+    "stratifier",
+    "stage_size",
+    "true_score",
+    "full_passes",
+    "truth",
+    "method",
+    "draws",
+    "stage1_go",
+    "stage1_no_go",
+    "escalated",
+    "decided_share",
+    "wrong",
+    "wrong_rate",
+    "passes",
+    "expected_cost_fraction_low",
+    "expected_cost_fraction_mean",
+    "expected_cost_fraction_high",
+)
+_ERROR_SETTING_COLUMNS = (
+    "generator",
+    "stratifier",
+    "stage_size",
+    "method",
+    "true_scores",
+    "draws",
+    "wrong",
+    "max_wrong_rate",
+    "max_wrong_rate_true_score",
+    "passes",
+    "failing_true_scores",
+    "decided_share",
+    "d95_below",
+    "d95_above",
+    "d95",
+    "mean_expected_cost_fraction",
+)
+_ERROR_COMBINED_COLUMNS = (
+    "stratifier",
+    "stage_size",
+    "method",
+    "passes_both_generators",
+    "failing_generators",
+    "max_wrong_rate",
+    "d95_below",
+    "d95_above",
+    "d95",
+    *(f"d95_{g}" for g in GENERATORS),
+    *(f"mean_expected_cost_fraction_{g}" for g in GENERATORS),
+)
 _COLUMNS = (
     "true_score",
     "full_passes",
@@ -210,7 +292,8 @@ class BenchmarkRun:
     """Every study of one policy section, ready for the report.
 
     ``summary`` holds one record for each true score; ``coverage`` is the
-    coverage summary with its cells.
+    coverage summary with its cells; ``error_rate`` is the error-rate summary
+    with its cells.
     """
 
     policy: ThresholdPolicy
@@ -221,6 +304,7 @@ class BenchmarkRun:
     summary: Sequence[Mapping[str, Any]]
     coverage: Mapping[str, Any]
     cost: CostEvidence
+    error_rate: Mapping[str, Any]
 
     @property
     def benchmark(self) -> Benchmark:
@@ -314,6 +398,212 @@ def coverage_table(coverage: Mapping[str, Any]) -> bytes:
             )
         )
     return stream.getvalue().encode("utf-8")
+
+
+def _optional(value: float | None) -> str:
+    """A value with 6 decimals, or an empty cell for no value."""
+    return "" if value is None else f"{value:.6f}"
+
+
+def error_rate_table(error: Mapping[str, Any]) -> bytes:
+    """One row for each generator, stratifier, stage size, true score, and method."""
+    stream = io.StringIO(newline="")
+    writer = csv.writer(stream, lineterminator="\n")
+    writer.writerow(_ERROR_COLUMNS)
+    for cell in error["cells"]:
+        fraction = cell["expected_cost_fraction"]
+        writer.writerow(
+            (
+                *(cell[name] for name in _ERROR_COLUMNS[:11]),
+                f"{cell['decided_share']:.6f}",
+                cell["wrong"],
+                f"{cell['wrong_rate']:.6f}",
+                int(cell["passes"]),
+                *(
+                    ("", "", "")
+                    if fraction is None
+                    else (f"{fraction[k]:.6f}" for k in ("low", "mean", "high"))
+                ),
+            )
+        )
+    return stream.getvalue().encode("utf-8")
+
+
+def error_rate_settings_table(error: Mapping[str, Any]) -> bytes:
+    """One row for each generator, stratifier, stage size, and method.
+
+    An empty d95 cell means that the probe does not reach the 95% decide level
+    on that side within the grid of true scores.
+    """
+    stream = io.StringIO(newline="")
+    writer = csv.writer(stream, lineterminator="\n")
+    writer.writerow(_ERROR_SETTING_COLUMNS)
+    for setting in error["settings"]:
+        writer.writerow(
+            (
+                *(setting[name] for name in _ERROR_SETTING_COLUMNS[:7]),
+                f"{setting['max_wrong_rate']:.6f}",
+                setting["max_wrong_rate_true_score"],
+                int(setting["passes"]),
+                " ".join(setting["failing_true_scores"]),
+                f"{setting['decided_share']:.6f}",
+                *(_optional(setting[k]) for k in ("d95_below", "d95_above", "d95")),
+                _optional(setting["mean_expected_cost_fraction"]),
+            )
+        )
+    return stream.getvalue().encode("utf-8")
+
+
+def error_rate_combined_table(error: Mapping[str, Any]) -> bytes:
+    """One row for each stratifier, stage size, and method, across both generators.
+
+    A setting passes when it passes for every generator. Its d95 is the largest
+    d95 of the generators. An empty d95 cell means that a generator does not
+    reach the 95% decide level inside the grid.
+    """
+    stream = io.StringIO(newline="")
+    writer = csv.writer(stream, lineterminator="\n")
+    writer.writerow(_ERROR_COMBINED_COLUMNS)
+    for setting in error["combined"]:
+        writer.writerow(
+            (
+                setting["stratifier"],
+                setting["stage_size"],
+                setting["method"],
+                int(setting["passes_both_generators"]),
+                " ".join(setting["failing_generators"]),
+                f"{setting['max_wrong_rate']:.6f}",
+                *(_optional(setting[k]) for k in ("d95_below", "d95_above", "d95")),
+                *(_optional(setting["d95_by_generator"].get(g)) for g in GENERATORS),
+                *(
+                    _optional(setting["mean_expected_cost_fraction_by_generator"].get(g))
+                    for g in GENERATORS
+                ),
+            )
+        )
+    return stream.getvalue().encode("utf-8")
+
+
+def _points_text(distance: float | None) -> str:
+    """A distance as whole points of score: 0.12 is 12 points."""
+    return "not reached" if distance is None else f"{distance * 100:.0f}"
+
+
+def _policy_setting(error: Mapping[str, Any], policy: ThresholdPolicy) -> Mapping[str, Any] | None:
+    key = (policy.stratifier, policy.stage1_size, policy.interval_method)
+    return next(
+        (c for c in error["combined"] if (c["stratifier"], c["stage_size"], c["method"]) == key),
+        None,
+    )
+
+
+def distance_claim(error: Mapping[str, Any], policy: ThresholdPolicy) -> dict[str, Any]:
+    """The plain-language d95 sentence for the policy probe, with its evidence."""
+    size, threshold = policy.stage1_size, policy.threshold
+    scores = policy.error_true_scores
+    grid = f"{scores[0]:.2f} to {scores[-1]:.2f}"
+    setting = _policy_setting(error, policy)
+    claim: dict[str, Any] = {
+        "stage_size": size,
+        "stratifier": policy.stratifier,
+        "method": policy.interval_method,
+        "threshold": threshold,
+        "true_score_grid": [scores[0], scores[-1]],
+    }
+    if setting is None:
+        return {
+            **claim,
+            "d95": None,
+            "d95_below": None,
+            "d95_above": None,
+            "d95_by_generator": {},
+            "passes_both_generators": None,
+            "smallest_stage_size_with_d95": None,
+            "sentence": f"The error-rate study does not include the {size}-question probe of "
+            "the policy.",
+            "smallest_sentence": "",
+            "error_verdict": "",
+        }
+    by_generator = setting["d95_by_generator"]
+    d95 = setting["d95"]
+    if d95 is None:
+        # The farthest grid distance on each side: a side that never reaches 95% needs more.
+        limit = Fraction(str(threshold))
+        grid_points = [Fraction(str(score)) for score in scores]
+        reach = {
+            "below": [limit - p for p in grid_points if p < limit],
+            "above": [p - limit for p in grid_points if p >= limit],
+        }
+
+        def side(name: str, where: str) -> str:
+            found = setting[f"d95_{name}"]
+            if found is not None:
+                return f"{where} the threshold, it needs {_points_text(found)} points."
+            if not reach[name]:
+                return f"{where} the threshold, the grid has no true score."
+            farthest = _points_text(float(max(reach[name])))
+            return f"{where} the threshold, it needs more than {farthest} points."
+
+        sentence = (
+            f"A {size}-question probe does not decide at stage 1 in 95% of simulated runs at "
+            f"every grid distance from the {threshold:.2f} threshold, for true scores {grid}. "
+            f"{side('below', 'Below')} {side('above', 'Above')}"
+        )
+    else:
+        detail = ", ".join(
+            f"{GENERATOR_LABELS.get(g, g)} {_points_text(d)} points"
+            for g, d in by_generator.items()
+        )
+        sentence = (
+            f"A {size}-question probe decides at stage 1 for every model that is at least "
+            f"{_points_text(d95)} points ({d95:.2f}) from the {threshold:.2f} threshold. This "
+            f"holds in at least 95% of simulated runs for both generators, at true scores "
+            f"{grid} ({detail})."
+        )
+    reached = sorted(
+        (
+            c
+            for c in error["combined"]
+            if (c["stratifier"], c["method"]) == (policy.stratifier, policy.interval_method)
+            and c["d95"] is not None
+        ),
+        key=lambda c: c["stage_size"],
+    )
+    if not reached:
+        smallest = None
+        smallest_sentence = (
+            "No studied probe size with this stratifier and method reaches d95 inside the grid."
+        )
+    else:
+        smallest = reached[0]["stage_size"]
+        smallest_sentence = (
+            f"The smallest studied probe with this stratifier and method that reaches d95 has "
+            f"{smallest} questions: d95 is {_points_text(reached[0]['d95'])} points."
+        )
+    line = float(error["pass_line"])
+    if setting["passes_both_generators"]:
+        verdict = (
+            f"Its wrong-decision rate is at most the pass line {line:.3f} at every true score "
+            "for both generators."
+        )
+    else:
+        failing = ", ".join(GENERATOR_LABELS.get(g, g) for g in setting["failing_generators"])
+        verdict = (
+            f"Its wrong-decision rate is above the pass line {line:.3f} at one or more true "
+            f"scores for: {failing}."
+        )
+    return {
+        **claim,
+        "d95": d95,
+        "d95_below": setting["d95_below"],
+        "d95_above": setting["d95_above"],
+        "d95_by_generator": dict(by_generator),
+        "passes_both_generators": setting["passes_both_generators"],
+        "smallest_stage_size_with_d95": smallest,
+        "sentence": sentence,
+        "smallest_sentence": smallest_sentence,
+        "error_verdict": verdict,
+    }
 
 
 def cost_table(cost: CostEvidence) -> bytes:
@@ -511,6 +801,12 @@ def benchmark_document(run: BenchmarkRun) -> dict[str, Any]:
         "cost": cost_document(
             cost, run.coverage, stratifier=policy.stratifier, method=policy.interval_method
         ),
+        "error_rate": {
+            **{key: value for key, value in run.error_rate.items() if key != "cells"},
+            "true_scores": list(policy.error_true_scores),
+            "stage_sizes": list(policy.error_stage_sizes),
+            "claim": distance_claim(run.error_rate, policy),
+        },
         "limitations": list(BENCHMARK_LIMITATIONS.get(policy.benchmark, ())),
     }
 
@@ -579,6 +875,8 @@ svg text { fill: var(--muted); font-size: 12px; }
 h3 { font-size: 1.05rem; margin: 24px 0 6px; }
 h4 { font-size: 0.95rem; margin: 20px 0 6px; }
 section { border-top: 2px solid var(--line); margin-top: 40px; }
+.claim { border-left: 4px solid var(--decisive); background: var(--panel);
+  padding: 8px 12px; font-weight: 600; }
 .judge-noise { border-left: 4px solid var(--mark); background: var(--panel);
   padding: 6px 10px; font-size: 0.92em; }
 """
@@ -1088,6 +1386,400 @@ the setting.</p>
 </div>"""
 
 
+def _grid_ticks(xs: Sequence[float]) -> list[float]:
+    """Every 0.10 of a fine grid; every point of a grid with fewer than 8 points."""
+    if len(xs) < 8:
+        return list(xs)
+    return [x for x in xs if round(x * 100) % 10 == 0]
+
+
+def _error_chart(
+    method: str,
+    cells: Sequence[Mapping[str, Any]],
+    *,
+    benchmark: str,
+    title: str,
+    y_max: float,
+    alpha: float,
+    pass_line: float,
+    threshold: float,
+) -> str:
+    """Wrong-decision rate against true score for one method: one line for each generator."""
+    width, height, left, right, top, bottom = 340, 230, 52, 20, 12, 40
+    xs = sorted({float(c["true_score"]) for c in cells})
+    x_low, x_high = xs[0], xs[-1]
+    span = x_high - x_low or 1.0
+
+    def px(x: float) -> float:
+        return left + (x - x_low) / span * (width - left - right)
+
+    def py(y: float) -> float:
+        return top + (1 - min(y, y_max) / y_max) * (height - top - bottom)
+
+    e = html.escape
+    ids = e(f"{benchmark}-error-{method}")
+    highs = {
+        g: max((float(c["wrong_rate"]) for c in cells if c["generator"] == g), default=0.0)
+        for g in GENERATORS
+    }
+    description = (
+        f"{METHOD_LABELS[method]}: wrong-decision rate for each true score and generator. "
+        "Highest rate: "
+        + "; ".join(f"{GENERATOR_LABELS[g]} {highs[g]:.3f}" for g in GENERATORS)
+        + f". Dashed lines: alpha {alpha:.2f} and the pass line {pass_line:.3f}."
+    )
+    parts = [
+        f'<svg viewBox="0 0 {width} {height}" role="img" data-chart="error" '
+        f'data-error="{e(method)}" aria-labelledby="{ids}-t {ids}-d">',
+        f'<title id="{ids}-t">{e(title)}</title>',
+        f'<desc id="{ids}-d">{e(description)}</desc>',
+        f'<line class="axis" x1="{left}" y1="{py(0):.1f}" x2="{width - right}" y2="{py(0):.1f}"/>',
+        f'<line class="axis" x1="{left}" y1="{top}" x2="{left}" y2="{py(0):.1f}"/>',
+    ]
+    for tick in (0.0, y_max / 2, y_max):
+        parts.append(
+            f'<text x="{left - 6}" y="{py(tick) + 4:.1f}" text-anchor="end">{tick:.3f}</text>'
+        )
+    for x in _grid_ticks(xs):
+        parts.append(
+            f'<text x="{px(x):.1f}" y="{py(0) + 15:.1f}" text-anchor="middle">{x:.2f}</text>'
+        )
+    if x_low <= threshold <= x_high:
+        parts.append(
+            f'<line class="mark" x1="{px(threshold):.1f}" y1="{top}" '
+            f'x2="{px(threshold):.1f}" y2="{py(0):.1f}"/>'
+            f'<text class="halo" x="{px(threshold) - 4:.1f}" y="{top + 12}" '
+            f'text-anchor="end">t {threshold:.2f}</text>'
+        )
+    for value, text, dy in (
+        (alpha, f"alpha {alpha:.2f}", 14),
+        (pass_line, f"pass line {pass_line:.3f}", -4),
+    ):
+        parts.append(
+            f'<line class="mark" x1="{left}" y1="{py(value):.1f}" x2="{width - right}" '
+            f'y2="{py(value):.1f}"/>'
+            f'<text class="halo" x="{width - right}" y="{py(value) + dy:.1f}" '
+            f'text-anchor="end">{e(text)}</text>'
+        )
+    for slot, generator in enumerate(GENERATORS, start=1):
+        mine = sorted(
+            (c for c in cells if c["generator"] == generator), key=lambda c: float(c["true_score"])
+        )
+        path = " ".join(
+            f"{px(float(c['true_score'])):.1f},{py(float(c['wrong_rate'])):.1f}" for c in mine
+        )
+        parts.append(_series_line(slot, path))
+        # On a fine grid, markers only where a draw was wrong, so a flat line stays readable.
+        parts.extend(
+            _marker(
+                slot,
+                px(float(c["true_score"])),
+                py(float(c["wrong_rate"])),
+                f"{GENERATOR_LABELS[generator]}, true score {c['true_score']}: "
+                f"{c['wrong']} wrong of {c['draws']} ({float(c['wrong_rate']):.3f}), "
+                f"decided at stage 1 {float(c['decided_share']):.3f}",
+            )
+            for c in mine
+            if c["wrong"] or len(mine) < 8
+        )
+    parts.append(
+        f'<text x="{(left + width - right) / 2:.1f}" y="{height - 6}" text-anchor="middle">'
+        "true full-set score</text>"
+        f'<text transform="translate(12 {(top + py(0)) / 2:.1f}) rotate(-90)" '
+        'text-anchor="middle">wrong-decision rate</text></svg>'
+    )
+    return "\n".join(parts)
+
+
+def _distance_chart(
+    stratifier: str,
+    settings: Sequence[Mapping[str, Any]],
+    *,
+    benchmark: str,
+    title: str,
+    population: int,
+    policy_size: int,
+    y_max: float,
+) -> str:
+    """d95 in points against stage-1 size: one line for each generator.
+
+    A stage size whose probe does not reach the decide level has no marker, and
+    the line breaks there.
+    """
+    width, height, left, right, top, bottom = 340, 230, 52, 20, 12, 40
+    sizes = sorted({int(s["stage_size"]) for s in settings})
+
+    def px(n: float) -> float:
+        return left + n / population * (width - left - right)
+
+    def py(y: float) -> float:
+        return top + (1 - min(y, y_max) / y_max) * (height - top - bottom)
+
+    e = html.escape
+    ids = e(f"{benchmark}-distance-{stratifier}")
+    description = (
+        "d95 in points for each stage size and generator: "
+        + "; ".join(
+            f"{GENERATOR_LABELS[g]} "
+            + ", ".join(
+                f"{s['stage_size']} questions {_points_text(s['d95'])}"
+                for s in settings
+                if s["generator"] == g
+            )
+            for g in GENERATORS
+        )
+        + ". A stage size with no 95% decision inside the grid has no marker."
+    )
+    parts = [
+        f'<svg viewBox="0 0 {width} {height}" role="img" data-chart="distance" '
+        f'data-distance="{e(stratifier)}" aria-labelledby="{ids}-t {ids}-d">',
+        f'<title id="{ids}-t">{e(title)}</title>',
+        f'<desc id="{ids}-d">{e(description)}</desc>',
+        f'<line class="axis" x1="{left}" y1="{py(0):.1f}" x2="{width - right}" y2="{py(0):.1f}"/>',
+        f'<line class="axis" x1="{left}" y1="{top}" x2="{left}" y2="{py(0):.1f}"/>',
+    ]
+    for tick in (0.0, y_max / 2, y_max):
+        parts.append(
+            f'<text x="{left - 6}" y="{py(tick) + 4:.1f}" text-anchor="end">{tick:.0f}</text>'
+        )
+    for n in (*sizes, population):
+        parts.append(f'<text x="{px(n):.1f}" y="{py(0) + 15:.1f}" text-anchor="middle">{n}</text>')
+    if policy_size in sizes:
+        parts.append(
+            f'<line class="mark" x1="{px(policy_size):.1f}" y1="{top}" '
+            f'x2="{px(policy_size):.1f}" y2="{py(0):.1f}"/>'
+            f'<text class="halo" x="{px(policy_size) + 4:.1f}" y="{top + 12}">'
+            f"policy {policy_size}</text>"
+        )
+    # A stage size that no generator decides at 95% inside the grid gets a vertical label.
+    for n in sizes:
+        if all(s["d95"] is None for s in settings if s["stage_size"] == n):
+            parts.append(
+                f'<text class="halo" transform="translate({px(n) + 13:.1f} {py(0) - 6:.1f}) '
+                f'rotate(-90)">not reached</text>'
+            )
+    for slot, generator in enumerate(GENERATORS, start=1):
+        mine = sorted(
+            (s for s in settings if s["generator"] == generator), key=lambda s: s["stage_size"]
+        )
+        # One polyline for each run of stage sizes with a d95.
+        runs: list[list[Mapping[str, Any]]] = [[]]
+        for s in mine:
+            if s["d95"] is None:
+                runs.append([])
+            else:
+                runs[-1].append(s)
+        for run in (r for r in runs if r):
+            path = " ".join(
+                f"{px(int(s['stage_size'])):.1f},{py(float(s['d95']) * 100):.1f}" for s in run
+            )
+            parts.append(_series_line(slot, path))
+        parts.extend(
+            _marker(
+                slot,
+                px(int(s["stage_size"])),
+                py(float(s["d95"]) * 100),
+                f"{GENERATOR_LABELS[generator]}, {s['stage_size']} questions: d95 "
+                f"{_points_text(s['d95'])} points (below {_points_text(s['d95_below'])}, "
+                f"above {_points_text(s['d95_above'])})",
+            )
+            for s in mine
+            if s["d95"] is not None
+        )
+    parts.append(
+        f'<text x="{(left + width - right) / 2:.1f}" y="{height - 6}" text-anchor="middle">'
+        "stage-1 size (questions)</text>"
+        f'<text transform="translate(12 {(top + py(0)) / 2:.1f}) rotate(-90)" '
+        'text-anchor="middle">d95 (points of score)</text></svg>'
+    )
+    return "\n".join(parts)
+
+
+def _error_section(document: Mapping[str, Any], all_cells: Sequence[Mapping[str, Any]]) -> str:
+    """The error-rate study: the d95 sentence, the two charts, and two tables."""
+    e = html.escape
+    error, claim = document["error_rate"], document["error_rate"]["claim"]
+    note = _judge_note(document)
+    key = str(document["benchmark"])
+    threshold, alpha = float(document["threshold"]), float(document["alpha"])
+    stratifier, method = str(document["stratifier"]), str(document["interval_method"])
+    policy_size, population = int(document["stage1_size"]), int(document["population"])
+    pass_line = float(error["pass_line"])
+    draws = int(error["draws_per_cell"])
+    sizes = list(error["stage_sizes"])
+    chart_size = policy_size if policy_size in sizes else sizes[0]
+    scores = error["true_scores"]
+    grid = f"{scores[0]:.2f} to {scores[-1]:.2f}"
+    settings = [
+        s
+        for s in error["settings"]
+        if (s["stratifier"], s["stage_size"]) == (stratifier, chart_size)
+    ]
+    cells = [c for c in all_cells if (c["stratifier"], c["stage_size"]) == (stratifier, chart_size)]
+    highest = max((float(c["wrong_rate"]) for c in cells), default=0.0)
+    # Room above the pass line for its label, and above the highest rate.
+    y_max = max(0.1, math.ceil(max(highest, pass_line * 1.3) * 20) / 20)
+    error_panels = []
+    for m in INTERVAL_METHODS:
+        mine = [s for s in settings if s["method"] == m]
+        passing = all(s["passes"] for s in mine)
+        worst = max((float(s["max_wrong_rate"]) for s in mine), default=0.0)
+        verdict = "passes" if passing else "fails"
+        title = (
+            f"{METHOD_LABELS[m]} {verdict} for both generators: highest wrong-decision "
+            f"rate {worst:.3f}"
+            if passing
+            else f"{METHOD_LABELS[m]} fails the pass line: highest wrong-decision rate {worst:.3f}"
+        )
+        chart = _error_chart(
+            m,
+            [c for c in cells if c["method"] == m],
+            benchmark=key,
+            title=title,
+            y_max=y_max,
+            alpha=alpha,
+            pass_line=pass_line,
+            threshold=threshold,
+        )
+        css = "" if passing else ' class="fail"'
+        error_panels.append(
+            f"<figure><figcaption{css}>{e(METHOD_LABELS[m])}: {verdict} "
+            f"(highest {worst:.3f})</figcaption>\n{chart}</figure>"
+        )
+    distances = [
+        float(s["d95"]) * 100
+        for s in error["settings"]
+        if s["method"] == method and s["d95"] is not None
+    ]
+    # Room above the highest point for the policy label.
+    d_max = max(10.0, math.ceil((max(distances, default=0.0) + 4) / 10) * 10)
+    stratifiers = list(dict.fromkeys(s["stratifier"] for s in error["settings"]))
+    distance_panels = []
+    for name in stratifiers:
+        mine = [s for s in error["settings"] if s["stratifier"] == name and s["method"] == method]
+        at_policy = [s for s in mine if s["stage_size"] == policy_size]
+        found = [s["d95"] for s in at_policy if s["d95"] is not None]
+        if at_policy and len(found) == len(at_policy):
+            title = (
+                f"{name}: at {policy_size} questions, d95 is {_points_text(min(found))} to "
+                f"{_points_text(max(found))} points across the generators"
+            )
+        else:
+            title = f"{name}: d95 against stage-1 size, by generator"
+        chart = _distance_chart(
+            name,
+            mine,
+            benchmark=key,
+            title=title,
+            population=population,
+            policy_size=policy_size,
+            y_max=d_max,
+        )
+        distance_panels.append(
+            f"<figure><figcaption><code>{e(name)}</code></figcaption>\n{chart}</figure>"
+        )
+    combined = {(c["stratifier"], c["stage_size"], c["method"]): c for c in error["combined"]}
+    rows = list(dict.fromkeys((s, n) for s, n, _ in combined))
+    header = "".join(f"<th>{e(METHOD_LABELS[m])}</th>" for m in INTERVAL_METHODS)
+
+    def table(cell: Callable[[str, Mapping[str, Any]], str]) -> str:
+        lines = []
+        for name, n in rows:
+            values = "".join(
+                cell(f"{e(name)}-{n}-{e(m)}", combined[(name, n, m)]) for m in INTERVAL_METHODS
+            )
+            lines.append(f"<tr><td><code>{e(name)}</code>, {n}</td>{values}</tr>")
+        return "\n".join(lines)
+
+    def verdict_cell(cell_key: str, setting: Mapping[str, Any]) -> str:
+        passing = setting["passes_both_generators"]
+        word, css = ("pass", "") if passing else ("fail", ' class="fail"')
+        return (
+            f'<td data-error-pass="{cell_key}"{css}>{word} '
+            f"{float(setting['max_wrong_rate']):.3f}</td>"
+        )
+
+    def distance_cell(cell_key: str, setting: Mapping[str, Any]) -> str:
+        detail = " / ".join(_points_text(d) for d in setting["d95_by_generator"].values())
+        # A d95 means nothing when the setting decides wrong too often.
+        if setting["passes_both_generators"]:
+            return (
+                f'<td data-d95="{cell_key}">{_points_text(setting["d95"])}'
+                f"<br><small>{e(detail)}</small></td>"
+            )
+        return (
+            f'<td data-d95="{cell_key}" class="fail">{_points_text(setting["d95"])}'
+            f"<br><small>{e(detail)}; error rate fails</small></td>"
+        )
+
+    generator_notes = "\n".join(
+        f"<li><b>{e(GENERATOR_LABELS[g])}</b> (<code>{e(g)}</code>). {e(GENERATOR_NOTES[g])}</li>"
+        for g in GENERATORS
+    )
+    passing_settings = [c for c in error["combined"] if c["passes_both_generators"]]
+    labels = [GENERATOR_LABELS[g] for g in GENERATORS]
+    return f"""<h3>Error rate and distance to decide</h3>
+{note}
+<p>How often does the probe decide wrong for a simulated model, and how far from the
+threshold must a model be for the probe to decide? For each setting (stratifier, stage size,
+and interval method) and each true score from {grid}, the study draws {draws:,} pairs of a
+new simulated model and a new stratified subset. Every method sees the same pairs, and
+every setting sees the same simulated models, so two settings compare on paired draws. Only
+stage 1 can decide wrong. A setting passes when its wrong-decision rate is at most
+{pass_line:.3f} at every true score: alpha {alpha:.2f} plus 3 standard errors.
+{len(passing_settings)} of {len(error["combined"])} settings pass for both generators.</p>
+<ul>
+{generator_notes}
+</ul>
+<p class="claim" data-d95-claim>{e(str(claim["sentence"]))}
+{e(str(claim["error_verdict"]))}
+{e(str(claim["smallest_sentence"]))}</p>
+<p>d95 is the smallest distance from the threshold at which the probe decides at stage 1 in
+at least 95% of the draws, at every grid true score at least that far away. Each side of the
+threshold has its own distance, and d95 is the larger one. One point is 0.01 of score.</p>
+<h4>Wrong-decision rate against true score</h4>
+{note}
+<p>The policy probe: {chart_size} questions, <code>{e(stratifier)}</code>. One panel for
+each interval method. A marker shows a true score with at least one wrong decision; hold the
+pointer on it for the counts. <code>error_rate.csv</code> holds every cell.</p>
+{_legend(labels)}
+<div class="panels">
+{chr(10).join(error_panels)}
+</div>
+<h4>Distance to decide against stage-1 size</h4>
+{note}
+<p>The policy method, <code>{e(method)}</code>, for each stratifier. A larger probe decides
+closer to the threshold. A stage size with no marker does not reach 95% inside the grid.</p>
+{_legend(labels)}
+<div class="panels">
+{chr(10).join(distance_panels)}
+</div>
+<h4>Highest wrong-decision rate for both generators</h4>
+{note}
+<p>"pass" means that the setting passes at every true score for both generators. The
+number is the highest wrong-decision rate across the generators and true scores.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>Stratifier, stage size</th>{header}</tr></thead>
+<tbody>
+{table(verdict_cell)}
+</tbody>
+</table>
+</div>
+<h4>Distance to decide (d95) for both generators</h4>
+{note}
+<p>The larger d95 of the two generators, in points. Below it: {e(" / ".join(labels))}.
+<code>error_rate_settings.csv</code> holds each side and generator.</p>
+<div class="scroll">
+<table>
+<thead><tr><th>Stratifier, stage size</th>{header}</tr></thead>
+<tbody>
+{table(distance_cell)}
+</tbody>
+</table>
+</div>"""
+
+
 def _benchmark_section(document: Mapping[str, Any], run: BenchmarkRun) -> str:
     """One benchmark: the same charts and tables for every benchmark."""
     rows, overall = document["true_scores"], document["overall"]
@@ -1198,6 +1890,7 @@ go one way for a given model.</p>
 part below explains it.</p>
 {_cost_section(run.cost, document)}
 {_coverage_section(document, run.coverage["cells"])}
+{_error_section(document, run.error_rate["cells"])}
 {limits_block}
 </section>"""
 
@@ -1228,6 +1921,14 @@ def _overview(documents: Sequence[Mapping[str, Any]]) -> str:
     def input_ratio(d: Mapping[str, Any]) -> str:
         return _ratio_text(d["cost"]["full_run"]["input_tokens_max_model_ratio"])
 
+    def d95(d: Mapping[str, Any]) -> str:
+        distance = d["error_rate"]["claim"]["d95"]
+        return "not reached" if distance is None else f"{_points_text(distance)} points"
+
+    def error_pass(d: Mapping[str, Any]) -> str:
+        passes = d["error_rate"]["claim"]["passes_both_generators"]
+        return "not studied" if passes is None else ("pass" if passes else "fail")
+
     rows: tuple[tuple[str, str, Callable[[Mapping[str, Any]], str]], ...] = (
         ("threshold", "Threshold", lambda d: f"{float(d['threshold']):.2f}"),
         ("stage1-size", "Stage-1 size", lambda d: f"{d['stage1_size']} of {d['population']}"),
@@ -1241,6 +1942,8 @@ def _overview(documents: Sequence[Mapping[str, Any]]) -> str:
             "Highest wrong-decision rate",
             lambda d: f"{float(d['overall']['max_wrong_decision_rate']):.3f}",
         ),
+        ("error-pass", "Error rate within the pass line, both generators", error_pass),
+        ("d95", "Distance to decide (d95)", d95),
         ("cost", "Expected cost, share of a full run", cost),
         ("mean-cost", "Mean expected cost across true scores", mean_cost),
         (
@@ -1361,6 +2064,9 @@ def build_outputs(loaded: LoadedPolicy, runs: Sequence[BenchmarkRun]) -> dict[st
         outputs[f"{folder}/coverage.csv"] = coverage_table(run.coverage)
         outputs[f"{folder}/cost.csv"] = cost_table(run.cost)
         outputs[f"{folder}/question_tokens.csv"] = question_token_table(run.cost)
+        outputs[f"{folder}/error_rate.csv"] = error_rate_table(run.error_rate)
+        outputs[f"{folder}/error_rate_settings.csv"] = error_rate_settings_table(run.error_rate)
+        outputs[f"{folder}/error_rate_combined.csv"] = error_rate_combined_table(run.error_rate)
     outputs["summary.json"] = encode_json(document)
     outputs["report.html"] = html_report(document, runs, manifest_inputs=inputs)
     manifest = {
@@ -1398,6 +2104,7 @@ def build_outputs(loaded: LoadedPolicy, runs: Sequence[BenchmarkRun]) -> dict[st
                 "coverage_cells": len(run.coverage["cells"]),
                 "cost_cells": len(run.cost.cells),
                 "missing_token_counts": len(run.cost.tokens.missing),
+                "error_rate_cells": len(run.error_rate["cells"]),
             }
             for run in runs
         },

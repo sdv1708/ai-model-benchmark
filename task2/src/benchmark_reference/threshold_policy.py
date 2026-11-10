@@ -24,7 +24,7 @@ from benchmark_reference.threshold_benchmarks import BENCHMARKS
 from benchmark_reference.threshold_intervals import INTERVAL_METHODS
 from benchmark_reference.uncertainty import validate_threshold
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 FROZEN_LOCK = Path(__file__).resolve().parents[2] / "policies" / "frozen-policies.json"
 _FILE_KEYS = {"schema_version", "policy_id", "version", "frozen", "benchmarks"}
 _KEYS = {
@@ -37,10 +37,13 @@ _KEYS = {
     "simulation",
     "coverage",
     "cost",
+    "error_rate",
 }
 _SIMULATION_KEYS = {"seed", "true_scores", "models_per_seed"}
 _COVERAGE_KEYS = {"subsets", "stage_sizes"}
 _COST_KEYS = {"stage_sizes", "bands"}
+_ERROR_KEYS = {"draws", "stage_sizes", "true_scores"}
+_GRID_KEYS = {"start", "stop", "step"}
 MAX_COST_BANDS = 4
 
 
@@ -69,6 +72,9 @@ class ThresholdPolicy:
     coverage_stage_sizes: tuple[int, ...]
     cost_stage_sizes: tuple[int, ...]
     cost_bands: tuple[tuple[float, float], ...]
+    error_draws: int
+    error_stage_sizes: tuple[int, ...]
+    error_true_scores: tuple[float, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -165,6 +171,30 @@ def _cost_bands(value: object, true_scores: list[float]) -> tuple[tuple[float, f
     return tuple(bands)
 
 
+def _grid(value: object) -> tuple[float, ...]:
+    """True scores from ``start`` to ``stop`` in exact decimal steps of ``step``.
+
+    Each value must be a multiple of 0.01, so every true score has an exact
+    two-decimal label. The step must divide the span exactly.
+    """
+    grid = _exact_keys(value, _GRID_KEYS, "error_rate true_scores")
+    for name in ("start", "stop"):
+        if not _number(grid[name]):
+            raise AnalysisError(f"Policy error_rate true_scores {name} must be in [0, 1]")
+    start, stop = Fraction(str(grid["start"])), Fraction(str(grid["stop"]))
+    if start > stop:
+        raise AnalysisError("Policy error_rate true_scores start must not exceed stop")
+    if not _number(grid["step"]) or Fraction(str(grid["step"])) < Fraction(1, 100):
+        raise AnalysisError("Policy error_rate true_scores step must be in [0.01, 1]")
+    step = Fraction(str(grid["step"]))
+    if any((value * 100).denominator != 1 for value in (start, stop, step)):
+        raise AnalysisError("Policy error_rate true_scores start, stop, and step need 2 decimals")
+    points = (stop - start) / step
+    if points.denominator != 1:
+        raise AnalysisError("Policy error_rate true_scores step must divide stop - start")
+    return tuple(float(start + k * step) for k in range(int(points) + 1))
+
+
 def load_policy(path: Path) -> LoadedPolicy:
     """Parse and validate one policy file; reject unknown or missing settings."""
     try:
@@ -247,6 +277,14 @@ def _section(
     cost = _exact_keys(value["cost"], _COST_KEYS, "cost")
     cost_sizes = _stage_sizes(cost["stage_sizes"], "cost stage_sizes")
     bands = _cost_bands(cost["bands"], scores)
+    error = _exact_keys(value["error_rate"], _ERROR_KEYS, "error_rate")
+    error_sizes = _stage_sizes(error["stage_sizes"], "error_rate stage_sizes")
+    # Issue #62 chooses among these sizes, so they must hold every candidate size.
+    stage1_size = _integer(value["stage1_size"], "stage1_size", minimum=1)
+    if not {stage1_size, *sizes} <= set(error_sizes):
+        raise AnalysisError(
+            "Policy error_rate stage_sizes must hold stage1_size and every coverage stage size"
+        )
     return ThresholdPolicy(
         policy_id=policy_id,
         version=version,
@@ -254,7 +292,7 @@ def _section(
         benchmark=benchmark,
         threshold=float(threshold),
         alpha=float(alpha),
-        stage1_size=_integer(value["stage1_size"], "stage1_size", minimum=1),
+        stage1_size=stage1_size,
         interval_method=str(value["interval_method"]),
         stratifier=str(value["stratifier"]),
         seeds=tuple(seeds),
@@ -265,6 +303,9 @@ def _section(
         coverage_stage_sizes=sizes,
         cost_stage_sizes=cost_sizes,
         cost_bands=bands,
+        error_draws=_integer(error["draws"], "error_rate draws", minimum=1),
+        error_stage_sizes=error_sizes,
+        error_true_scores=_grid(error["true_scores"]),
     )
 
 
