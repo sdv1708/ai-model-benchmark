@@ -7,7 +7,7 @@ from itertools import combinations
 import pytest
 
 from benchmark_reference.models import AnalysisError
-from benchmark_reference.threshold_simulation import SimulationGenerator
+from benchmark_reference.threshold_simulation import FlipGenerator, SimulationGenerator
 
 # Three reference models: question 0 is passed by none, 1 by one, 2 by two, 3 by all.
 REFERENCES = {
@@ -74,3 +74,75 @@ def test_draws_repeat_for_one_seed_and_vary_across_seeds() -> None:
 def test_true_score_outside_unit_interval_is_rejected(true_score: float) -> None:
     with pytest.raises(AnalysisError, match="true score"):
         SimulationGenerator(REFERENCES).draw(true_score, seed=0)
+
+
+# The flip generator starts from the real grades of one reference model.
+
+
+def test_flip_generator_lists_the_reference_models_in_sorted_order() -> None:
+    assert FlipGenerator({"c": REFERENCES["c"], "a": REFERENCES["a"]}).models == ("a", "c")
+
+
+@pytest.mark.parametrize("base", ["a", "b", "c"])
+@pytest.mark.parametrize(("true_score", "passes"), [(0.0, 0), (0.3, 2), (0.51, 3), (1.0, 4)])
+def test_flip_draw_hits_the_chosen_full_set_score_exactly(
+    base: str, true_score: float, passes: int
+) -> None:
+    generator = FlipGenerator(REFERENCES)
+    for seed in range(10):
+        grades = generator.draw(true_score, seed=seed, base=base)
+        assert set(grades) == {0, 1, 2, 3}
+        assert set(grades.values()) <= {0.0, 1.0}
+        assert sum(grades.values()) == passes
+
+
+def test_flip_draw_changes_only_as_many_grades_as_it_must_and_in_one_direction() -> None:
+    references = {
+        m: {i: float((i * (j + 2)) % 7 < 3 + j) for i in range(60)} for j, m in enumerate("abc")
+    }
+    generator = FlipGenerator(references)
+    for base, real in references.items():
+        real_passes = int(sum(real.values()))
+        for true_score in (0.2, 0.5, 0.8):
+            grades = generator.draw(true_score, seed=3, base=base)
+            changed = [i for i in real if grades[i] != real[i]]
+            target = math.ceil(true_score * 60)
+            assert len(changed) == abs(target - real_passes)
+            # A draw above the real score only adds passes; a draw below only removes them.
+            assert all(grades[i] == float(target > real_passes) for i in changed)
+
+
+def test_flip_draw_at_the_real_score_returns_the_real_grades() -> None:
+    # Model b passes 2 of 4 questions, so a 0.5 draw needs no flip.
+    assert FlipGenerator(REFERENCES).draw(0.5, seed=9, base="b") == {
+        i: float(g) for i, g in REFERENCES["b"].items()
+    }
+
+
+def test_flip_draw_chooses_the_flipped_questions_uniformly() -> None:
+    # Model b fails questions 0 and 1. A 0.75 draw needs one more pass, so each of
+    # the two fails becomes the pass with probability 1/2.
+    generator = FlipGenerator(REFERENCES)
+    draws = 4000
+    seen = Counter(
+        next(i for i in (0, 1) if generator.draw(0.75, seed=s, base="b")[i]) for s in range(draws)
+    )
+    assert abs(seen[0] / draws - 0.5) < 0.03
+
+
+def test_flip_draws_repeat_for_one_seed_and_vary_across_seeds() -> None:
+    references = {m: {i: float((i + j) % 3 == 0) for i in range(60)} for j, m in enumerate("abc")}
+    generator = FlipGenerator(references)
+    assert generator.draw(0.6, seed=7, base="a") == generator.draw(0.6, seed=7, base="a")
+    assert len({tuple(generator.draw(0.6, seed=s, base="a").values()) for s in range(10)}) > 1
+
+
+def test_flip_draw_rejects_an_unknown_base_model() -> None:
+    with pytest.raises(AnalysisError, match="not a reference model"):
+        FlipGenerator(REFERENCES).draw(0.5, seed=0, base="z")
+
+
+@pytest.mark.parametrize("true_score", [-0.1, 1.1, float("nan")])
+def test_flip_true_score_outside_unit_interval_is_rejected(true_score: float) -> None:
+    with pytest.raises(AnalysisError, match="true score"):
+        FlipGenerator(REFERENCES).draw(true_score, seed=0, base="a")

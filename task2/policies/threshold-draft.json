@@ -39,6 +39,21 @@
         ],
         "subsets": 2000
       },
+      "error_rate": {
+        "draws": 1000,
+        "stage_sizes": [
+          12,
+          20,
+          30,
+          50,
+          70
+        ],
+        "true_scores": {
+          "start": 0.3,
+          "step": 0.01,
+          "stop": 0.9
+        }
+      },
       "interval_method": "pooled_exact_hypergeometric",
       "seeds": [
         0,
@@ -124,6 +139,21 @@
         ],
         "subsets": 2000
       },
+      "error_rate": {
+        "draws": 1000,
+        "stage_sizes": [
+          32,
+          63,
+          95,
+          158,
+          221
+        ],
+        "true_scores": {
+          "start": 0.3,
+          "step": 0.01,
+          "stop": 0.9
+        }
+      },
       "interval_method": "pooled_exact_hypergeometric",
       "seeds": [
         0,
@@ -173,6 +203,6 @@
   },
   "frozen": false,
   "policy_id": "threshold-policy",
-  "schema_version": 4,
+  "schema_version": 5,
   "version": "draft-1"
 }

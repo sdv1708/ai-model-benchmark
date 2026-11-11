@@ -50,12 +50,17 @@ def _model_seed(simulation_seed: int, true_score: str, selector_seed: int, repli
     return int.from_bytes(hashlib.sha256(text.encode("ascii")).digest()[:8], "big")
 
 
-def true_score_labels(policy: ThresholdPolicy) -> list[str]:
-    """The true scores as two-decimal labels. Two scores must not share a label."""
-    labels = [f"{score:.2f}" for score in policy.true_scores]
+def score_labels(scores: Sequence[float], *, name: str) -> list[str]:
+    """Two-decimal labels of ``scores``. Two scores must not share a label."""
+    labels = [f"{score:.2f}" for score in scores]
     if len(set(labels)) != len(labels):
-        raise AnalysisError("Policy true_scores must differ at two decimal places")
+        raise AnalysisError(f"Policy {name} must differ at two decimal places")
     return labels
+
+
+def true_score_labels(policy: ThresholdPolicy) -> list[str]:
+    """The true scores of the decision study as two-decimal labels."""
+    return score_labels(policy.true_scores, name="true_scores")
 
 
 def check_benchmark(panel: ReferencePanel, policy: ThresholdPolicy) -> None:

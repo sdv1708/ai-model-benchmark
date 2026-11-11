@@ -1,4 +1,6 @@
-"""Run the two-stage decision, its token cost, and the coverage study on simulated models.
+"""Run the two-stage decision, its token cost, and the coverage and error-rate studies.
+
+Every study uses simulated models only.
 
 The command runs every benchmark section of the policy file and writes one report.
 """
@@ -20,6 +22,7 @@ from benchmark_reference.threshold_cost import (
     run_cost_study,
 )
 from benchmark_reference.threshold_coverage import run_coverage_study, summarize_coverage
+from benchmark_reference.threshold_error_rate import run_error_rate_study, summarize_error_rate
 from benchmark_reference.threshold_policy import (
     ThresholdPolicy,
     authorize_real_replay,
@@ -29,6 +32,7 @@ from benchmark_reference.threshold_report import (
     JUDGE_NOISE,
     BenchmarkRun,
     build_outputs,
+    distance_claim,
     output_names,
 )
 from benchmark_reference.threshold_study import run_simulated_study, summarize
@@ -68,6 +72,14 @@ def run_benchmark(
     coverage = summarize_coverage(
         cells, subsets=policy.coverage_subsets, alpha=policy.alpha, full_tokens=model.full
     )
+    error_cells = run_error_rate_study(panel, policy, costs=model, workers=workers)
+    error_rate = summarize_error_rate(
+        error_cells,
+        threshold=policy.threshold,
+        draws=policy.error_draws,
+        alpha=policy.alpha,
+        full_tokens=model.full,
+    )
     return BenchmarkRun(
         policy=policy,
         panel_file=panel_file,
@@ -77,6 +89,7 @@ def run_benchmark(
         summary=summarize(rows, population=population),
         coverage=coverage,
         cost=cost,
+        error_rate=error_rate,
     )
 
 
@@ -114,6 +127,16 @@ def _print_run(run: BenchmarkRun) -> None:
             f"{title}, {method['method']}: {verdict}, lowest coverage "
             f"{method['min_coverage']:.4f}, mean width {method['mean_width']:.3f}"
         )
+    combined = run.error_rate["combined"]
+    passing = sum(setting["passes_both_generators"] for setting in combined)
+    print(
+        f"{title}, error rate: {passing} of {len(combined)} settings pass for both generators "
+        f"(pass line {run.error_rate['pass_line']:.3f})"
+    )
+    claim = distance_claim(run.error_rate, run.policy)
+    print(f"{title}, d95: {claim['sentence']} {claim['error_verdict']}".rstrip())
+    if claim["smallest_sentence"]:
+        print(f"{title}, d95: {claim['smallest_sentence']}")
 
 
 def main(argv: Sequence[str] | None = None) -> None:

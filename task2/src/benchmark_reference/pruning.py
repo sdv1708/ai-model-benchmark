@@ -10,6 +10,7 @@ import math
 from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Protocol
 
 from benchmark_reference.models import AnalysisError
@@ -113,6 +114,25 @@ def reference_strata(references: ReferenceScores, *, strategy: str) -> dict[str,
     return dict(groups)
 
 
+@lru_cache(maxsize=4096)
+def _allocate(sizes: tuple[tuple[str, int], ...], budget: int) -> tuple[tuple[str, int], ...]:
+    """Questions per stratum, in stratum-name order. It depends on the sizes and budget only.
+
+    Each stratum gets one question. Each further question goes to the stratum
+    furthest below its proportional share, with ties to the first name.
+    """
+    size = dict(sizes)
+    total = sum(size.values())
+    allocation = dict.fromkeys(sorted(size), 1)
+    for _ in range(budget - len(size)):
+        key = min(
+            (key for key in allocation if allocation[key] < size[key]),
+            key=lambda key: (-(budget * size[key] - allocation[key] * total), key),
+        )
+        allocation[key] += 1
+    return tuple(allocation.items())
+
+
 def select_strata(
     groups: Mapping[str, list[int]], *, budget: int, seed: int
 ) -> tuple[SelectedSample, ...]:
@@ -135,15 +155,9 @@ def select_strata(
         raise AnalysisError("Invalid strata, budget, or seed")
     if budget < len(groups):
         raise AnalysisError(f"Budget {budget} cannot cover {len(groups)} occupied strata")
-    allocation = dict.fromkeys(sorted(groups), 1)
-    for _ in range(budget - len(groups)):
-        key = min(
-            (key for key in allocation if allocation[key] < len(groups[key])),
-            key=lambda key: (-(budget * len(groups[key]) - allocation[key] * len(ids)), key),
-        )
-        allocation[key] += 1
+    allocation = _allocate(tuple(sorted((key, len(m)) for key, m in groups.items())), budget)
     selected: list[SelectedSample] = []
-    for key, count in allocation.items():
+    for key, count in allocation:
         members = sorted(groups[key], key=lambda index: (_priority(seed, index), index))[:count]
         selected.extend(
             SelectedSample(

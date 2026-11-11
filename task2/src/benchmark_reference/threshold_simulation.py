@@ -7,6 +7,12 @@ draw has exactly ``K = ceil(true_score * N)`` passes. The full-set score is
 therefore known: it is the smallest score at or above the chosen value. The
 common ability term cancels under that condition, so no fitting is needed.
 
+The second generator, ``FlipGenerator``, starts from the real grades of one
+reference model. It flips grades chosen uniformly at random until the pass count
+is ``K``. It flips passes to fails when the real score is above the chosen score,
+and fails to passes when it is below. It therefore keeps the real per-question
+pattern of that model and changes only ``|K - real passes|`` grades.
+
 Simulated grades are targets. They never become selection information.
 """
 
@@ -77,3 +83,32 @@ class SimulationGenerator:
             grades[index] = 1.0 if passed else 0.0
             remaining -= passed
         return grades
+
+
+class FlipGenerator:
+    """Draw binary grades from the real grades of one reference model.
+
+    A draw flips the fewest grades that reach the chosen full-set score. The
+    flipped questions are a uniform random choice among the questions that can
+    flip in the needed direction.
+    """
+
+    def __init__(self, references: ReferenceScores) -> None:
+        ids = validate_references(references)
+        self.ids = tuple(ids)
+        self.models = tuple(sorted(references))
+        self._grades = {m: tuple(int(references[m][i]) for i in ids) for m in self.models}
+
+    def draw(self, true_score: float, *, seed: int, base: str) -> dict[int, float]:
+        """Grades of ``base`` with exactly ``ceil(true_score * N)`` passes; repeatable per seed."""
+        if base not in self._grades:
+            raise AnalysisError(f"{base!r} is not a reference model; choose one of {self.models}")
+        target = target_pass_count(true_score, len(self.ids))
+        grades = list(self._grades[base])
+        real = sum(grades)
+        # Above the real score, fails become passes; below it, passes become fails.
+        source = 0 if target > real else 1
+        candidates = [j for j, grade in enumerate(grades) if grade == source]
+        for j in random.Random(seed).sample(candidates, abs(target - real)):
+            grades[j] = 1 - source
+        return {index: float(grade) for index, grade in zip(self.ids, grades, strict=True)}
