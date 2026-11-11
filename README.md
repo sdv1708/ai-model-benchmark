@@ -1,7 +1,7 @@
 # Performance & Quality Lab
 
 - **Live application:** [Performance Studio](https://ai-model-quality-challenge-rho.vercel.app/)
-- **Benchmark runner:** [EvalScope pruning repository](https://github.com/sdv1708/evalscope-pruning)
+- **Benchmark runner:** [EvalScope pruning repository](https://github.com/sdv1708/evalscope-pruning). This repository is private on 11 November 2026. Issue [#74](https://github.com/sdv1708/ai-model-benchmark/issues/74) tracks access.
 - **Planned work:** [Known gaps and planned work](#known-gaps-and-planned-work)
 
 Performance & Quality Lab supports two parts of model selection: serving performance and answer quality.
@@ -15,15 +15,16 @@ The live application hosts Performance Studio. Benchmark analysis runs locally.
 
 ## Current status
 
-This table gives the state of the project on 29 October 2026.
+This table gives the state of the project on 11 November 2026.
 
-| Area                         | State                  | Result                                                                                                              |
-| ---------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Performance Studio           | Complete and deployed  | Upload, compare, and evaluate workbook projections in the browser.                                                  |
-| Subset studies               | Complete               | No smaller tested subset passed every recorded policy gate. The recorded default keeps 315 of 315 and 100 of 100.   |
-| Two-stage threshold decision | First slice complete   | A 63-question probe runs on simulated LiveCodeBench models. The policy is a draft. No replay on real grades exists. |
-| EvalScope integration        | Complete for one stage | Two pruned adapters and a run comparison tool work inside EvalScope. The two-stage mode is planned.                 |
-| Image-pair prototype         | Prototype              | Synthetic images and scripted answers only. No multimodal subset is validated.                                      |
+| Area                         | State                      | Result                                                                                                            |
+| ---------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Performance Studio           | Complete and deployed      | Upload, compare, and evaluate workbook projections in the browser.                                                |
+| Subset studies               | Complete                   | No smaller tested subset passed every recorded policy gate. The recorded default keeps 315 of 315 and 100 of 100. |
+| Two-stage threshold decision | Simulated studies complete | Coverage, token cost, and error rate are measured on simulated models for both benchmarks. The policy is a draft. |
+| Test on real models          | Planned                    | No replay on real grades exists. A replay on 28 public LiveCodeBench models is planned.                           |
+| EvalScope integration        | Complete for one stage     | Two pruned adapters and a run comparison tool work inside EvalScope. The two-stage mode is planned.               |
+| Image-pair prototype         | Prototype                  | Synthetic images and scripted answers only. No multimodal subset is validated.                                    |
 
 The [planned work](#known-gaps-and-planned-work) section lists each open gap and the issue that addresses it.
 
@@ -382,7 +383,7 @@ The highest wrong-decision rate is 7 of 1,000, at true score 0.70.
 
 This result has two limits:
 
-- The models are simulated. The generator uses the same reference difficulty as the stratifier, and this favors stratification.
+- The models are simulated. The generator uses the same reference difficulty as the stratifier, and this favors stratification. A second generator gives almost the same result (see [error rate and distance](#error-rate-and-distance-on-simulated-models)), but it also starts from the reference grades.
 - The policy is a draft, not a frozen policy.
 
 The same command runs the AA-LCR section: threshold 0.60 and a 20-question probe (20% of 100).
@@ -393,7 +394,7 @@ AA-LCR grades come from an LLM judge with one judgment for each answer, so judge
 The [benchmark reference](task2/README.md#aa-lcr-on-the-draft-policy) gives the full AA-LCR result.
 
 The published claim therefore stays full retention.
-Issues [#60](https://github.com/sdv1708/ai-model-benchmark/issues/60) to [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) address these limits.
+Issues [#75](https://github.com/sdv1708/ai-model-benchmark/issues/75), [#62](https://github.com/sdv1708/ai-model-benchmark/issues/62), and [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) address these limits with a frozen policy and a replay on real models.
 To reproduce the table, run the command in the [usage guide](USAGE.md#run-a-two-stage-threshold-decision).
 
 ### Token cost on simulated models
@@ -435,6 +436,42 @@ The bootstrap (Rao-Wu rescaling) fails 27 cells, all at 95 questions or fewer.
 There, some strata hold one sampled question, or only passes, and add no bootstrap width.
 The draft policy still names the pooled exact method.
 Issue #62 chooses the method for policy v1 with a fixed rule.
+
+### Error rate and distance on simulated models
+
+The same command measures how often the probe decides wrong, and how far from the threshold a model must be for the probe to decide.
+It uses two generators. The first is the Rasch-style generator of the earlier studies.
+The second takes the real grades of one reference model and flips random grades until the pass count reaches the true score.
+For each generator, the study runs 1,000 draws at each true score from 0.30 to 0.90 in steps of 0.01.
+It covers every stratifier, interval method, and stage size of the draft policy: 40 settings for each benchmark.
+
+A setting passes when its wrong-decision rate is at most 0.071 at every true score, for both generators.
+The value 0.071 is 0.05 plus 3 standard errors at 1,000 draws.
+
+| Benchmark                      | Settings that pass | Settings that fail                                      |
+| ------------------------------ | -----------------: | ------------------------------------------------------- |
+| LiveCodeBench (threshold 0.70) |           39 of 40 | Bootstrap interval, `response_stratified`, 32 questions |
+| AA-LCR (threshold 0.60)        |           37 of 40 | Bootstrap interval at 12 and 20 questions               |
+
+The pooled exact interval passes in every setting. Its highest wrong-decision rate is 0.020.
+
+d95 is the smallest distance from the threshold at which the probe decides at stage 1 in at least 95% of the draws.
+The table gives d95 for the stratifier and the interval method of the draft policy.
+
+| LiveCodeBench probe |         d95 | AA-LCR probe |         d95 |
+| ------------------: | ----------: | -----------: | ----------: |
+|        32 questions | Not reached | 12 questions | Not reached |
+|        63 questions |        0.19 | 20 questions | Not reached |
+|        95 questions |        0.14 | 30 questions |        0.26 |
+|       158 questions |        0.10 | 50 questions |        0.17 |
+|       221 questions |        0.06 | 70 questions |        0.12 |
+
+The 63-question LiveCodeBench probe decides at stage 1 for a simulated model that is at least 0.19 from the 0.70 threshold.
+The 20-question AA-LCR probe of the draft policy does not reach d95 at any distance in the grid.
+The two generators differ in d95 by 0.02 or less.
+
+Both generators start from the reference grades, so a simulated model is not an unseen model.
+The replay on real models in [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) uses the same pass rule.
 
 ## EvalScope integration
 
@@ -544,7 +581,8 @@ Issue [#65](https://github.com/sdv1708/ai-model-benchmark/issues/65) adds the tw
 The user runs a stage-1 probe and gets GO, NO GO, or ESCALATE.
 On ESCALATE, the user runs the remaining questions.
 `compare_runs` then reports the decision, the interval, the stage that decided, and the tokens used.
-The mode reads its settings from frozen policy v1, so it starts after the real-grade replay in [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63).
+The mode reads its settings from frozen policy v1, so it starts after the freeze in [#62](https://github.com/sdv1708/ai-model-benchmark/issues/62).
+Issue [#78](https://github.com/sdv1708/ai-model-benchmark/issues/78) then runs the mode on live model endpoints and measures the tokens and the cost.
 
 ## Image-pair prototype
 
@@ -569,46 +607,54 @@ All issues are in the [issue tracker](https://github.com/sdv1708/ai-model-benchm
 
 ### Gaps with planned work
 
-| Gap                                                                                                                                             | Planned work                                                                                                                                                        |
-| ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The error rate for an unseen model is not known. The current generator favors stratification.                                                   | [#60](https://github.com/sdv1708/ai-model-benchmark/issues/60) adds a second generator and reports the minimum distance from `t` at which the probe decides.        |
-| The selectors do not use token cost.                                                                                                            | [#61](https://github.com/sdv1708/ai-model-benchmark/issues/61) adds cost-aware Neyman allocation as a selector.                                                     |
-| A policy chosen after a look at real grades can be biased.                                                                                      | [#62](https://github.com/sdv1708/ai-model-benchmark/issues/62) freezes policy v1 with fixed rules from simulated results only.                                      |
-| The two-stage rule has no evidence on real grades.                                                                                              | [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) runs one held-out replay with frozen policy v1 and publishes the result, pass or fail.               |
-| The results are spread across JSON and CSV files.                                                                                               | [#64](https://github.com/sdv1708/ai-model-benchmark/issues/64) publishes one self-contained HTML results report, linked from the top of this README.                |
-| The EvalScope adapters run one stage only.                                                                                                      | [#65](https://github.com/sdv1708/ai-model-benchmark/issues/65) adds the two-stage mode to both adapters and to `compare_runs`.                                      |
-| The documents state the full-retention result.                                                                                                  | [#66](https://github.com/sdv1708/ai-model-benchmark/issues/66) updates every document with the frozen v1 result.                                                    |
-| The live site shows performance results only.                                                                                                   | [#67](https://github.com/sdv1708/ai-model-benchmark/issues/67) adds a read-only **Benchmark results** tab to Performance Studio.                                    |
+| Gap                                                                                                    | Planned work                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The error rate for an unseen real model is not known. Both generators start from the reference grades. | [#75](https://github.com/sdv1708/ai-model-benchmark/issues/75) imports the public per-question results of 28 real LiveCodeBench models. None of them is in the reference panel. |
+| A policy chosen after a look at real grades can be biased.                                             | [#62](https://github.com/sdv1708/ai-model-benchmark/issues/62) freezes policy v1 and the replay protocol with fixed rules, before any public grade is read.                     |
+| The two-stage rule has no evidence on real grades.                                                     | [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) runs frozen policy v1 one time on the 28 models and publishes the result, pass or fail.                          |
+| The effect of the reference panel and of the benchmark size is not known.                              | [#77](https://github.com/sdv1708/ai-model-benchmark/issues/77) holds out one developer group at a time, on 315 and on 1,055 questions.                                          |
+| No fixed pruned list is validated as a score estimator.                                                | [#80](https://github.com/sdv1708/ai-model-benchmark/issues/80) tests fixed lists of 95 and 158 LiveCodeBench questions on the 28 models.                                        |
+| The EvalScope adapters run one stage only.                                                             | [#65](https://github.com/sdv1708/ai-model-benchmark/issues/65) adds the two-stage mode to both adapters and to `compare_runs`.                                                  |
+| The project measured no live inference saving.                                                         | [#78](https://github.com/sdv1708/ai-model-benchmark/issues/78) runs the two-stage mode on live model endpoints and measures tokens, time, and cost.                             |
+| AA-LCR has one recorded judgment per answer. Judge noise is not measured.                              | [#76](https://github.com/sdv1708/ai-model-benchmark/issues/76) sends each of the 300 saved answers to the judge 5 times.                                                        |
+| The results are spread across JSON and CSV files.                                                      | [#64](https://github.com/sdv1708/ai-model-benchmark/issues/64) publishes one self-contained HTML results report, linked from the top of this README.                            |
+| The documents state the full-retention result.                                                         | [#66](https://github.com/sdv1708/ai-model-benchmark/issues/66) updates every document with the frozen v1 result.                                                                |
+| The EvalScope pruning repository is private, so its links need access.                                 | [#74](https://github.com/sdv1708/ai-model-benchmark/issues/74) makes the links work and confirms the data rights.                                                               |
 
-If the real-grade replay in [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) fails any criterion, the report says so.
+If the replay in [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) fails any criterion, the report says so.
 In that case, full retention stays the published claim.
+
+Two issues are deferred.
+[#61](https://github.com/sdv1708/ai-model-benchmark/issues/61) adds cost-aware Neyman allocation as a selector; policy v1 chooses from the existing stratifiers only.
+[#67](https://github.com/sdv1708/ai-model-benchmark/issues/67) adds a read-only **Benchmark results** tab to Performance Studio.
 
 ### Order of work
 
 ```mermaid
 flowchart LR
-    I56["#56 Two-stage slice (done)"] --> I57["#57 Intervals (done)"]
-    I56 --> I58["#58 Token cost (done)"]
-    I58 --> I59["#59 AA-LCR (done)"]
-    I57 --> I60["#60 Unseen-model error"]
-    I58 --> I61["#61 Neyman selector"]
-    I59 --> I61
-    I57 --> I62["#62 Freeze policy v1"]
-    I59 --> I62
-    I60 --> I62
-    I61 --> I62
-    I62 --> I63["#63 Real-grade replay"]
+    I60["#60 Error rate (done)"] --> I62["#62 Freeze policy v1"]
+    I75["#75 Public panel import"] --> I62
+    I62 --> I63["#63 Replay on 28 real models"]
+    I62 --> I65["#65 EvalScope two-stage"]
+    I63 --> I77["#77 Panel and size study"]
+    I63 --> I80["#80 Pruned list test"]
+    I77 --> I80
+    I65 --> I78["#78 Live endpoint run"]
     I63 --> I64["#64 Results report"]
-    I63 --> I65["#65 EvalScope two-stage"]
-    I64 --> I67["#67 Studio tab"]
+    I77 --> I64
+    I80 --> I64
     I64 --> I66["#66 Documents"]
     I65 --> I66
+    I74["#74 Links and data rights"] --> I66
+    I76["#76 Judge noise"]
 ```
+
+Issues #56 to #60 are complete.
+Issues #76 and #78 need a model endpoint key and an approved cost estimate.
 
 ### Limits with no planned work
 
-- AA-LCR has one recorded judgment per answer. Judge noise is not measured.
-- The project measured no live inference saving.
+- AA-LCR has no public per-question results. No test on unseen models and no pruned list exist for AA-LCR.
 - The image-pair prototype uses synthetic images and scripted answers. No multimodal subset is validated.
 - Performance Studio results describe supplied projections. Production capacity requires a separate load test.
 
@@ -630,23 +676,24 @@ Production capacity and resource limits require separate validation.
 
 ## Terminology and documentation
 
-| Term              | Meaning                                                                                       |
-| ----------------- | --------------------------------------------------------------------------------------------- |
-| Projection        | A supplied performance estimate.                                                              |
-| Sweep             | One model/profile workbook with several configurations.                                       |
-| Configuration     | One scenario and batch size.                                                                  |
-| Capacity          | Aggregate projected throughput in tokens/second.                                              |
-| Generation speed  | Output tokens/second for one user.                                                            |
-| TTFT              | Time to first token, measured in milliseconds.                                                |
-| Stratum           | A group of questions with shared selection characteristics.                                   |
-| Retained fraction | The proportion of the original question set selected.                                         |
-| Operating point   | A candidate method and retained size evaluated against a policy.                              |
-| Percentage point  | An absolute difference between percentages; 60% to 63% is three percentage points.            |
-| Reference panel   | The question fingerprints and historical grades that an EvalScope adapter uses for selection. |
-| Stage-1 probe     | The first, smaller set of questions in the two-stage rule.                                    |
-| ESCALATE          | The two-stage result when the probe interval crosses the threshold.                           |
-| Census            | A run on every remaining question. It has no sampling error.                                  |
-| Frozen policy     | A policy file whose hash is committed. Only a frozen policy can run on real grades.           |
+| Term              | Meaning                                                                                                   |
+| ----------------- | --------------------------------------------------------------------------------------------------------- |
+| Projection        | A supplied performance estimate.                                                                          |
+| Sweep             | One model/profile workbook with several configurations.                                                   |
+| Configuration     | One scenario and batch size.                                                                              |
+| Capacity          | Aggregate projected throughput in tokens/second.                                                          |
+| Generation speed  | Output tokens/second for one user.                                                                        |
+| TTFT              | Time to first token, measured in milliseconds.                                                            |
+| Stratum           | A group of questions with shared selection characteristics.                                               |
+| Retained fraction | The proportion of the original question set selected.                                                     |
+| Operating point   | A candidate method and retained size evaluated against a policy.                                          |
+| Percentage point  | An absolute difference between percentages; 60% to 63% is three percentage points.                        |
+| Reference panel   | The question fingerprints and historical grades that an EvalScope adapter uses for selection.             |
+| Stage-1 probe     | The first, smaller set of questions in the two-stage rule.                                                |
+| ESCALATE          | The two-stage result when the probe interval crosses the threshold.                                       |
+| Census            | A run on every remaining question. It has no sampling error.                                              |
+| Frozen policy     | A policy file whose hash is committed. Only a frozen policy can run on real grades.                       |
+| d95               | The smallest distance from the threshold at which the stage-1 probe decides in at least 95% of the draws. |
 
 The documentation uses ASD-STE100 writing principles: short sentences, active voice, consistent technical names, and ordered procedures.
 Software identifiers and benchmark names retain their exact spelling.
