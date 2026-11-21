@@ -15,16 +15,16 @@ The live application hosts Performance Studio. Benchmark analysis runs locally.
 
 ## Current status
 
-This table gives the state of the project on 11 November 2026.
+This table gives the state of the project on 21 November 2026.
 
-| Area                         | State                      | Result                                                                                                            |
-| ---------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Performance Studio           | Complete and deployed      | Upload, compare, and evaluate workbook projections in the browser.                                                |
-| Subset studies               | Complete                   | No smaller tested subset passed every recorded policy gate. The recorded default keeps 315 of 315 and 100 of 100. |
-| Two-stage threshold decision | Simulated studies complete | Coverage, token cost, and error rate are measured on simulated models for both benchmarks. The policy is a draft. |
-| Test on real models          | Planned                    | No replay on real grades exists. A replay on 28 public LiveCodeBench models is planned.                           |
-| EvalScope integration        | Complete for one stage     | Two pruned adapters and a run comparison tool work inside EvalScope. The two-stage mode is planned.               |
-| Image-pair prototype         | Prototype                  | Synthetic images and scripted answers only. No multimodal subset is validated.                                    |
+| Area                         | State                      | Result                                                                                                                                                                   |
+| ---------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Performance Studio           | Complete and deployed      | Upload, compare, and evaluate workbook projections in the browser.                                                                                                       |
+| Subset studies               | Complete                   | No smaller tested subset passed every recorded policy gate. The recorded default keeps 315 of 315 and 100 of 100.                                                        |
+| Two-stage threshold decision | Simulated studies complete | Coverage, token cost, and error rate are measured on simulated models for both benchmarks. The policy is a draft.                                                        |
+| Test on real models          | Data path ready            | The package fetches, checks, and maps the public results of 28 LiveCodeBench models. Their grades stay locked until a policy is frozen. No replay on real grades exists. |
+| EvalScope integration        | Complete for one stage     | Two pruned adapters and a run comparison tool work inside EvalScope. The two-stage mode is planned.                                                                      |
+| Image-pair prototype         | Prototype                  | Synthetic images and scripted answers only. No multimodal subset is validated.                                                                                           |
 
 The [planned work](#known-gaps-and-planned-work) section lists each open gap and the issue that addresses it.
 
@@ -149,7 +149,7 @@ frontend/
   tests/                 Browser journeys, accessibility checks, and fixtures
 task2/
   src/benchmark_reference/  Saved-data validation, subset studies, threshold decisions, and image tools
-  data/                  Historical reference panels for the EvalScope adapters
+  data/                  Reference panels and the public-results question mapping
   policies/              Versioned threshold policies and the frozen-policy lock file
   tools/                 Audits, panel exports, source verification, and image demo
   tests/                 Synthetic fixtures and method checks
@@ -273,23 +273,24 @@ The loader rejects missing partners, unexpected files, malformed grades, duplica
 Missing grades do not become zero scores.
 Errors include source paths and line numbers.
 
-| Module group                                                    | Responsibility                                                      |
-| --------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `inputs.py`, `analysis.py`, `models.py`                         | Validate files, join predictions to reviews, and represent samples. |
-| `pruning.py`, `long_context.py`                                 | Select stratified coding and long-context subsets.                  |
-| `experiments.py`, `transfer.py`                                 | Evaluate held-out models and independently held-out model pairs.    |
-| `uncertainty.py`, `study_metrics.py`                            | Compute intervals, ordering evidence, and threshold outcomes.       |
-| `judge_noise.py`                                                | Report sensitivity to hypothetical changed judgments.               |
-| `operating_points.py`                                           | Apply score, ordering, uncertainty, and decision gates.             |
-| `threshold_policy.py`                                           | Load a policy file, record its hash, and enforce the frozen lock.   |
-| `threshold_benchmarks.py`                                       | Load each benchmark panel and give the strata of its stratifiers.   |
-| `threshold_simulation.py`                                       | Draw simulated models with a known full-set score.                  |
-| `two_stage.py`                                                  | Apply the stage-1 interval rule and the census on ESCALATE.         |
-| `threshold_tokens.py`, `threshold_cost.py`                      | Read token counts of saved answers and compute the expected cost.   |
-| `threshold_study.py`, `threshold_report.py`, `threshold_cli.py` | Write the decision table, summary, HTML report, and manifest.       |
-| Reporting modules                                               | Write scores, selections, summaries, and manifests.                 |
-| `mmmu_images.py`                                                | Build normalized original images and controlled variants.           |
-| `mmmu_requests.py`, `mmmu_measurements.py`                      | Export request plans and analyze saved paired attempts.             |
+| Module group                                                    | Responsibility                                                                                                                  |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `inputs.py`, `analysis.py`, `models.py`                         | Validate files, join predictions to reviews, and represent samples.                                                             |
+| `pruning.py`, `long_context.py`                                 | Select stratified coding and long-context subsets.                                                                              |
+| `experiments.py`, `transfer.py`                                 | Evaluate held-out models and independently held-out model pairs.                                                                |
+| `uncertainty.py`, `study_metrics.py`                            | Compute intervals, ordering evidence, and threshold outcomes.                                                                   |
+| `judge_noise.py`                                                | Report sensitivity to hypothetical changed judgments.                                                                           |
+| `operating_points.py`                                           | Apply score, ordering, uncertainty, and decision gates.                                                                         |
+| `threshold_policy.py`                                           | Load a policy file, record its hash, and enforce the frozen lock.                                                               |
+| `threshold_benchmarks.py`                                       | Load each benchmark panel and give the strata of its stratifiers.                                                               |
+| `threshold_simulation.py`                                       | Draw simulated models with a known full-set score.                                                                              |
+| `two_stage.py`                                                  | Apply the stage-1 interval rule and the census on ESCALATE.                                                                     |
+| `public_lcb.py`, `public_lcb_cli.py`                            | Fetch and check the public LiveCodeBench results, and map the 315 panel questions. Grades stay locked until a policy is frozen. |
+| `threshold_tokens.py`, `threshold_cost.py`                      | Read token counts of saved answers and compute the expected cost.                                                               |
+| `threshold_study.py`, `threshold_report.py`, `threshold_cli.py` | Write the decision table, summary, HTML report, and manifest.                                                                   |
+| Reporting modules                                               | Write scores, selections, summaries, and manifests.                                                                             |
+| `mmmu_images.py`                                                | Build normalized original images and controlled variants.                                                                       |
+| `mmmu_requests.py`, `mmmu_measurements.py`                      | Export request plans and analyze saved paired attempts.                                                                         |
 
 ### Subset methods and uncertainty
 
@@ -397,7 +398,8 @@ AA-LCR grades come from an LLM judge with one judgment for each answer, so judge
 The [benchmark reference](task2/README.md#aa-lcr-on-the-draft-policy) gives the full AA-LCR result.
 
 The published claim therefore stays full retention.
-Issues [#75](https://github.com/sdv1708/ai-model-benchmark/issues/75), [#62](https://github.com/sdv1708/ai-model-benchmark/issues/62), and [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) address these limits with a frozen policy and a replay on real models.
+[#75](https://github.com/sdv1708/ai-model-benchmark/issues/75) prepared the public results of 28 real LiveCodeBench models, with the grades locked.
+Issues [#62](https://github.com/sdv1708/ai-model-benchmark/issues/62) and [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) address these limits with a frozen policy and a replay on those models.
 To reproduce the table, run the command in the [usage guide](USAGE.md#run-a-two-stage-threshold-decision).
 
 ### Token cost on simulated models
@@ -610,18 +612,17 @@ All issues are in the [issue tracker](https://github.com/sdv1708/ai-model-benchm
 
 ### Gaps with planned work
 
-| Gap                                                                                                    | Planned work                                                                                                                                                                    |
-| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The error rate for an unseen real model is not known. Both generators start from the reference grades. | [#75](https://github.com/sdv1708/ai-model-benchmark/issues/75) imports the public per-question results of 28 real LiveCodeBench models. None of them is in the reference panel. |
-| A policy chosen after a look at real grades can be biased.                                             | [#62](https://github.com/sdv1708/ai-model-benchmark/issues/62) freezes policy v1 and the replay protocol with fixed rules, before any public grade is read.                     |
-| The two-stage rule has no evidence on real grades.                                                     | [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) runs frozen policy v1 one time on the 28 models and publishes the result, pass or fail.                          |
-| The effect of the reference panel and of the benchmark size is not known.                              | [#77](https://github.com/sdv1708/ai-model-benchmark/issues/77) holds out one developer group at a time, on 315 and on 1,055 questions.                                          |
-| No fixed pruned list is validated as a score estimator.                                                | [#80](https://github.com/sdv1708/ai-model-benchmark/issues/80) tests fixed lists of 95 and 158 LiveCodeBench questions on the 28 models.                                        |
-| The EvalScope adapters run one stage only.                                                             | [#65](https://github.com/sdv1708/ai-model-benchmark/issues/65) adds the two-stage mode to both adapters and to `compare_runs`.                                                  |
-| The project measured no live inference saving.                                                         | [#78](https://github.com/sdv1708/ai-model-benchmark/issues/78) runs the two-stage mode on live model endpoints and measures tokens, time, and cost.                             |
-| AA-LCR has one recorded judgment per answer. Judge noise is not measured.                              | [#76](https://github.com/sdv1708/ai-model-benchmark/issues/76) sends each of the 300 saved answers to the judge 5 times.                                                        |
-| The results are spread across JSON and CSV files.                                                      | [#64](https://github.com/sdv1708/ai-model-benchmark/issues/64) publishes one self-contained HTML results report, linked from the top of this README.                            |
-| The documents state the full-retention result.                                                         | [#66](https://github.com/sdv1708/ai-model-benchmark/issues/66) updates every document with the frozen v1 result.                                                                |
+| Gap                                                                                                                                                                     | Planned work                                                                                                                                                                                                                                                                                 |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A policy chosen after a look at real grades can be biased.                                                                                                              | [#62](https://github.com/sdv1708/ai-model-benchmark/issues/62) freezes policy v1 and the replay protocol with fixed rules, before any public grade is read.                                                                                                                                  |
+| The two-stage rule has no evidence on real grades. Both simulation generators start from the reference grades, so the error rate for an unseen real model is not known. | [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) runs frozen policy v1 one time on the 28 public models and publishes the result, pass or fail. [#75](https://github.com/sdv1708/ai-model-benchmark/issues/75) prepared their results. None of them is in the reference panel. |
+| The effect of the reference panel and of the benchmark size is not known.                                                                                               | [#77](https://github.com/sdv1708/ai-model-benchmark/issues/77) holds out one developer group at a time, on 315 and on 1,055 questions.                                                                                                                                                       |
+| No fixed pruned list is validated as a score estimator.                                                                                                                 | [#80](https://github.com/sdv1708/ai-model-benchmark/issues/80) tests fixed lists of 95 and 158 LiveCodeBench questions on the 28 models.                                                                                                                                                     |
+| The EvalScope adapters run one stage only.                                                                                                                              | [#65](https://github.com/sdv1708/ai-model-benchmark/issues/65) adds the two-stage mode to both adapters and to `compare_runs`.                                                                                                                                                               |
+| The project measured no live inference saving.                                                                                                                          | [#78](https://github.com/sdv1708/ai-model-benchmark/issues/78) runs the two-stage mode on live model endpoints and measures tokens, time, and cost.                                                                                                                                          |
+| AA-LCR has one recorded judgment per answer. Judge noise is not measured.                                                                                               | [#76](https://github.com/sdv1708/ai-model-benchmark/issues/76) sends each of the 300 saved answers to the judge 5 times.                                                                                                                                                                     |
+| The results are spread across JSON and CSV files.                                                                                                                       | [#64](https://github.com/sdv1708/ai-model-benchmark/issues/64) publishes one self-contained HTML results report, linked from the top of this README.                                                                                                                                         |
+| The documents state the full-retention result.                                                                                                                          | [#66](https://github.com/sdv1708/ai-model-benchmark/issues/66) updates every document with the frozen v1 result.                                                                                                                                                                             |
 
 If the replay in [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) fails any criterion, the report says so.
 In that case, full retention stays the published claim.
@@ -635,7 +636,7 @@ Two issues are deferred.
 ```mermaid
 flowchart LR
     I60["#60 Error rate (done)"] --> I62["#62 Freeze policy v1"]
-    I75["#75 Public panel import"] --> I62
+    I75["#75 Public panel import (done)"] --> I62
     I62 --> I63["#63 Replay on 28 real models"]
     I62 --> I65["#65 EvalScope two-stage"]
     I63 --> I77["#77 Panel and size study"]
@@ -651,7 +652,7 @@ flowchart LR
     I76["#76 Judge noise"]
 ```
 
-Issues #56 to #60 and #74 are complete.
+Issues #56 to #60, #74, and #75 are complete.
 Issues #76 and #78 need a model endpoint key and an approved cost estimate.
 
 ### Limits with no planned work
