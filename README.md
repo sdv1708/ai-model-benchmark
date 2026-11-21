@@ -1,7 +1,7 @@
 # Performance & Quality Lab
 
 - **Live application:** [Performance Studio](https://ai-model-quality-challenge-rho.vercel.app/)
-- **Benchmark runner:** [EvalScope pruning repository](https://github.com/sdv1708/evalscope-pruning). This repository is private on 11 November 2026. Issue [#74](https://github.com/sdv1708/ai-model-benchmark/issues/74) tracks access.
+- **Benchmark runner:** [EvalScope pruning repository](https://github.com/sdv1708/evalscope-pruning). This repository is public.
 - **Planned work:** [Known gaps and planned work](#known-gaps-and-planned-work)
 
 Performance & Quality Lab supports two parts of model selection: serving performance and answer quality.
@@ -157,11 +157,14 @@ task2/
 Evals/                   Saved benchmark artifacts managed through Git LFS
 docs/
   data/                  Recorded summaries, manifests, and source audit results
-  scripts/               Projection summary generation
+  scripts/               Projection summary generation and the README link check
 perf_data.zip            Supplied performance workbooks
 vercel.json              Frontend and API service routing
 USAGE.md                 Installation and operating procedures
 ```
+
+The supplied performance workbooks, the bundled sample workbook, and the saved benchmark artifacts are public.
+On 21 November 2026, the owner confirmed in [#74](https://github.com/sdv1708/ai-model-benchmark/issues/74#issuecomment-7068365711) that this data can stay public.
 
 ### Performance data flow
 
@@ -619,7 +622,6 @@ All issues are in the [issue tracker](https://github.com/sdv1708/ai-model-benchm
 | AA-LCR has one recorded judgment per answer. Judge noise is not measured.                              | [#76](https://github.com/sdv1708/ai-model-benchmark/issues/76) sends each of the 300 saved answers to the judge 5 times.                                                        |
 | The results are spread across JSON and CSV files.                                                      | [#64](https://github.com/sdv1708/ai-model-benchmark/issues/64) publishes one self-contained HTML results report, linked from the top of this README.                            |
 | The documents state the full-retention result.                                                         | [#66](https://github.com/sdv1708/ai-model-benchmark/issues/66) updates every document with the frozen v1 result.                                                                |
-| The EvalScope pruning repository is private, so its links need access.                                 | [#74](https://github.com/sdv1708/ai-model-benchmark/issues/74) makes the links work and confirms the data rights.                                                               |
 
 If the replay in [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) fails any criterion, the report says so.
 In that case, full retention stays the published claim.
@@ -645,11 +647,11 @@ flowchart LR
     I80 --> I64
     I64 --> I66["#66 Documents"]
     I65 --> I66
-    I74["#74 Links and data rights"] --> I66
+    I74["#74 Links and data rights (done)"] --> I66
     I76["#76 Judge noise"]
 ```
 
-Issues #56 to #60 are complete.
+Issues #56 to #60 and #74 are complete.
 Issues #76 and #78 need a model endpoint key and an approved cost estimate.
 
 ### Limits with no planned work
@@ -660,7 +662,7 @@ Issues #76 and #78 need a model endpoint key and an approved cost estimate.
 
 ## Development and deployment
 
-The [usage guide](USAGE.md#verification) lists tests, static checks, and build commands.
+The [usage guide](USAGE.md#verification) lists tests, static checks, build commands, and the README link check.
 Python tests cover pure functions and HTTP boundaries.
 Browser tests cover uploads, customer decisions, engineering evidence, recovery, and accessibility scans.
 Synthetic benchmark fixtures provide known expected answers.
