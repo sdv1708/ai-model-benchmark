@@ -423,6 +423,56 @@ The default is `task2/data`.
 `--data-root` sets the folder that holds `Part 1/predictions`.
 The default is the `Evals` folder at the repository root.
 
+## Public LiveCodeBench results
+
+LiveCodeBench publishes one `pass@1` value for each model and question.
+None of these models is in the reference panel.
+The 315 reference-panel questions come from the same public dataset, so the public results give a test on real models that the selector never saw.
+This package prepares that data path only. It gives and prints no grade.
+
+| Fact (read on 10 November 2026) | Value                                                                                    |
+| ------------------------------- | ---------------------------------------------------------------------------------------- |
+| Source                          | `https://livecodebench.github.io/performances_generation.json`                           |
+| Size                            | 6,950,346 bytes                                                                          |
+| SHA-256 (the pin)               | `17f9a1d69e3f6290fc8b967a4dd13fbb46e34dd05716fdee793780a1cfadd0c1`                       |
+| Shape                           | 28 models and 1,055 questions, 29,540 rows, no missing cell                              |
+| Row fields                      | `question_id`, `model`, `date`, `difficulty`, `pass@1`, `platform`                       |
+| `pass@1`                        | A number from 0 to 100 for each model and question                                       |
+| License                         | The source repository states no license                                                  |
+
+The raw file is not committed, because its source states no license.
+`uv run lcb-public fetch` downloads it to `task2/external/livecodebench/`, and Git ignores that folder.
+The command stops and writes nothing when the SHA-256 differs from the pin.
+
+The model `release_date` field is not a release date: 19 of 28 models share one placeholder value.
+No analysis can use it, and the loader does not give it.
+The row field `date` is the question date, in Unix milliseconds.
+
+`public_lcb.py` has two loaders:
+
+- `load_public_results` gives the question identifiers, dates, difficulty labels, platforms, and model names, with no restriction.
+- `load_public_grades` gives the raw `pass@1` values, 0 to 100. It gives them only after the frozen-policy check of the real-grade replay passes. The check runs before the file is opened. The draft policy is refused.
+
+The grade rule, for example "pass at 50 or more", comes from the frozen policy, not from the loader.
+Both loaders check the pin and validate every row.
+They reject these faults:
+
+- A missing cell.
+- A duplicate model and question pair, or a duplicate model.
+- A `pass@1` value outside 0 to 100.
+- A model count other than 28, or a question count other than 1,055.
+
+Their error messages name the model and the question, never a `pass@1` value.
+
+[`data/lcb-public-mapping.json`](data/lcb-public-mapping.json) joins the 315 reference-panel questions to public question identifiers.
+Each entry holds the panel index, the question fingerprint, and the question identifier only.
+The header records the pinned dataset, the SHA-256 of the reference panel, and the pin of the public file.
+`uv run --extra public-source lcb-public map` rebuilds the mapping.
+It uses the fingerprint rule and the pinned dataset revision of the source verification (`marianna13/livecodebench_code_generation_lite_parquet` at `e70df962`).
+It must find exactly 315 unique matches, each in the public results with the same platform.
+Otherwise it stops and names each question that fails.
+The committed mapping has 315 unique matches.
+
 ## Commands and reports
 
 From this directory, run:

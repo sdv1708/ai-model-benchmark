@@ -1,35 +1,23 @@
 """Verify panel fingerprints against pinned public question columns, without inference.
 
-Run in the EvalScope environment (fsspec, aiohttp and pyarrow are already present).
+Run with the ``public-source`` extra:
+``uv run --extra public-source python tools/verify_lcb_source.py --panel ... --output ...``.
 Only question/identity columns are fetched over HTTP byte ranges; large hidden-test
 columns are excluded. This research check requires internet, but no credential.
 """
 
 import argparse
-import hashlib
-import importlib
 import json
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from benchmark_reference.public_lcb import (
+    DATASET,
+    DATASET_REVISION,
+    DATASET_SUBSET,
+    question_fingerprint,
+    read_dataset_rows,
+)
 from benchmark_reference.reporting import validate_output_location
-
-DATASET = "marianna13/livecodebench_code_generation_lite_parquet"
-REVISION = "e70df9620dd54c12afac5e2881355de6f9ece2e9"
-
-
-def read_shard(index: int) -> list[dict[str, str]]:
-    """Project only the small columns needed to check original problem identity."""
-    fsspec = importlib.import_module("fsspec")
-    parquet = importlib.import_module("pyarrow.parquet")
-    root = f"https://huggingface.co/datasets/{DATASET}/resolve/{REVISION}"
-    url = f"{root}/release_v5/test-{index:05d}-of-00009.parquet?download=true"
-    with fsspec.open(url, "rb", block_size=256 * 1024).open() as stream:
-        table = parquet.ParquetFile(stream).read(
-            columns=["question_content", "question_id", "platform", "contest_date"]
-        )
-    rows: list[dict[str, str]] = table.to_pylist()
-    return rows
 
 
 def main() -> None:
@@ -40,12 +28,10 @@ def main() -> None:
     validate_output_location(args.output.parent, args.panel.parent, output_names=[args.output.name])
     panel = json.loads(args.panel.read_text(encoding="utf-8"))
     wanted = {task["question_sha256"] for task in panel["tasks"]}
-    with ThreadPoolExecutor(max_workers=3) as pool:
-        rows = [row for shard in pool.map(read_shard, range(9)) for row in shard]
+    rows = read_dataset_rows()
     found: dict[str, dict[str, str]] = {}
     for row in rows:
-        normalized = row["question_content"].replace("\r\n", "\n").replace("\r", "\n").strip()
-        fingerprint = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+        fingerprint = question_fingerprint(row["question_content"])
         if fingerprint in wanted:
             if fingerprint in found:
                 raise ValueError("Duplicate public source question fingerprint")
@@ -54,8 +40,8 @@ def main() -> None:
         raise ValueError(f"Public source misses {len(wanted - found.keys())} reference questions")
     result = {
         "dataset": DATASET,
-        "revision": REVISION,
-        "subset": "release_v5",
+        "revision": DATASET_REVISION,
+        "subset": DATASET_SUBSET,
         "source_count": len(rows),
         "reference_count": len(wanted),
         "matched": len(found),

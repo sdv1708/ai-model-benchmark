@@ -31,6 +31,8 @@ frontend/tests/fixtures/generated/
 frontend/tests/fixtures/browser-generated/
 .env*
 task2/output/
+# The public LiveCodeBench file states no license; never commit it (#75).
+task2/external/
 
 # Extracted inputs and local API examples.
 /perf_data/
