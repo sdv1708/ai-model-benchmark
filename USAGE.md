@@ -398,6 +398,27 @@ Keep those ports free.
 The suite rebuilds the frontend before browser tests.
 Browser installation requires a download unless Chromium is already cached.
 
+From the repository root, check the README links as a reader who is not signed in:
+
+```powershell
+uv run --no-project --python 3.12 python docs/scripts/check_links.py README.md
+```
+
+The check sends no credentials and no cookies.
+A relative link must point to a file that exists, with the same letter case.
+An anchor on a Markdown file must match a heading in that file.
+An external link must return an HTTP status below 400.
+The check skips links to local hosts: `localhost`, `127.0.0.1`, `::1`, `0.0.0.0`, and `*.localhost`.
+Exit code 0 means that every link works.
+Exit code 1 means that at least one link is broken.
+To check more files, add them to the command.
+
+To test the link check itself, run this command from `docs/scripts/`:
+
+```powershell
+uv run --no-project --python 3.12 --with pytest pytest test_check_links.py
+```
+
 ## Fault recovery
 
 | Symptom                            | Action                                                                                                                                                           |
