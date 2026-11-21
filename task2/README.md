@@ -279,7 +279,8 @@ The metadata does not change the simulated pass probability.
 The generator and the stratifiers `difficulty_stratified`, `response_stratified`, and `length_difficulty_stratified` use the same reference difficulty.
 This favors those stratifiers.
 The `metadata_stratified` strata do not use reference grades, so the generator does not favor them.
-Issue #60 adds a second generator.
+The error-rate study uses a second generator. It flips random grades of one reference model until the pass count reaches the true score.
+Both generators start from the reference grades, so a simulated model is not an unseen model.
 
 AA-LCR grades come from an LLM judge, and the saved data has one judgment for each answer.
 Judge noise is therefore not measured.
