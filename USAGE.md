@@ -320,6 +320,33 @@ It refuses `--real-grades` until a policy is frozen and its hash is committed.
 
 The [benchmark reference](task2/README.md#two-stage-threshold-decision) explains the rule and its limits.
 
+## Prepare the public LiveCodeBench results
+
+From `task2/`, download the public per-question results:
+
+```powershell
+uv run lcb-public fetch
+```
+
+The command saves the file to `task2/external/livecodebench/`. Git ignores that folder.
+The command stops and writes nothing when the SHA-256 differs from the pinned value.
+Do not commit the file: its source states no license.
+
+Validate the downloaded file and print its shape:
+
+```powershell
+uv run lcb-public check
+```
+
+Rebuild the committed question mapping. This step needs internet access and the `public-source` extra:
+
+```powershell
+uv run --extra public-source lcb-public map
+```
+
+No command prints a grade. The grades stay locked until a frozen policy passes the real-grade replay check.
+The [benchmark reference](task2/README.md#public-livecodebench-results) gives the source, the pin, and the limits.
+
 ## Run the image-pair demonstration
 
 From `task2/`, choose an unused output directory:
