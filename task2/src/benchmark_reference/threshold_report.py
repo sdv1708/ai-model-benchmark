@@ -27,6 +27,7 @@ from benchmark_reference.threshold_cost import (
     run_tokens,
 )
 from benchmark_reference.threshold_error_rate import FLIP, GENERATORS, RASCH
+from benchmark_reference.threshold_frozen_report import frozen_document, frozen_html
 from benchmark_reference.threshold_intervals import (
     BONFERRONI,
     BOOTSTRAP,
@@ -164,6 +165,8 @@ IMPLEMENTATION_FILES = (
     "threshold_benchmarks.py",
     "uncertainty.py",
     "threshold_intervals.py",
+    "threshold_rules.py",
+    "threshold_protocol.py",
     "threshold_policy.py",
     "threshold_simulation.py",
     "two_stage.py",
@@ -173,6 +176,7 @@ IMPLEMENTATION_FILES = (
     "threshold_cost.py",
     "threshold_coverage.py",
     "threshold_error_rate.py",
+    "threshold_frozen_report.py",
     "threshold_report.py",
     "threshold_cli.py",
 )
@@ -812,13 +816,20 @@ def benchmark_document(run: BenchmarkRun) -> dict[str, Any]:
 
 
 def summary_document(loaded: LoadedPolicy, runs: Sequence[BenchmarkRun]) -> dict[str, Any]:
-    return {
+    """The summary. A frozen policy adds its frozen-policy block; a draft adds no key."""
+    document: dict[str, Any] = {
         "analysis_version": ANALYSIS_VERSION,
         "mode": "simulated",
         "policy": {"key": loaded.key, "sha256": loaded.sha256, "frozen": loaded.frozen},
         "benchmarks": [benchmark_document(run) for run in runs],
         "limitations": [*LIMITATIONS, *(() if loaded.frozen else (DRAFT_LIMITATION,))],
     }
+    frozen = frozen_document(
+        loaded, {run.policy.benchmark: (run.policy, run.coverage, run.error_rate) for run in runs}
+    )
+    if frozen is not None:
+        document["frozen_policy"] = frozen
+    return document
 
 
 _STYLE = """
@@ -2000,6 +2011,9 @@ def html_report(
         for d in documents
     )
     sections = "\n".join(_benchmark_section(d, run) for d, run in zip(documents, runs, strict=True))
+    frozen = document.get("frozen_policy")
+    frozen_section = "" if frozen is None else frozen_html(frozen)
+    frozen_link = "" if frozen is None else '<li><a href="#frozen-policy">Frozen policy</a></li>\n'
     limitations = "\n".join(f"<li>{e(str(item))}</li>" for item in document["limitations"])
     inputs = "\n".join(
         f"<li>{e(name)}: <code>{e(str(sha))}</code></li>" for name, sha in manifest_inputs.items()
@@ -2020,13 +2034,14 @@ One policy file sets the threshold, the stage-1 size, the interval method, and t
 stratifier of each benchmark. Each benchmark has its own section with the same charts and
 tables.</p>
 <ul>
-{links}
+{frozen_link}{links}
 </ul>
 <h2>Benchmarks side by side</h2>
 <p>The expected cost is the range across the true scores at the policy stage-1 size, as a
 share of one full run. The mean gives each true score equal weight. The benchmark sections
 give the evidence for each value.</p>
 {_overview(documents)}
+{frozen_section}
 {sections}
 <h2>Limits</h2>
 <p>These limits apply to every benchmark. Each benchmark section adds its own limits.</p>

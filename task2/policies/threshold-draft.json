@@ -203,6 +203,6 @@
   },
   "frozen": false,
   "policy_id": "threshold-policy",
-  "schema_version": 5,
+  "schema_version": 6,
   "version": "draft-1"
 }

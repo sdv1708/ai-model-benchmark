@@ -242,10 +242,13 @@ AA-LCR uses `metadata_stratified` or `length_difficulty_stratified`, the stratif
 The AA-LCR threshold `0.60` is the threshold of the recorded operating-point analysis.
 The smallest AA-LCR stage size is `12`, because `length_difficulty_stratified` has 12 occupied strata and each stratum needs one question.
 
-Policy files use `schema_version` 4.
+Policy files use `schema_version` 6.
 Schema 2 adds the `coverage` section.
 Schema 3 adds the `cost` section.
 Schema 4 puts the settings in one section for each benchmark.
+Schema 5 adds the `error_rate` section.
+Schema 6 adds the `protocol` and `selection` blocks of a frozen policy.
+The draft moved from schema 5 to schema 6 with no other change, and it has neither block.
 The LiveCodeBench draft bands are `0.30` to `0.50`, `0.55` to `0.65`, `0.70` to `0.75`, and `0.80` to `0.90`.
 The AA-LCR draft bands are `0.30` to `0.40`, `0.45` to `0.55`, `0.60` to `0.65`, and `0.70` to `0.90`.
 Each band is an inclusive `[low, high]` pair.
@@ -258,8 +261,71 @@ The manifest records the SHA-256 of the exact policy file bytes.
 The command refuses it unless the policy is marked `frozen` and its hash matches the entry in `policies/frozen-policies.json`.
 The command reads that lock file from git `HEAD`.
 An uncommitted edit to the lock file therefore authorizes nothing.
-No policy is frozen yet.
+Policy v1 is frozen (see [frozen policy v1](#frozen-policy-v1)).
 The real replay itself is issue #63.
+
+### Frozen policy v1
+
+[`threshold-v1.json`](policies/threshold-v1.json) is frozen policy `threshold-policy@v1`.
+Its SHA-256 is `2b9e1d771567788ad4ee9213ab09484b7d0dce81c884782d949d5dde2814f1a8`.
+The lock file [`frozen-policies.json`](policies/frozen-policies.json) records this hash.
+The draft stays in the repository and still runs.
+
+A command wrote v1. Nobody edited a chosen value by hand:
+
+```powershell
+uv run threshold-decision --policy policies/threshold-draft.json --output-dir output/draft-run
+uv run threshold-freeze --simulated-run output/draft-run --output policies/threshold-v1.json --version v1 --public-file external/livecodebench/performances_generation.json
+```
+
+`threshold-freeze` reads the summary and the manifest of the simulated run of the draft.
+It stops when the manifest names another policy hash, when the run is not simulated, or when the summary bytes differ from the manifest hash.
+It applies two fixed rules to each benchmark section ([`threshold_rules.py`](src/benchmark_reference/threshold_rules.py)):
+
+1. Interval method: a method passes the coverage study when it passes every cell, for each stratifier, stage size, and true score. The rule chooses the passing method with the smallest mean width.
+2. Stratifier and stage-1 size: the rule takes the error-rate settings of the chosen method only. Of the settings that pass for both generators, it chooses the setting with the lowest expected token cost. The cost is the mean-estimate cost fraction under a uniform prior on the true scores 0.30 to 0.90 of the error-rate grid. Each generator has equal weight.
+
+The candidates are the existing stratifiers only.
+The Neyman selector (#61) is deferred and is not a candidate.
+The rules read simulated results only.
+With `--public-file`, the command checks the developer groups against the 28 public model names. The loader of #75 checks every row of the file, but it gives the command only the names. The command reads no grade.
+
+| Benchmark     | Value                       | v1                                       | Simulated result that chose it                                                                                         |
+| ------------- | --------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| LiveCodeBench | Interval method             | `stratified_wilson`                      | Passes 130 of 130 coverage cells with mean width 0.159. Pooled exact is next at 0.167.                                 |
+| LiveCodeBench | Stratifier and stage-1 size | `difficulty_stratified`, 63 questions    | Mean cost 0.4605 of a full run, both generators pass. `response_stratified` at 63 questions is next at 0.4703.         |
+| AA-LCR        | Interval method             | `pooled_exact_hypergeometric`            | Passes 130 of 130 cells with mean width 0.283. Wilson is narrower (0.278), but it fails 1 cell.                        |
+| AA-LCR        | Stratifier and stage-1 size | `metadata_stratified`, 30 questions      | Mean cost 0.6363 of a full run, both generators pass. `length_difficulty_stratified` at 30 questions is next at 0.6430. |
+
+The cost of each generator alone gives the same four choices.
+The AA-LCR probe grows from 20 to 30 questions.
+Its new stratifier, `metadata_stratified`, does not use reference grades, so the simulation generator does not favor it.
+
+A frozen file must hold two blocks beside its sections. The loader rejects a frozen file that lacks either block or any key in them:
+
+- `protocol` holds every value of the real replays. The list below gives its parts.
+  - The two stages, and the indifference zone: 0, with 0.02 as a secondary result.
+  - The public-panel pin and the hash of the question mapping.
+  - The grade rule: `pass@1` of 50 or more, with 100 as a secondary rule.
+  - The settings of the unseen-model replay (#63) and of the random-probe baseline.
+  - The reference-panel study (#77), with the developer group of each public model.
+  - The pruned-set test (#80). Its interval method is the method of the LiveCodeBench section.
+  - Every pass criterion, the stated comparisons with the simulated d95, and three disclosures.
+- `selection` records the source run (draft hash, summary hash, manifest hash) and the candidates that each rule compared.
+
+The loader re-applies the rules to the recorded candidates.
+The result must agree with the recorded choice and with the section values, so a hand edit of a chosen value stops the loader.
+The 1,055-question arm of #77 must use the LiveCodeBench stage-1 fraction, rounded up: 211 questions.
+
+`threshold-freeze` never overwrites a policy file or a lock entry.
+A later change must create a new version, for example `v2`.
+`threshold-decision` refuses to write the results of a frozen policy into a folder that already holds them.
+
+A run of `threshold-decision` with a frozen policy adds a "Frozen policy" section to the report.
+The section shows each chosen value with the simulated result that chose it, each fixed value, the pass criteria, the stated comparisons, and the disclosures.
+It also re-applies the rules to the coverage and error-rate results of the same run.
+Those studies do not depend on the chosen values, so the rules must give the v1 values again.
+The section states whether they do.
 
 ### Simulated models
 
@@ -384,7 +450,7 @@ Judge noise is not measured: the saved data has one judgment for each answer, an
 - Every wrong-decision rate is below the one-tail bound `0.025`. The 6 AA-LCR wrong decisions are all at true score `0.60`, which is exactly the threshold.
 - A 20-question AA-LCR probe gives a wide interval. The probe decides 86.6% of models at true score `0.30` and 86.0% at `0.90`, but fewer than 10% from `0.50` to `0.75`.
 - For one AA-LCR question, the input counts of the three reference models differ by at most 3.0%. The input cost therefore depends on the documents, not on the model. At each true score, the low and high cost fractions differ by less than 0.0003.
-- The band mean of the AA-LCR cost is 0.815 at 12 questions, 0.775 at 20, 0.670 at 30, 0.692 at 50, and 0.784 at 70. The 30-question probe is the cheapest tested size. Issue #62 sets the frozen stage size.
+- The band mean of the AA-LCR cost is 0.815 at 12 questions, 0.775 at 20, 0.670 at 30, 0.692 at 50, and 0.784 at 70. The 30-question probe is the cheapest tested size. Frozen policy v1 uses 30 questions for AA-LCR.
 - Pooled exact and Bonferroni exact pass all 130 AA-LCR coverage cells; pooled exact has the lowest coverage `0.948`.
 - Stratified Wilson fails 1 of 130 cells: `metadata_stratified`, 20 questions, true score `0.85`, coverage `0.933`.
 - The bootstrap fails 79 of 130 cells, with the lowest coverage `0.013`. Most AA-LCR strata have one or two sampled questions at these sizes, and such a stratum adds no bootstrap width.

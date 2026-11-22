@@ -293,10 +293,9 @@ def test_loader_rejects_a_row_with_another_set_of_fields(tmp_path: Path) -> None
 
 
 def _frozen_policy(tmp_path: Path) -> LoadedPolicy:
-    value = json.loads(DRAFT.read_text(encoding="utf-8"))
-    value["frozen"] = True
+    """A copy of the committed frozen policy v1; the lock text of each test decides the gate."""
     path = tmp_path / "frozen.json"
-    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_bytes((DRAFT.parent / "threshold-v1.json").read_bytes())
     return load_policy(path)
 
 

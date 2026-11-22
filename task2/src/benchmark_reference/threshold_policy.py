@@ -4,6 +4,10 @@ A policy file has one section for each benchmark. Each section has its own
 threshold, stage-1 size, interval method, stratifier, and study settings. The
 file-level ``policy_id``, ``version``, and ``frozen`` apply to every section.
 
+A frozen file also holds the replay ``protocol`` and the ``selection`` record
+(see ``threshold_protocol``). The loader rejects a frozen file that lacks either
+block or any of their keys. A draft can omit both.
+
 The policy hash is the SHA-256 of the exact file bytes. A real-grade replay runs
 only for a policy that is marked frozen. Its hash must also match the lock file
 in git HEAD. An uncommitted edit to the lock file therefore authorizes nothing.
@@ -18,15 +22,25 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from fractions import Fraction
 from pathlib import Path
+from typing import Any
 
 from benchmark_reference.models import AnalysisError
 from benchmark_reference.threshold_benchmarks import BENCHMARKS
 from benchmark_reference.threshold_intervals import INTERVAL_METHODS
+from benchmark_reference.threshold_protocol import (
+    SectionFacts,
+    grid,
+    validate_protocol,
+    validate_selection,
+)
 from benchmark_reference.uncertainty import validate_threshold
 
-SCHEMA_VERSION = 5
+# Schema 6 adds the protocol and selection blocks of a frozen policy.
+SCHEMA_VERSION = 6
 FROZEN_LOCK = Path(__file__).resolve().parents[2] / "policies" / "frozen-policies.json"
 _FILE_KEYS = {"schema_version", "policy_id", "version", "frozen", "benchmarks"}
+# A frozen file must hold these blocks; a draft can omit them.
+_FROZEN_KEYS = {"protocol", "selection"}
 _KEYS = {
     "threshold",
     "alpha",
@@ -43,7 +57,6 @@ _SIMULATION_KEYS = {"seed", "true_scores", "models_per_seed"}
 _COVERAGE_KEYS = {"subsets", "stage_sizes"}
 _COST_KEYS = {"stage_sizes", "bands"}
 _ERROR_KEYS = {"draws", "stage_sizes", "true_scores"}
-_GRID_KEYS = {"start", "stop", "step"}
 MAX_COST_BANDS = 4
 
 
@@ -82,6 +95,8 @@ class LoadedPolicy:
     """A validated policy file, its file name, and the SHA-256 of its exact bytes.
 
     ``benchmarks`` holds one section for each benchmark of the file, in report order.
+    ``protocol`` and ``selection`` are the validated blocks of a frozen file, or
+    None when the file has no such block.
     """
 
     policy_id: str
@@ -90,6 +105,8 @@ class LoadedPolicy:
     benchmarks: Mapping[str, ThresholdPolicy]
     file_name: str
     sha256: str
+    protocol: Mapping[str, Any] | None = None
+    selection: Mapping[str, Any] | None = None
 
     @property
     def key(self) -> str:
@@ -171,30 +188,6 @@ def _cost_bands(value: object, true_scores: list[float]) -> tuple[tuple[float, f
     return tuple(bands)
 
 
-def _grid(value: object) -> tuple[float, ...]:
-    """True scores from ``start`` to ``stop`` in exact decimal steps of ``step``.
-
-    Each value must be a multiple of 0.01, so every true score has an exact
-    two-decimal label. The step must divide the span exactly.
-    """
-    grid = _exact_keys(value, _GRID_KEYS, "error_rate true_scores")
-    for name in ("start", "stop"):
-        if not _number(grid[name]):
-            raise AnalysisError(f"Policy error_rate true_scores {name} must be in [0, 1]")
-    start, stop = Fraction(str(grid["start"])), Fraction(str(grid["stop"]))
-    if start > stop:
-        raise AnalysisError("Policy error_rate true_scores start must not exceed stop")
-    if not _number(grid["step"]) or Fraction(str(grid["step"])) < Fraction(1, 100):
-        raise AnalysisError("Policy error_rate true_scores step must be in [0.01, 1]")
-    step = Fraction(str(grid["step"]))
-    if any((value * 100).denominator != 1 for value in (start, stop, step)):
-        raise AnalysisError("Policy error_rate true_scores start, stop, and step need 2 decimals")
-    points = (stop - start) / step
-    if points.denominator != 1:
-        raise AnalysisError("Policy error_rate true_scores step must divide stop - start")
-    return tuple(float(start + k * step) for k in range(int(points) + 1))
-
-
 def load_policy(path: Path) -> LoadedPolicy:
     """Parse and validate one policy file; reject unknown or missing settings."""
     try:
@@ -202,7 +195,10 @@ def load_policy(path: Path) -> LoadedPolicy:
         raw = json.loads(data.decode("utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise AnalysisError(f"Cannot read policy {path}: {exc}") from exc
-    value = _exact_keys(raw, _FILE_KEYS, "file")
+    if not isinstance(raw, dict):
+        raise AnalysisError(f"Policy file keys must be exactly {sorted(_FILE_KEYS)}")
+    blocks = set(raw) & _FROZEN_KEYS
+    value = _exact_keys(raw, _FILE_KEYS | blocks, "file")
     if value["schema_version"] != SCHEMA_VERSION:
         raise AnalysisError(f"Policy schema_version must be {SCHEMA_VERSION}")
     if not isinstance(value["frozen"], bool):
@@ -228,8 +224,29 @@ def load_policy(path: Path) -> LoadedPolicy:
         except AnalysisError as exc:
             # The section name tells the reader which benchmark has the bad setting.
             raise AnalysisError(f"Policy section {name}: {exc}") from exc
+    if value["frozen"] and blocks != _FROZEN_KEYS:
+        missing = sorted(_FROZEN_KEYS - blocks)
+        raise AnalysisError(f"A frozen policy must hold the blocks {missing}")
+    facts = {
+        n: SectionFacts(
+            p.threshold, p.stage1_size, p.interval_method, p.stratifier, p.error_stage_sizes
+        )
+        for n, p in benchmarks.items()
+    }
+    protocol = selection = None
+    if "protocol" in value:
+        protocol = validate_protocol(value["protocol"], facts)
+    if "selection" in value:
+        selection = validate_selection(value["selection"], facts)
     return LoadedPolicy(
-        policy_id, version, value["frozen"], benchmarks, path.name, hashlib.sha256(data).hexdigest()
+        policy_id,
+        version,
+        value["frozen"],
+        benchmarks,
+        path.name,
+        hashlib.sha256(data).hexdigest(),
+        protocol,
+        selection,
     )
 
 
@@ -305,7 +322,7 @@ def _section(
         cost_bands=bands,
         error_draws=_integer(error["draws"], "error_rate draws", minimum=1),
         error_stage_sizes=error_sizes,
-        error_true_scores=_grid(error["true_scores"]),
+        error_true_scores=grid(error["true_scores"], "error_rate true_scores"),
     )
 
 
