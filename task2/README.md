@@ -257,12 +257,11 @@ A policy can have at most 4 bands, so that each band has its own color, dash pat
 The manifest records the SHA-256 of the exact policy file bytes.
 `.gitattributes` keeps policy files at LF line endings, so the hash is the same on every platform.
 
-`--real-grades` requests a replay on real model grades.
+`--real-grades` runs the preregistered replay on real model grades (see [real replay](#real-replay)).
 The command refuses it unless the policy is marked `frozen` and its hash matches the entry in `policies/frozen-policies.json`.
 The command reads that lock file from git `HEAD`.
 An uncommitted edit to the lock file therefore authorizes nothing.
 Policy v1 is frozen (see [frozen policy v1](#frozen-policy-v1)).
-The real replay itself is issue #63.
 
 ### Frozen policy v1
 
@@ -290,12 +289,12 @@ The Neyman selector (#61) is deferred and is not a candidate.
 The rules read simulated results only.
 With `--public-file`, the command checks the developer groups against the 28 public model names. The loader of #75 checks every row of the file, but it gives the command only the names. The command reads no grade.
 
-| Benchmark     | Value                       | v1                                       | Simulated result that chose it                                                                                         |
-| ------------- | --------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| LiveCodeBench | Interval method             | `stratified_wilson`                      | Passes 130 of 130 coverage cells with mean width 0.159. Pooled exact is next at 0.167.                                 |
-| LiveCodeBench | Stratifier and stage-1 size | `difficulty_stratified`, 63 questions    | Mean cost 0.4605 of a full run, both generators pass. `response_stratified` at 63 questions is next at 0.4703.         |
-| AA-LCR        | Interval method             | `pooled_exact_hypergeometric`            | Passes 130 of 130 cells with mean width 0.283. Wilson is narrower (0.278), but it fails 1 cell.                        |
-| AA-LCR        | Stratifier and stage-1 size | `metadata_stratified`, 30 questions      | Mean cost 0.6363 of a full run, both generators pass. `length_difficulty_stratified` at 30 questions is next at 0.6430. |
+| Benchmark     | Value                       | v1                                    | Simulated result that chose it                                                                                          |
+| ------------- | --------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| LiveCodeBench | Interval method             | `stratified_wilson`                   | Passes 130 of 130 coverage cells with mean width 0.159. Pooled exact is next at 0.167.                                  |
+| LiveCodeBench | Stratifier and stage-1 size | `difficulty_stratified`, 63 questions | Mean cost 0.4605 of a full run, both generators pass. `response_stratified` at 63 questions is next at 0.4703.          |
+| AA-LCR        | Interval method             | `pooled_exact_hypergeometric`         | Passes 130 of 130 cells with mean width 0.283. Wilson is narrower (0.278), but it fails 1 cell.                         |
+| AA-LCR        | Stratifier and stage-1 size | `metadata_stratified`, 30 questions   | Mean cost 0.6363 of a full run, both generators pass. `length_difficulty_stratified` at 30 questions is next at 0.6430. |
 
 The cost of each generator alone gives the same four choices.
 The AA-LCR probe grows from 20 to 30 questions.
@@ -326,6 +325,48 @@ The section shows each chosen value with the simulated result that chose it, eac
 It also re-applies the rules to the coverage and error-rate results of the same run.
 Those studies do not depend on the chosen values, so the rules must give the v1 values again.
 The section states whether they do.
+
+### Real replay
+
+The real replay tests a frozen policy on the 28 public LiveCodeBench models (#63):
+
+```powershell
+uv run lcb-public fetch
+uv run threshold-decision --policy policies/threshold-v1.json --real-grades --output-dir ../docs/data/task2-real-replay
+```
+
+The command takes every setting from the frozen policy.
+It checks these points before it reads a public grade:
+
+- The policy hash matches the committed lock file.
+- The reference panel, the question mapping, and the public file match the hashes in the policy.
+- The public model names match the developer groups of the policy.
+- The `task2` folder has no uncommitted change, so the recorded commit is the code that ran.
+- Git `HEAD` has no record of a replay of this policy, and no start marker exists in `output/`.
+
+The replay runs one time.
+A second run needs `--rerun-reason`, and the report states the reason.
+Use it only for a code fault or to reproduce the result.
+
+[`threshold_replay.py`](src/benchmark_reference/threshold_replay.py) makes the decisions with the functions of the two-stage rule.
+The report gives the cost as tokens and as questions.
+The cost mark uses the mean token estimate.
+The indifference zone forgives a wrong decision only when the full-set score is closer to the threshold than the zone.
+Each public model gets new subsets for its coverage check. Their seeds differ from the seeds of every other study.
+
+| Output                  | Content                                                                                |
+| ----------------------- | -------------------------------------------------------------------------------------- |
+| `cells.csv`             | Each grade rule, probe kind, model, and threshold: outcomes, wrong decisions, and cost |
+| `coverage.csv`          | Coverage of each model under each grade rule                                           |
+| `models.csv`            | One row for each model: scores, pass@1 facts, and results under both grade rules       |
+| `reference_holdout.csv` | Each decision of the secondary replay on the 3 reference models                        |
+| `summary.json`          | Every number of the report                                                             |
+| `report.md`             | The marks, the comparisons, the limits, the disclosures, and the provenance            |
+| `manifest.json`         | The command, the commit, the input hashes, the code hashes, and the output hashes      |
+
+The outputs hold derived values for each model. They hold no grade of one question.
+The recorded replay of v1 is in [`docs/data/task2-real-replay`](../docs/data/task2-real-replay/report.md).
+It passed the 3 pass criteria.
 
 ### Simulated models
 
@@ -464,15 +505,15 @@ uv run threshold-decision --policy policies/threshold-draft.json --output-dir ou
 The command runs every benchmark section of the policy file.
 It writes one folder of tables for each benchmark and three shared files:
 
-| File                             | Content                                                                                    |
-| -------------------------------- | ------------------------------------------------------------------------------------------ |
-| `<benchmark>/decisions.csv`      | One row per simulated model: true score, stage-1 result, decision, stage, and tokens used. |
-| `<benchmark>/coverage.csv`       | One row per coverage cell and method: coverage, misses on each side, width.                |
-| `<benchmark>/cost.csv`           | One row per cost stage size and true score: escalation rate and token cost.                |
-| `<benchmark>/question_tokens.csv` | One row per question: its estimate and the counts of each reference model.                |
-| `summary.json`                   | For each benchmark: decision summary for each true score, coverage verdicts, and limits.   |
-| `report.html`                    | Self-contained report with charts and tables, in light and dark modes.                     |
-| `manifest.json`                  | Policy hash, input hashes for each benchmark, and output hashes.                           |
+| File                              | Content                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------ |
+| `<benchmark>/decisions.csv`       | One row per simulated model: true score, stage-1 result, decision, stage, and tokens used. |
+| `<benchmark>/coverage.csv`        | One row per coverage cell and method: coverage, misses on each side, width.                |
+| `<benchmark>/cost.csv`            | One row per cost stage size and true score: escalation rate and token cost.                |
+| `<benchmark>/question_tokens.csv` | One row per question: its estimate and the counts of each reference model.                 |
+| `summary.json`                    | For each benchmark: decision summary for each true score, coverage verdicts, and limits.   |
+| `report.html`                     | Self-contained report with charts and tables, in light and dark modes.                     |
+| `manifest.json`                   | Policy hash, input hashes for each benchmark, and output hashes.                           |
 
 `<benchmark>` is `live_code_bench_v5` or `aa_lcr`.
 The report starts with a side-by-side table of both benchmarks.
@@ -496,15 +537,15 @@ None of these models is in the reference panel.
 The 315 reference-panel questions come from the same public dataset, so the public results give a test on real models that the selector never saw.
 This package prepares that data path only. It gives and prints no grade.
 
-| Fact (read on 10 November 2026) | Value                                                                                    |
-| ------------------------------- | ---------------------------------------------------------------------------------------- |
-| Source                          | `https://livecodebench.github.io/performances_generation.json`                           |
-| Size                            | 6,950,346 bytes                                                                          |
-| SHA-256 (the pin)               | `17f9a1d69e3f6290fc8b967a4dd13fbb46e34dd05716fdee793780a1cfadd0c1`                       |
-| Shape                           | 28 models and 1,055 questions, 29,540 rows, no missing cell                              |
-| Row fields                      | `question_id`, `model`, `date`, `difficulty`, `pass@1`, `platform`                       |
-| `pass@1`                        | A number from 0 to 100 for each model and question                                       |
-| License                         | The source repository states no license                                                  |
+| Fact (read on 10 November 2026) | Value                                                              |
+| ------------------------------- | ------------------------------------------------------------------ |
+| Source                          | `https://livecodebench.github.io/performances_generation.json`     |
+| Size                            | 6,950,346 bytes                                                    |
+| SHA-256 (the pin)               | `17f9a1d69e3f6290fc8b967a4dd13fbb46e34dd05716fdee793780a1cfadd0c1` |
+| Shape                           | 28 models and 1,055 questions, 29,540 rows, no missing cell        |
+| Row fields                      | `question_id`, `model`, `date`, `difficulty`, `pass@1`, `platform` |
+| `pass@1`                        | A number from 0 to 100 for each model and question                 |
+| License                         | The source repository states no license                            |
 
 The raw file is not committed, because its source states no license.
 `uv run lcb-public fetch` downloads it to `task2/external/livecodebench/`, and Git ignores that folder.

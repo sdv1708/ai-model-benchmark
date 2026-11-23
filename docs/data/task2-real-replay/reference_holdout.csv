@@ -1,0 +1,121 @@
+benchmark,model,seed,full_passes,questions,truth,stage1_result,decision,wrong,questions_graded,expected_tokens_mean
+live_code_bench_v5,gpt-oss-120b,0,241,315,GO,ESCALATE,GO,0,315,4532328.0
+live_code_bench_v5,gpt-oss-120b,1,241,315,GO,ESCALATE,GO,0,315,4532328.0
+live_code_bench_v5,gpt-oss-120b,2,241,315,GO,GO,GO,0,63,820144.7
+live_code_bench_v5,gpt-oss-120b,3,241,315,GO,ESCALATE,GO,0,315,4532328.0
+live_code_bench_v5,gpt-oss-120b,4,241,315,GO,ESCALATE,GO,0,315,4532328.0
+live_code_bench_v5,gpt-oss-120b,5,241,315,GO,GO,GO,0,63,725284.0
+live_code_bench_v5,gpt-oss-120b,6,241,315,GO,ESCALATE,GO,0,315,4532328.0
+live_code_bench_v5,gpt-oss-120b,7,241,315,GO,ESCALATE,GO,0,315,4532328.0
+live_code_bench_v5,gpt-oss-120b,8,241,315,GO,ESCALATE,GO,0,315,4532328.0
+live_code_bench_v5,gpt-oss-120b,9,241,315,GO,ESCALATE,GO,0,315,4532328.0
+live_code_bench_v5,gpt-oss-120b,10,241,315,GO,GO,GO,0,63,747684.3
+live_code_bench_v5,gpt-oss-120b,11,241,315,GO,ESCALATE,GO,0,315,4532328.0
+live_code_bench_v5,gpt-oss-120b,12,241,315,GO,ESCALATE,GO,0,315,4532328.0
+live_code_bench_v5,gpt-oss-120b,13,241,315,GO,ESCALATE,GO,0,315,4532328.0
+live_code_bench_v5,gpt-oss-120b,14,241,315,GO,ESCALATE,GO,0,315,4532328.0
+live_code_bench_v5,gpt-oss-120b,15,241,315,GO,ESCALATE,GO,0,315,4532328.0
+live_code_bench_v5,gpt-oss-120b,16,241,315,GO,ESCALATE,GO,0,315,4532328.0
+live_code_bench_v5,gpt-oss-120b,17,241,315,GO,ESCALATE,GO,0,315,4532328.0
+live_code_bench_v5,gpt-oss-120b,18,241,315,GO,ESCALATE,GO,0,315,4532328.0
+live_code_bench_v5,gpt-oss-120b,19,241,315,GO,ESCALATE,GO,0,315,4532328.0
+live_code_bench_v5,kimi-k2.5,0,198,315,NO GO,NO GO,NO GO,0,63,857070.7
+live_code_bench_v5,kimi-k2.5,1,198,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,kimi-k2.5,2,198,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,kimi-k2.5,3,198,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,kimi-k2.5,4,198,315,NO GO,NO GO,NO GO,0,63,805272.3
+live_code_bench_v5,kimi-k2.5,5,198,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,kimi-k2.5,6,198,315,NO GO,NO GO,NO GO,0,63,997031.3
+live_code_bench_v5,kimi-k2.5,7,198,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,kimi-k2.5,8,198,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,kimi-k2.5,9,198,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,kimi-k2.5,10,198,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,kimi-k2.5,11,198,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,kimi-k2.5,12,198,315,NO GO,NO GO,NO GO,0,63,896750.3
+live_code_bench_v5,kimi-k2.5,13,198,315,NO GO,NO GO,NO GO,0,63,1040861.7
+live_code_bench_v5,kimi-k2.5,14,198,315,NO GO,NO GO,NO GO,0,63,823590.3
+live_code_bench_v5,kimi-k2.5,15,198,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,kimi-k2.5,16,198,315,NO GO,NO GO,NO GO,0,63,989750.7
+live_code_bench_v5,kimi-k2.5,17,198,315,NO GO,NO GO,NO GO,0,63,997318.0
+live_code_bench_v5,kimi-k2.5,18,198,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,kimi-k2.5,19,198,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,minimax-m2.5,0,195,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,minimax-m2.5,1,195,315,NO GO,NO GO,NO GO,0,63,1030183.7
+live_code_bench_v5,minimax-m2.5,2,195,315,NO GO,NO GO,NO GO,0,63,910356.0
+live_code_bench_v5,minimax-m2.5,3,195,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,minimax-m2.5,4,195,315,NO GO,NO GO,NO GO,0,63,797058.3
+live_code_bench_v5,minimax-m2.5,5,195,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,minimax-m2.5,6,195,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,minimax-m2.5,7,195,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,minimax-m2.5,8,195,315,NO GO,NO GO,NO GO,0,63,1000747.0
+live_code_bench_v5,minimax-m2.5,9,195,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,minimax-m2.5,10,195,315,NO GO,NO GO,NO GO,0,63,847007.0
+live_code_bench_v5,minimax-m2.5,11,195,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,minimax-m2.5,12,195,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,minimax-m2.5,13,195,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,minimax-m2.5,14,195,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,minimax-m2.5,15,195,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,minimax-m2.5,16,195,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,minimax-m2.5,17,195,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+live_code_bench_v5,minimax-m2.5,18,195,315,NO GO,NO GO,NO GO,0,63,848141.3
+live_code_bench_v5,minimax-m2.5,19,195,315,NO GO,ESCALATE,NO GO,0,315,4532328.0
+aa_lcr,gpt-oss-120b,0,48,100,NO GO,ESCALATE,NO GO,0,100,9616201.3
+aa_lcr,gpt-oss-120b,1,48,100,NO GO,ESCALATE,NO GO,0,100,9616201.3
+aa_lcr,gpt-oss-120b,2,48,100,NO GO,ESCALATE,NO GO,0,100,9616201.3
+aa_lcr,gpt-oss-120b,3,48,100,NO GO,ESCALATE,NO GO,0,100,9616201.3
+aa_lcr,gpt-oss-120b,4,48,100,NO GO,ESCALATE,NO GO,0,100,9616201.3
+aa_lcr,gpt-oss-120b,5,48,100,NO GO,NO GO,NO GO,0,30,2893284.3
+aa_lcr,gpt-oss-120b,6,48,100,NO GO,ESCALATE,NO GO,0,100,9616201.3
+aa_lcr,gpt-oss-120b,7,48,100,NO GO,ESCALATE,NO GO,0,100,9616201.3
+aa_lcr,gpt-oss-120b,8,48,100,NO GO,ESCALATE,NO GO,0,100,9616201.3
+aa_lcr,gpt-oss-120b,9,48,100,NO GO,ESCALATE,NO GO,0,100,9616201.3
+aa_lcr,gpt-oss-120b,10,48,100,NO GO,ESCALATE,NO GO,0,100,9616201.3
+aa_lcr,gpt-oss-120b,11,48,100,NO GO,ESCALATE,NO GO,0,100,9616201.3
+aa_lcr,gpt-oss-120b,12,48,100,NO GO,ESCALATE,NO GO,0,100,9616201.3
+aa_lcr,gpt-oss-120b,13,48,100,NO GO,NO GO,NO GO,0,30,2878727.3
+aa_lcr,gpt-oss-120b,14,48,100,NO GO,ESCALATE,NO GO,0,100,9616201.3
+aa_lcr,gpt-oss-120b,15,48,100,NO GO,NO GO,NO GO,0,30,2867554.0
+aa_lcr,gpt-oss-120b,16,48,100,NO GO,ESCALATE,NO GO,0,100,9616201.3
+aa_lcr,gpt-oss-120b,17,48,100,NO GO,NO GO,NO GO,0,30,2907331.0
+aa_lcr,gpt-oss-120b,18,48,100,NO GO,ESCALATE,NO GO,0,100,9616201.3
+aa_lcr,gpt-oss-120b,19,48,100,NO GO,ESCALATE,NO GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,0,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,1,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,2,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,3,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,4,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,5,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,6,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,7,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,8,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,9,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,10,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,11,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,12,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,13,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,14,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,15,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,16,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,17,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,18,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,kimi-k2.5,19,66,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,0,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,1,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,2,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,3,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,4,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,5,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,6,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,7,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,8,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,9,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,10,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,11,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,12,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,13,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,14,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,15,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,16,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,17,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,18,64,100,GO,ESCALATE,GO,0,100,9616201.3
+aa_lcr,minimax-m2.5,19,64,100,GO,GO,GO,0,30,2899041.0
