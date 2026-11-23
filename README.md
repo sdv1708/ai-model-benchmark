@@ -15,16 +15,16 @@ The live application hosts Performance Studio. Benchmark analysis runs locally.
 
 ## Current status
 
-This table gives the state of the project on 21 November 2026.
+This table gives the state of the project on 23 November 2026.
 
-| Area                         | State                      | Result                                                                                                                                                                   |
-| ---------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Performance Studio           | Complete and deployed      | Upload, compare, and evaluate workbook projections in the browser.                                                                                                       |
-| Subset studies               | Complete                   | No smaller tested subset passed every recorded policy gate. The recorded default keeps 315 of 315 and 100 of 100.                                                        |
-| Two-stage threshold decision | Policy v1 frozen           | Coverage, token cost, and error rate are measured on simulated models for both benchmarks. Fixed rules chose frozen policy v1 from these results.                         |
-| Test on real models          | Data path ready            | The package fetches, checks, and maps the public results of 28 LiveCodeBench models. Only the frozen v1 replay (#63) can read their grades. No replay on real grades exists yet. |
-| EvalScope integration        | Complete for one stage     | Two pruned adapters and a run comparison tool work inside EvalScope. The two-stage mode is planned.                                                                      |
-| Image-pair prototype         | Prototype                  | Synthetic images and scripted answers only. No multimodal subset is validated.                                                                                           |
+| Area                         | State                  | Result                                                                                                                                            |
+| ---------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Performance Studio           | Complete and deployed  | Upload, compare, and evaluate workbook projections in the browser.                                                                                |
+| Subset studies               | Complete               | No smaller tested subset passed every recorded policy gate. The recorded default keeps 315 of 315 and 100 of 100.                                 |
+| Two-stage threshold decision | Policy v1 frozen       | Coverage, token cost, and error rate are measured on simulated models for both benchmarks. Fixed rules chose frozen policy v1 from these results. |
+| Test on real models          | Replay passed          | Frozen policy v1 passed its 3 preregistered criteria on 28 unseen LiveCodeBench models. Near the threshold, most runs still need the full set.    |
+| EvalScope integration        | Complete for one stage | Two pruned adapters and a run comparison tool work inside EvalScope. The two-stage mode is planned.                                               |
+| Image-pair prototype         | Prototype              | Synthetic images and scripted answers only. No multimodal subset is validated.                                                                    |
 
 The [planned work](#known-gaps-and-planned-work) section lists each open gap and the issue that addresses it.
 
@@ -400,7 +400,7 @@ The [benchmark reference](task2/README.md#aa-lcr-on-the-draft-policy) gives the 
 
 The published claim therefore stays full retention.
 [#75](https://github.com/sdv1708/ai-model-benchmark/issues/75) prepared the public results of 28 real LiveCodeBench models, with the grades locked.
-[#62](https://github.com/sdv1708/ai-model-benchmark/issues/62) froze policy v1 before anyone read a public grade. [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) replays it on those models.
+[#62](https://github.com/sdv1708/ai-model-benchmark/issues/62) froze policy v1 before anyone read a public grade, with the [disclosures](#frozen-policy-v1) below. [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) replayed it on those models one time. The [result](#real-replay-of-policy-v1) is below.
 To reproduce the table, run the command in the [usage guide](USAGE.md#run-a-two-stage-threshold-decision).
 
 ### Token cost on simulated models
@@ -477,7 +477,7 @@ The 20-question AA-LCR probe of the draft policy does not reach d95 at any dista
 The two generators differ in d95 by 0.02 or less.
 
 Both generators start from the reference grades, so a simulated model is not an unseen model.
-The replay on real models in [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) uses the same pass rule.
+The [replay on real models](#real-replay-of-policy-v1) uses the same pass rule.
 
 ### Frozen policy v1
 
@@ -507,7 +507,7 @@ A run of `threshold-decision` with v1 gives the decision study below: 13,000 sim
 Every wrong-decision rate stays below the one-tail bound 0.025.
 For AA-LCR, v1 decides 24 percentage points more models at stage 1, and its mean cost falls from 0.749 to 0.611 of a full run.
 The [run record](docs/data/task2-threshold-v1-run.json) gives the manifest, the frozen-policy section, and the rule check: the rules, applied to the results of this run, give the v1 values again.
-These are simulated models. The real test is [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63).
+These are simulated models. The [real replay](#real-replay-of-policy-v1) is the test on real models.
 
 Policy v1 also fixes the grade rule (`pass@1` of 50 or more), the replay settings, the random-probe baseline, the developer groups, the pruned-set test, every pass criterion, and the stated comparisons.
 The [benchmark reference](task2/README.md#frozen-policy-v1) gives every value.
@@ -517,6 +517,35 @@ Three disclosures go with v1:
 - The author saw a scratch replay on the 3 reference models before the freeze. The simulated choice reduces that bias, but it does not remove it.
 - Before the freeze, the author read only these facts from the public panel: the file shape, the model names, and the count of each `pass@1` value. The author also read the question dates, difficulty labels, and platforms, and the `release_date` field. Nobody computed a score or a decision of a public model.
 - The ordering criterion of the pruned-set test changed after the author saw the 3-model results. It now applies only to pairs with a gap of 0.10 or more. The author fixed it before anyone read a public grade.
+
+The [replay report](docs/data/task2-real-replay/report.md#disclosures) adds a note to each disclosure.
+
+### Real replay of policy v1
+
+[#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) ran frozen policy v1 one time on 28 public LiveCodeBench models.
+None of them is in the reference panel that gives the strata.
+Each model gets 1,000 decisions at each of 61 thresholds from 0.30 to 0.90: 1,708,000 decisions.
+The policy fixed every setting and every pass criterion before the run.
+
+| Pass criterion of v1                                 | Limit | Result | Mark |
+| ---------------------------------------------------- | ----: | -----: | ---- |
+| Highest wrong-decision rate of 1,708 cells           | 0.071 |  0.014 | Pass |
+| Lowest coverage of 28 models                         | 0.935 |  0.950 | Pass |
+| Mean expected cost at 0.70, as a share of a full run |   1.0 |  0.674 | Pass |
+
+- Across all thresholds, the 63-question probe made 70.8% of the decisions. Of the 1,708,000 decisions, 601 were wrong. The mean expected cost was 0.433 of a full run.
+- At 0.10 or more from the threshold, 0 of 1,206,000 decisions were wrong.
+- At the primary threshold 0.70, the probe made 40.6% of the decisions. Of the 28 models, 19 have a full score within 0.10 of 0.70, and those models usually need the full set.
+- The stratified probe is not better everywhere. At 0.70, the random probe made 42.3% of the decisions, and the stratified probe made 40.6%. The random probe made 84 wrong decisions of 28,000, and the stratified probe made 28.
+- The real d95 is larger than the simulated d95. It is 0.195 over all thresholds, against 0.18. At 0.70 alone, no distance above the threshold reaches 95%.
+- The AA-LCR evidence is weak. In the replay of the 3 reference models, the probe made 5 of 60 AA-LCR decisions. No decision was wrong.
+
+The 28 models come from 9 developer groups, and they are not independent.
+The 1,000 decisions of one model reuse the same grades.
+The token cost is an estimate from the saved answers of the reference models.
+The [replay report](docs/data/task2-real-replay/report.md) gives each model, each secondary result, and each limit.
+The [manifest](docs/data/task2-real-replay/manifest.json) has SHA-256 `ed3c5bacb4b6b62695ee3b5e87d0b3f44e1b4deb4204f4f76da831b7fdc808d0`.
+It records the command and commit `9a7ce058d0c98d02b2d347b457b7ba1bdb188a5b`.
 
 ## EvalScope integration
 
@@ -652,19 +681,18 @@ All issues are in the [issue tracker](https://github.com/sdv1708/ai-model-benchm
 
 ### Gaps with planned work
 
-| Gap                                                                                                                                                                     | Planned work                                                                                                                                                                                                                                                                                 |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The two-stage rule has no evidence on real grades. Both simulation generators start from the reference grades, so the error rate for an unseen real model is not known. | [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) runs frozen policy v1 one time on the 28 public models and publishes the result, pass or fail. [#75](https://github.com/sdv1708/ai-model-benchmark/issues/75) prepared their results. None of them is in the reference panel. |
-| The effect of the reference panel and of the benchmark size is not known.                                                                                               | [#77](https://github.com/sdv1708/ai-model-benchmark/issues/77) holds out one developer group at a time, on 315 and on 1,055 questions.                                                                                                                                                       |
-| No fixed pruned list is validated as a score estimator.                                                                                                                 | [#80](https://github.com/sdv1708/ai-model-benchmark/issues/80) tests fixed lists of 95 and 158 LiveCodeBench questions on the 28 models.                                                                                                                                                     |
-| The EvalScope adapters run one stage only.                                                                                                                              | [#65](https://github.com/sdv1708/ai-model-benchmark/issues/65) adds the two-stage mode to both adapters and to `compare_runs`.                                                                                                                                                               |
-| The project measured no live inference saving.                                                                                                                          | [#78](https://github.com/sdv1708/ai-model-benchmark/issues/78) runs the two-stage mode on live model endpoints and measures tokens, time, and cost.                                                                                                                                          |
-| AA-LCR has one recorded judgment per answer. Judge noise is not measured.                                                                                               | [#76](https://github.com/sdv1708/ai-model-benchmark/issues/76) sends each of the 300 saved answers to the judge 5 times.                                                                                                                                                                     |
-| The results are spread across JSON and CSV files.                                                                                                                       | [#64](https://github.com/sdv1708/ai-model-benchmark/issues/64) publishes one self-contained HTML results report, linked from the top of this README.                                                                                                                                         |
-| The documents state the full-retention result.                                                                                                                          | [#66](https://github.com/sdv1708/ai-model-benchmark/issues/66) updates every document with the frozen v1 result.                                                                                                                                                                             |
+| Gap                                                                       | Planned work                                                                                                                                         |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The effect of the reference panel and of the benchmark size is not known. | [#77](https://github.com/sdv1708/ai-model-benchmark/issues/77) holds out one developer group at a time, on 315 and on 1,055 questions.               |
+| No fixed pruned list is validated as a score estimator.                   | [#80](https://github.com/sdv1708/ai-model-benchmark/issues/80) tests fixed lists of 95 and 158 LiveCodeBench questions on the 28 models.             |
+| The EvalScope adapters run one stage only.                                | [#65](https://github.com/sdv1708/ai-model-benchmark/issues/65) adds the two-stage mode to both adapters and to `compare_runs`.                       |
+| The project measured no live inference saving.                            | [#78](https://github.com/sdv1708/ai-model-benchmark/issues/78) runs the two-stage mode on live model endpoints and measures tokens, time, and cost.  |
+| AA-LCR has one recorded judgment per answer. Judge noise is not measured. | [#76](https://github.com/sdv1708/ai-model-benchmark/issues/76) sends each of the 300 saved answers to the judge 5 times.                             |
+| The results are spread across JSON and CSV files.                         | [#64](https://github.com/sdv1708/ai-model-benchmark/issues/64) publishes one self-contained HTML results report, linked from the top of this README. |
+| The documents state the full-retention result.                            | [#66](https://github.com/sdv1708/ai-model-benchmark/issues/66) updates every document with the frozen v1 result.                                     |
 
-If the replay in [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) fails any criterion, the report says so.
-In that case, full retention stays the published claim.
+The [real replay](#real-replay-of-policy-v1) passed every criterion.
+Full retention stays the claim for a score estimate, because no fixed pruned list is validated.
 
 Two issues are deferred.
 [#61](https://github.com/sdv1708/ai-model-benchmark/issues/61) adds cost-aware Neyman allocation as a selector; policy v1 chooses from the existing stratifiers only.
@@ -676,7 +704,7 @@ Two issues are deferred.
 flowchart LR
     I60["#60 Error rate (done)"] --> I62["#62 Freeze policy v1 (done)"]
     I75["#75 Public panel import (done)"] --> I62
-    I62 --> I63["#63 Replay on 28 real models"]
+    I62 --> I63["#63 Replay on 28 real models (done)"]
     I62 --> I65["#65 EvalScope two-stage"]
     I63 --> I77["#77 Panel and size study"]
     I63 --> I80["#80 Pruned list test"]
@@ -691,7 +719,7 @@ flowchart LR
     I76["#76 Judge noise"]
 ```
 
-Issues #56 to #60, #62, #74, and #75 are complete.
+Issues #56 to #60, #62, #63, #74, and #75 are complete.
 Issues #76 and #78 need a model endpoint key and an approved cost estimate.
 
 ### Limits with no planned work

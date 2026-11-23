@@ -1,0 +1,1335 @@
+{
+  "all_criteria_pass": true,
+  "analysis_version": "threshold-real-replay-v1",
+  "criteria": {
+    "coverage": {
+      "checked": 28,
+      "failed": 0,
+      "limit": 0.935,
+      "passed": true,
+      "statement": "For each model, the interval holds the full-set score in at least 0.935 of the 2,000 subsets at the policy stage-1 size.",
+      "value": 0.95
+    },
+    "mean_cost_at_primary_threshold": {
+      "checked": 28,
+      "failed": 0,
+      "limit": 1.0,
+      "passed": true,
+      "statement": "At the primary threshold, the mean expected cost across the models is below 1.0 of a full run.",
+      "value": 0.674411
+    },
+    "wrong_decision_rate": {
+      "checked": 1708,
+      "failed": 0,
+      "limit": 0.071,
+      "passed": true,
+      "statement": "For each model and threshold, the wrong-decision rate across the 1,000 seeds is at most 0.071. This is the pass rule of #60.",
+      "value": 0.014
+    }
+  },
+  "developer_groups": 9,
+  "disclosures": {
+    "ordering_criterion_change": {
+      "note": "Before the freeze, the author read the count of each pass@1 value, as disclosure 2 says. Nobody computed a score, interval, or decision of a public model. The owner confirmed this disclosure with this note on 23 November 2026.",
+      "policy_text": "The ordering criterion of the pruned-set test changed after the author saw the 3-model results. The criterion now applies only to model pairs with a full-set gap of 0.10 or more. The author fixed this change before anyone read a public grade."
+    },
+    "public_panel_read": {
+      "note": "The public loader (#75) parsed and range-checked every pass@1 value in memory before the freeze. Only model names and question metadata came out of the loader. The owner confirmed this disclosure with this note on 23 November 2026.",
+      "policy_text": "Before this freeze, the author read these facts from the public panel: the file shape, the model names, and the count of each pass@1 value. The author also read the question dates, difficulty labels, and platforms, and the release_date field. Nobody computed a score or a decision of a public model."
+    },
+    "reference_replay_seen": {
+      "note": "In this text, \"the author\" means the repository owner and the AI agents that worked for the owner. A session record of 29 October 2026 shows that an agent made a script for a scratch threshold replay. The script no longer exists, so this report cannot check what it read. The owner did not confirm this disclosure from memory.",
+      "policy_text": "The author saw a scratch replay on the 3 reference models before this freeze. The rules choose every tuned value from simulated results only. This choice reduces the bias from that replay, but it does not remove it. The simulated models start from the grades of the same 3 reference models."
+    }
+  },
+  "grade_rules": {
+    "primary": {
+      "by_distance": [
+        {
+          "below": 0.02,
+          "cells": 101,
+          "decisions": 101000,
+          "from": 0.0,
+          "max_wrong_rate": 0.014,
+          "mean_cost_fraction": 0.983424,
+          "stage1_share": 0.020743,
+          "wrong": 426
+        },
+        {
+          "below": 0.05,
+          "cells": 153,
+          "decisions": 153000,
+          "from": 0.02,
+          "max_wrong_rate": 0.006,
+          "mean_cost_fraction": 0.945939,
+          "stage1_share": 0.067614,
+          "wrong": 151
+        },
+        {
+          "below": 0.1,
+          "cells": 248,
+          "decisions": 248000,
+          "from": 0.05,
+          "max_wrong_rate": 0.002,
+          "mean_cost_fraction": 0.766535,
+          "stage1_share": 0.291435,
+          "wrong": 24
+        },
+        {
+          "below": 0.15,
+          "cells": 236,
+          "decisions": 236000,
+          "from": 0.1,
+          "max_wrong_rate": 0.0,
+          "mean_cost_fraction": 0.431017,
+          "stage1_share": 0.709305,
+          "wrong": 0
+        },
+        {
+          "below": 0.2,
+          "cells": 206,
+          "decisions": 206000,
+          "from": 0.15,
+          "max_wrong_rate": 0.0,
+          "mean_cost_fraction": 0.246719,
+          "stage1_share": 0.939058,
+          "wrong": 0
+        },
+        {
+          "below": null,
+          "cells": 764,
+          "decisions": 764000,
+          "from": 0.2,
+          "max_wrong_rate": 0.0,
+          "mean_cost_fraction": 0.199035,
+          "stage1_share": 0.998793,
+          "wrong": 0
+        }
+      ],
+      "min_coverage": 0.95,
+      "min_pass_at_1": 50,
+      "probes": {
+        "random": {
+          "all_thresholds": {
+            "cells": 1708,
+            "decisions": 1708000,
+            "max_wrong_rate": 0.027,
+            "mean_cost_fraction": {
+              "high": 0.44596,
+              "low": 0.446016,
+              "mean": 0.445915
+            },
+            "mean_question_fraction": 0.446534,
+            "stage1_decisions": 1181649,
+            "stage1_share": 0.691832,
+            "wrong": 1645
+          },
+          "primary_threshold": {
+            "cells": 28,
+            "decisions": 28000,
+            "max_wrong_rate": 0.022,
+            "mean_cost_fraction": {
+              "high": 0.661215,
+              "low": 0.661351,
+              "mean": 0.661172
+            },
+            "mean_question_fraction": 0.661886,
+            "stage1_decisions": 11834,
+            "stage1_share": 0.422643,
+            "wrong": 84
+          }
+        },
+        "stratified": {
+          "all_thresholds": {
+            "cells": 1708,
+            "decisions": 1708000,
+            "max_wrong_rate": 0.014,
+            "mean_cost_fraction": {
+              "high": 0.43255,
+              "low": 0.432735,
+              "mean": 0.43253
+            },
+            "mean_question_fraction": 0.433894,
+            "stage1_decisions": 1208636,
+            "stage1_share": 0.707632,
+            "wrong": 601
+          },
+          "primary_threshold": {
+            "cells": 28,
+            "decisions": 28000,
+            "max_wrong_rate": 0.008,
+            "mean_cost_fraction": {
+              "high": 0.674432,
+              "low": 0.674617,
+              "mean": 0.674411
+            },
+            "mean_question_fraction": 0.675371,
+            "stage1_decisions": 11362,
+            "stage1_share": 0.405786,
+            "wrong": 28
+          }
+        }
+      },
+      "real_d95_all_thresholds": {
+        "d95": 0.194603,
+        "d95_above": 0.188095,
+        "d95_below": 0.194603
+      },
+      "real_d95_at_primary_threshold": {
+        "d95": null,
+        "d95_above": null,
+        "d95_below": 0.309524
+      },
+      "results_outside_limits": {
+        "coverage": 0,
+        "mean_cost_at_primary_threshold": 0,
+        "wrong_decision_rate": 0
+      },
+      "wrong_outside_indifference_zone": {
+        "primary": {
+          "wrong": 601,
+          "zone": 0
+        },
+        "secondary": {
+          "wrong": 175,
+          "zone": 0.02
+        }
+      }
+    },
+    "secondary": {
+      "by_distance": [
+        {
+          "below": 0.02,
+          "cells": 94,
+          "decisions": 94000,
+          "from": 0.0,
+          "max_wrong_rate": 0.02,
+          "mean_cost_fraction": 0.98291,
+          "stage1_share": 0.021362,
+          "wrong": 423
+        },
+        {
+          "below": 0.05,
+          "cells": 138,
+          "decisions": 138000,
+          "from": 0.02,
+          "max_wrong_rate": 0.005,
+          "mean_cost_fraction": 0.947915,
+          "stage1_share": 0.06508,
+          "wrong": 121
+        },
+        {
+          "below": 0.1,
+          "cells": 233,
+          "decisions": 233000,
+          "from": 0.05,
+          "max_wrong_rate": 0.002,
+          "mean_cost_fraction": 0.773535,
+          "stage1_share": 0.282614,
+          "wrong": 15
+        },
+        {
+          "below": 0.15,
+          "cells": 235,
+          "decisions": 235000,
+          "from": 0.1,
+          "max_wrong_rate": 0.0,
+          "mean_cost_fraction": 0.445925,
+          "stage1_share": 0.690851,
+          "wrong": 0
+        },
+        {
+          "below": 0.2,
+          "cells": 223,
+          "decisions": 223000,
+          "from": 0.15,
+          "max_wrong_rate": 0.0,
+          "mean_cost_fraction": 0.248253,
+          "stage1_share": 0.937256,
+          "wrong": 0
+        },
+        {
+          "below": null,
+          "cells": 785,
+          "decisions": 785000,
+          "from": 0.2,
+          "max_wrong_rate": 0.0,
+          "mean_cost_fraction": 0.199086,
+          "stage1_share": 0.998727,
+          "wrong": 0
+        }
+      ],
+      "min_coverage": 0.9525,
+      "min_pass_at_1": 100,
+      "probes": {
+        "random": {
+          "all_thresholds": {
+            "cells": 1708,
+            "decisions": 1708000,
+            "max_wrong_rate": 0.028,
+            "mean_cost_fraction": {
+              "high": 0.435075,
+              "low": 0.435125,
+              "mean": 0.435029
+            },
+            "mean_question_fraction": 0.435648,
+            "stage1_decisions": 1204892,
+            "stage1_share": 0.70544,
+            "wrong": 1537
+          },
+          "primary_threshold": {
+            "cells": 28,
+            "decisions": 28000,
+            "max_wrong_rate": 0.022,
+            "mean_cost_fraction": {
+              "high": 0.609733,
+              "low": 0.609531,
+              "mean": 0.609693
+            },
+            "mean_question_fraction": 0.609057,
+            "stage1_decisions": 13683,
+            "stage1_share": 0.488679,
+            "wrong": 84
+          }
+        },
+        "stratified": {
+          "all_thresholds": {
+            "cells": 1708,
+            "decisions": 1708000,
+            "max_wrong_rate": 0.02,
+            "mean_cost_fraction": {
+              "high": 0.421492,
+              "low": 0.421677,
+              "mean": 0.421472
+            },
+            "mean_question_fraction": 0.422859,
+            "stage1_decisions": 1232197,
+            "stage1_share": 0.721427,
+            "wrong": 559
+          },
+          "primary_threshold": {
+            "cells": 28,
+            "decisions": 28000,
+            "max_wrong_rate": 0.008,
+            "mean_cost_fraction": {
+              "high": 0.617301,
+              "low": 0.617304,
+              "mean": 0.617286
+            },
+            "mean_question_fraction": 0.617657,
+            "stage1_decisions": 13382,
+            "stage1_share": 0.477929,
+            "wrong": 28
+          }
+        }
+      },
+      "real_d95_all_thresholds": {
+        "d95": 0.196032,
+        "d95_above": 0.187778,
+        "d95_below": 0.196032
+      },
+      "real_d95_at_primary_threshold": {
+        "d95": null,
+        "d95_above": null,
+        "d95_below": 0.395238
+      },
+      "results_outside_limits": {
+        "coverage": 0,
+        "mean_cost_at_primary_threshold": 0,
+        "wrong_decision_rate": 0
+      },
+      "wrong_outside_indifference_zone": {
+        "primary": {
+          "wrong": 559,
+          "zone": 0
+        },
+        "secondary": {
+          "wrong": 136,
+          "zone": 0.02
+        }
+      }
+    }
+  },
+  "mode": "real",
+  "model_results": [
+    {
+      "developer": "Anthropic",
+      "mean_pass_at_1": 17.1111,
+      "model": "Claude-3-Haiku",
+      "neither_0_nor_100": 31,
+      "primary": {
+        "cost_fraction_at_primary": 0.198074,
+        "coverage": 0.9625,
+        "full_passes": 55,
+        "full_score": 0.174603,
+        "max_wrong_rate": 0.0,
+        "questions_at_primary": 63.0,
+        "random_stage1_share_at_primary": 1.0,
+        "stage1_share_all_thresholds": 0.984475,
+        "stage1_share_at_primary": 1.0,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.198074,
+        "coverage": 0.9525,
+        "full_passes": 40,
+        "full_score": 0.126984,
+        "max_wrong_rate": 0.0,
+        "questions_at_primary": 63.0,
+        "random_stage1_share_at_primary": 1.0,
+        "stage1_share_all_thresholds": 0.998967,
+        "stage1_share_at_primary": 1.0,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "Anthropic",
+      "mean_pass_at_1": 37.4921,
+      "model": "Claude-3.5-Sonnet-20241022",
+      "neither_0_nor_100": 40,
+      "primary": {
+        "cost_fraction_at_primary": 0.198074,
+        "coverage": 0.972,
+        "full_passes": 123,
+        "full_score": 0.390476,
+        "max_wrong_rate": 0.014,
+        "questions_at_primary": 63.0,
+        "random_stage1_share_at_primary": 1.0,
+        "stage1_share_all_thresholds": 0.690934,
+        "stage1_share_at_primary": 1.0,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.198074,
+        "coverage": 0.9685,
+        "full_passes": 95,
+        "full_score": 0.301587,
+        "max_wrong_rate": 0.014,
+        "questions_at_primary": 63.0,
+        "random_stage1_share_at_primary": 1.0,
+        "stage1_share_all_thresholds": 0.812836,
+        "stage1_share_at_primary": 1.0,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "Anthropic",
+      "mean_pass_at_1": 53.6508,
+      "model": "Claude-Opus-4",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.274621,
+        "coverage": 0.9845,
+        "full_passes": 169,
+        "full_score": 0.536508,
+        "max_wrong_rate": 0.005,
+        "questions_at_primary": 86.688,
+        "random_stage1_share_at_primary": 0.847,
+        "stage1_share_all_thresholds": 0.64618,
+        "stage1_share_at_primary": 0.906,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.274621,
+        "coverage": 0.9845,
+        "full_passes": 169,
+        "full_score": 0.536508,
+        "max_wrong_rate": 0.005,
+        "questions_at_primary": 86.688,
+        "random_stage1_share_at_primary": 0.847,
+        "stage1_share_all_thresholds": 0.64618,
+        "stage1_share_at_primary": 0.906,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "Anthropic",
+      "mean_pass_at_1": 61.9048,
+      "model": "Claude-Opus-4 (Thinking)",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.759268,
+        "coverage": 0.989,
+        "full_passes": 195,
+        "full_score": 0.619048,
+        "max_wrong_rate": 0.007,
+        "questions_at_primary": 238.392,
+        "random_stage1_share_at_primary": 0.34,
+        "stage1_share_all_thresholds": 0.655262,
+        "stage1_share_at_primary": 0.304,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.759268,
+        "coverage": 0.989,
+        "full_passes": 195,
+        "full_score": 0.619048,
+        "max_wrong_rate": 0.007,
+        "questions_at_primary": 238.392,
+        "random_stage1_share_at_primary": 0.34,
+        "stage1_share_all_thresholds": 0.655262,
+        "stage1_share_at_primary": 0.304,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "Anthropic",
+      "mean_pass_at_1": 52.6984,
+      "model": "Claude-Sonnet-4",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.260958,
+        "coverage": 0.9845,
+        "full_passes": 166,
+        "full_score": 0.526984,
+        "max_wrong_rate": 0.008,
+        "questions_at_primary": 82.404,
+        "random_stage1_share_at_primary": 0.874,
+        "stage1_share_all_thresholds": 0.646098,
+        "stage1_share_at_primary": 0.923,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.260958,
+        "coverage": 0.9845,
+        "full_passes": 166,
+        "full_score": 0.526984,
+        "max_wrong_rate": 0.008,
+        "questions_at_primary": 82.404,
+        "random_stage1_share_at_primary": 0.874,
+        "stage1_share_all_thresholds": 0.646098,
+        "stage1_share_at_primary": 0.923,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "Anthropic",
+      "mean_pass_at_1": 61.2698,
+      "model": "Claude-Sonnet-4 (Thinking)",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.732537,
+        "coverage": 0.976,
+        "full_passes": 193,
+        "full_score": 0.612698,
+        "max_wrong_rate": 0.004,
+        "questions_at_primary": 230.076,
+        "random_stage1_share_at_primary": 0.355,
+        "stage1_share_all_thresholds": 0.654426,
+        "stage1_share_at_primary": 0.337,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.732537,
+        "coverage": 0.976,
+        "full_passes": 193,
+        "full_score": 0.612698,
+        "max_wrong_rate": 0.004,
+        "questions_at_primary": 230.076,
+        "random_stage1_share_at_primary": 0.355,
+        "stage1_share_all_thresholds": 0.654426,
+        "stage1_share_at_primary": 0.337,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "DeepSeek",
+      "mean_pass_at_1": 75.4286,
+      "model": "DeepSeek-R1-0528",
+      "neither_0_nor_100": 99,
+      "primary": {
+        "cost_fraction_at_primary": 0.82025,
+        "coverage": 0.989,
+        "full_passes": 242,
+        "full_score": 0.768254,
+        "max_wrong_rate": 0.006,
+        "questions_at_primary": 259.56,
+        "random_stage1_share_at_primary": 0.273,
+        "stage1_share_all_thresholds": 0.699393,
+        "stage1_share_at_primary": 0.22,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.510164,
+        "coverage": 0.986,
+        "full_passes": 182,
+        "full_score": 0.577778,
+        "max_wrong_rate": 0.009,
+        "questions_at_primary": 160.02,
+        "random_stage1_share_at_primary": 0.609,
+        "stage1_share_all_thresholds": 0.649885,
+        "stage1_share_at_primary": 0.615,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "DeepSeek",
+      "mean_pass_at_1": 36.7619,
+      "model": "DeepSeek-V3",
+      "neither_0_nor_100": 50,
+      "primary": {
+        "cost_fraction_at_primary": 0.198074,
+        "coverage": 0.981,
+        "full_passes": 112,
+        "full_score": 0.355556,
+        "max_wrong_rate": 0.012,
+        "questions_at_primary": 63.0,
+        "random_stage1_share_at_primary": 1.0,
+        "stage1_share_all_thresholds": 0.725623,
+        "stage1_share_at_primary": 1.0,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.198074,
+        "coverage": 0.968,
+        "full_passes": 96,
+        "full_score": 0.304762,
+        "max_wrong_rate": 0.013,
+        "questions_at_primary": 63.0,
+        "random_stage1_share_at_primary": 1.0,
+        "stage1_share_all_thresholds": 0.806705,
+        "stage1_share_at_primary": 1.0,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "LG",
+      "mean_pass_at_1": 72.3016,
+      "model": "EXAONE-4.0-32B",
+      "neither_0_nor_100": 58,
+      "primary": {
+        "cost_fraction_at_primary": 0.817875,
+        "coverage": 0.9915,
+        "full_passes": 242,
+        "full_score": 0.768254,
+        "max_wrong_rate": 0.004,
+        "questions_at_primary": 258.804,
+        "random_stage1_share_at_primary": 0.259,
+        "stage1_share_all_thresholds": 0.699557,
+        "stage1_share_at_primary": 0.223,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.765276,
+        "coverage": 0.981,
+        "full_passes": 194,
+        "full_score": 0.615873,
+        "max_wrong_rate": 0.006,
+        "questions_at_primary": 240.156,
+        "random_stage1_share_at_primary": 0.339,
+        "stage1_share_all_thresholds": 0.654295,
+        "stage1_share_at_primary": 0.297,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "OpenAI",
+      "mean_pass_at_1": 29.7143,
+      "model": "GPT-4-Turbo-2024-04-09",
+      "neither_0_nor_100": 54,
+      "primary": {
+        "cost_fraction_at_primary": 0.198074,
+        "coverage": 0.9775,
+        "full_passes": 94,
+        "full_score": 0.298413,
+        "max_wrong_rate": 0.011,
+        "questions_at_primary": 63.0,
+        "random_stage1_share_at_primary": 1.0,
+        "stage1_share_all_thresholds": 0.817738,
+        "stage1_share_at_primary": 1.0,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.198074,
+        "coverage": 0.9655,
+        "full_passes": 65,
+        "full_score": 0.206349,
+        "max_wrong_rate": 0.0,
+        "questions_at_primary": 63.0,
+        "random_stage1_share_at_primary": 1.0,
+        "stage1_share_all_thresholds": 0.956885,
+        "stage1_share_at_primary": 1.0,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "OpenAI",
+      "mean_pass_at_1": 30.6984,
+      "model": "GPT-4O-2024-08-06",
+      "neither_0_nor_100": 59,
+      "primary": {
+        "cost_fraction_at_primary": 0.198074,
+        "coverage": 0.9675,
+        "full_passes": 97,
+        "full_score": 0.307937,
+        "max_wrong_rate": 0.011,
+        "questions_at_primary": 63.0,
+        "random_stage1_share_at_primary": 1.0,
+        "stage1_share_all_thresholds": 0.799262,
+        "stage1_share_at_primary": 1.0,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.198074,
+        "coverage": 0.975,
+        "full_passes": 68,
+        "full_score": 0.215873,
+        "max_wrong_rate": 0.0,
+        "questions_at_primary": 63.0,
+        "random_stage1_share_at_primary": 1.0,
+        "stage1_share_all_thresholds": 0.944279,
+        "stage1_share_at_primary": 1.0,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "OpenAI",
+      "mean_pass_at_1": 27.6508,
+      "model": "GPT-4O-mini-2024-07-18",
+      "neither_0_nor_100": 38,
+      "primary": {
+        "cost_fraction_at_primary": 0.198074,
+        "coverage": 0.95,
+        "full_passes": 86,
+        "full_score": 0.273016,
+        "max_wrong_rate": 0.004,
+        "questions_at_primary": 63.0,
+        "random_stage1_share_at_primary": 1.0,
+        "stage1_share_all_thresholds": 0.858328,
+        "stage1_share_at_primary": 1.0,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.198074,
+        "coverage": 0.9675,
+        "full_passes": 72,
+        "full_score": 0.228571,
+        "max_wrong_rate": 0.0,
+        "questions_at_primary": 63.0,
+        "random_stage1_share_at_primary": 1.0,
+        "stage1_share_all_thresholds": 0.926344,
+        "stage1_share_at_primary": 1.0,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "Google",
+      "mean_pass_at_1": 64.7619,
+      "model": "Gemini-2.5-Flash-04-17",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.908155,
+        "coverage": 0.9765,
+        "full_passes": 204,
+        "full_score": 0.647619,
+        "max_wrong_rate": 0.008,
+        "questions_at_primary": 285.516,
+        "random_stage1_share_at_primary": 0.168,
+        "stage1_share_all_thresholds": 0.660443,
+        "stage1_share_at_primary": 0.117,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.908155,
+        "coverage": 0.9765,
+        "full_passes": 204,
+        "full_score": 0.647619,
+        "max_wrong_rate": 0.008,
+        "questions_at_primary": 285.516,
+        "random_stage1_share_at_primary": 0.168,
+        "stage1_share_all_thresholds": 0.660443,
+        "stage1_share_at_primary": 0.117,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "Google",
+      "mean_pass_at_1": 65.3968,
+      "model": "Gemini-2.5-Flash-05-20",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.922739,
+        "coverage": 0.9905,
+        "full_passes": 206,
+        "full_score": 0.653968,
+        "max_wrong_rate": 0.007,
+        "questions_at_primary": 290.304,
+        "random_stage1_share_at_primary": 0.139,
+        "stage1_share_all_thresholds": 0.661967,
+        "stage1_share_at_primary": 0.098,
+        "wrong_at_primary": 1
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.922739,
+        "coverage": 0.9905,
+        "full_passes": 206,
+        "full_score": 0.653968,
+        "max_wrong_rate": 0.007,
+        "questions_at_primary": 290.304,
+        "random_stage1_share_at_primary": 0.139,
+        "stage1_share_all_thresholds": 0.661967,
+        "stage1_share_at_primary": 0.098,
+        "wrong_at_primary": 1
+      }
+    },
+    {
+      "developer": "Google",
+      "mean_pass_at_1": 75.5556,
+      "model": "Gemini-2.5-Pro-05-06",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.900728,
+        "coverage": 0.987,
+        "full_passes": 238,
+        "full_score": 0.755556,
+        "max_wrong_rate": 0.004,
+        "questions_at_primary": 284.256,
+        "random_stage1_share_at_primary": 0.171,
+        "stage1_share_all_thresholds": 0.692885,
+        "stage1_share_at_primary": 0.122,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.900728,
+        "coverage": 0.987,
+        "full_passes": 238,
+        "full_score": 0.755556,
+        "max_wrong_rate": 0.004,
+        "questions_at_primary": 284.256,
+        "random_stage1_share_at_primary": 0.171,
+        "stage1_share_all_thresholds": 0.692885,
+        "stage1_share_at_primary": 0.122,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "Google",
+      "mean_pass_at_1": 74.2857,
+      "model": "Gemini-2.5-Pro-06-05",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.933522,
+        "coverage": 0.9905,
+        "full_passes": 234,
+        "full_score": 0.742857,
+        "max_wrong_rate": 0.002,
+        "questions_at_primary": 294.588,
+        "random_stage1_share_at_primary": 0.135,
+        "stage1_share_all_thresholds": 0.689033,
+        "stage1_share_at_primary": 0.081,
+        "wrong_at_primary": 1
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.933522,
+        "coverage": 0.9905,
+        "full_passes": 234,
+        "full_score": 0.742857,
+        "max_wrong_rate": 0.002,
+        "questions_at_primary": 294.588,
+        "random_stage1_share_at_primary": 0.135,
+        "stage1_share_all_thresholds": 0.689033,
+        "stage1_share_at_primary": 0.081,
+        "wrong_at_primary": 1
+      }
+    },
+    {
+      "developer": "xAI",
+      "mean_pass_at_1": 70.4762,
+      "model": "Grok-3-Mini (High)",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.975892,
+        "coverage": 0.9605,
+        "full_passes": 222,
+        "full_score": 0.704762,
+        "max_wrong_rate": 0.008,
+        "questions_at_primary": 307.44,
+        "random_stage1_share_at_primary": 0.049,
+        "stage1_share_all_thresholds": 0.676311,
+        "stage1_share_at_primary": 0.03,
+        "wrong_at_primary": 6
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.975892,
+        "coverage": 0.9605,
+        "full_passes": 222,
+        "full_score": 0.704762,
+        "max_wrong_rate": 0.008,
+        "questions_at_primary": 307.44,
+        "random_stage1_share_at_primary": 0.049,
+        "stage1_share_all_thresholds": 0.676311,
+        "stage1_share_at_primary": 0.03,
+        "wrong_at_primary": 6
+      }
+    },
+    {
+      "developer": "OpenAI",
+      "mean_pass_at_1": 78.0952,
+      "model": "O3 (High)",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.745785,
+        "coverage": 0.9915,
+        "full_passes": 246,
+        "full_score": 0.780952,
+        "max_wrong_rate": 0.006,
+        "questions_at_primary": 235.872,
+        "random_stage1_share_at_primary": 0.336,
+        "stage1_share_all_thresholds": 0.704721,
+        "stage1_share_at_primary": 0.314,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.745785,
+        "coverage": 0.9915,
+        "full_passes": 246,
+        "full_score": 0.780952,
+        "max_wrong_rate": 0.006,
+        "questions_at_primary": 235.872,
+        "random_stage1_share_at_primary": 0.336,
+        "stage1_share_all_thresholds": 0.704721,
+        "stage1_share_at_primary": 0.314,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "OpenAI",
+      "mean_pass_at_1": 70.4762,
+      "model": "O3-Mini-2025-01-31 (High)",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.992943,
+        "coverage": 0.99,
+        "full_passes": 222,
+        "full_score": 0.704762,
+        "max_wrong_rate": 0.006,
+        "questions_at_primary": 312.732,
+        "random_stage1_share_at_primary": 0.049,
+        "stage1_share_all_thresholds": 0.675574,
+        "stage1_share_at_primary": 0.009,
+        "wrong_at_primary": 6
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.992943,
+        "coverage": 0.99,
+        "full_passes": 222,
+        "full_score": 0.704762,
+        "max_wrong_rate": 0.006,
+        "questions_at_primary": 312.732,
+        "random_stage1_share_at_primary": 0.049,
+        "stage1_share_all_thresholds": 0.675574,
+        "stage1_share_at_primary": 0.009,
+        "wrong_at_primary": 6
+      }
+    },
+    {
+      "developer": "OpenAI",
+      "mean_pass_at_1": 62.5397,
+      "model": "O3-Mini-2025-01-31 (Low)",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.815863,
+        "coverage": 0.9845,
+        "full_passes": 197,
+        "full_score": 0.625397,
+        "max_wrong_rate": 0.007,
+        "questions_at_primary": 256.284,
+        "random_stage1_share_at_primary": 0.271,
+        "stage1_share_all_thresholds": 0.657082,
+        "stage1_share_at_primary": 0.233,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.815863,
+        "coverage": 0.9845,
+        "full_passes": 197,
+        "full_score": 0.625397,
+        "max_wrong_rate": 0.007,
+        "questions_at_primary": 256.284,
+        "random_stage1_share_at_primary": 0.271,
+        "stage1_share_all_thresholds": 0.657082,
+        "stage1_share_at_primary": 0.233,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "OpenAI",
+      "mean_pass_at_1": 68.254,
+      "model": "O3-Mini-2025-01-31 (Med)",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.987553,
+        "coverage": 0.989,
+        "full_passes": 215,
+        "full_score": 0.68254,
+        "max_wrong_rate": 0.005,
+        "questions_at_primary": 310.968,
+        "random_stage1_share_at_primary": 0.059,
+        "stage1_share_all_thresholds": 0.669525,
+        "stage1_share_at_primary": 0.016,
+        "wrong_at_primary": 1
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.987553,
+        "coverage": 0.989,
+        "full_passes": 215,
+        "full_score": 0.68254,
+        "max_wrong_rate": 0.005,
+        "questions_at_primary": 310.968,
+        "random_stage1_share_at_primary": 0.059,
+        "stage1_share_all_thresholds": 0.669525,
+        "stage1_share_at_primary": 0.016,
+        "wrong_at_primary": 1
+      }
+    },
+    {
+      "developer": "OpenAI",
+      "mean_pass_at_1": 83.8095,
+      "model": "O4-Mini (High)",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.287669,
+        "coverage": 0.995,
+        "full_passes": 264,
+        "full_score": 0.838095,
+        "max_wrong_rate": 0.005,
+        "questions_at_primary": 91.476,
+        "random_stage1_share_at_primary": 0.79,
+        "stage1_share_all_thresholds": 0.744377,
+        "stage1_share_at_primary": 0.887,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.287669,
+        "coverage": 0.995,
+        "full_passes": 264,
+        "full_score": 0.838095,
+        "max_wrong_rate": 0.005,
+        "questions_at_primary": 91.476,
+        "random_stage1_share_at_primary": 0.79,
+        "stage1_share_all_thresholds": 0.744377,
+        "stage1_share_at_primary": 0.887,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "OpenAI",
+      "mean_pass_at_1": 68.254,
+      "model": "O4-Mini (Low)",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.981929,
+        "coverage": 0.986,
+        "full_passes": 215,
+        "full_score": 0.68254,
+        "max_wrong_rate": 0.005,
+        "questions_at_primary": 309.204,
+        "random_stage1_share_at_primary": 0.052,
+        "stage1_share_all_thresholds": 0.669328,
+        "stage1_share_at_primary": 0.023,
+        "wrong_at_primary": 3
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.981929,
+        "coverage": 0.986,
+        "full_passes": 215,
+        "full_score": 0.68254,
+        "max_wrong_rate": 0.005,
+        "questions_at_primary": 309.204,
+        "random_stage1_share_at_primary": 0.052,
+        "stage1_share_all_thresholds": 0.669328,
+        "stage1_share_at_primary": 0.023,
+        "wrong_at_primary": 3
+      }
+    },
+    {
+      "developer": "OpenAI",
+      "mean_pass_at_1": 77.1429,
+      "model": "O4-Mini (Medium)",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.821484,
+        "coverage": 0.993,
+        "full_passes": 243,
+        "full_score": 0.771429,
+        "max_wrong_rate": 0.005,
+        "questions_at_primary": 259.812,
+        "random_stage1_share_at_primary": 0.252,
+        "stage1_share_all_thresholds": 0.699164,
+        "stage1_share_at_primary": 0.219,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.821484,
+        "coverage": 0.993,
+        "full_passes": 243,
+        "full_score": 0.771429,
+        "max_wrong_rate": 0.005,
+        "questions_at_primary": 259.812,
+        "random_stage1_share_at_primary": 0.252,
+        "stage1_share_all_thresholds": 0.699164,
+        "stage1_share_at_primary": 0.219,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "NVIDIA",
+      "mean_pass_at_1": 70.6984,
+      "model": "OpenCodeReasoning-Nemotron-1.1-32B",
+      "neither_0_nor_100": 97,
+      "primary": {
+        "cost_fraction_at_primary": 0.928882,
+        "coverage": 0.989,
+        "full_passes": 234,
+        "full_score": 0.742857,
+        "max_wrong_rate": 0.005,
+        "questions_at_primary": 293.076,
+        "random_stage1_share_at_primary": 0.123,
+        "stage1_share_all_thresholds": 0.688246,
+        "stage1_share_at_primary": 0.087,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.261272,
+        "coverage": 0.9775,
+        "full_passes": 163,
+        "full_score": 0.51746,
+        "max_wrong_rate": 0.02,
+        "questions_at_primary": 82.404,
+        "random_stage1_share_at_primary": 0.914,
+        "stage1_share_all_thresholds": 0.647311,
+        "stage1_share_at_primary": 0.923,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "NVIDIA",
+      "mean_pass_at_1": 72.6984,
+      "model": "OpenReasoning-Nemotron-32B",
+      "neither_0_nor_100": 97,
+      "primary": {
+        "cost_fraction_at_primary": 0.86684,
+        "coverage": 0.984,
+        "full_passes": 239,
+        "full_score": 0.75873,
+        "max_wrong_rate": 0.005,
+        "questions_at_primary": 273.924,
+        "random_stage1_share_at_primary": 0.199,
+        "stage1_share_all_thresholds": 0.694721,
+        "stage1_share_at_primary": 0.163,
+        "wrong_at_primary": 0
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.297644,
+        "coverage": 0.9805,
+        "full_passes": 169,
+        "full_score": 0.536508,
+        "max_wrong_rate": 0.009,
+        "questions_at_primary": 93.744,
+        "random_stage1_share_at_primary": 0.841,
+        "stage1_share_all_thresholds": 0.647016,
+        "stage1_share_at_primary": 0.878,
+        "wrong_at_primary": 0
+      }
+    },
+    {
+      "developer": "Alibaba",
+      "mean_pass_at_1": 71.746,
+      "model": "Qwen3-235B-A22B",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.973853,
+        "coverage": 0.9775,
+        "full_passes": 226,
+        "full_score": 0.71746,
+        "max_wrong_rate": 0.011,
+        "questions_at_primary": 306.936,
+        "random_stage1_share_at_primary": 0.049,
+        "stage1_share_all_thresholds": 0.680066,
+        "stage1_share_at_primary": 0.032,
+        "wrong_at_primary": 2
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.973853,
+        "coverage": 0.9775,
+        "full_passes": 226,
+        "full_score": 0.71746,
+        "max_wrong_rate": 0.011,
+        "questions_at_primary": 306.936,
+        "random_stage1_share_at_primary": 0.049,
+        "stage1_share_all_thresholds": 0.680066,
+        "stage1_share_at_primary": 0.032,
+        "wrong_at_primary": 2
+      }
+    },
+    {
+      "developer": "Developer of XBai-o4-medium",
+      "mean_pass_at_1": 69.5238,
+      "model": "XBai-o4-medium",
+      "neither_0_nor_100": 0,
+      "primary": {
+        "cost_fraction_at_primary": 0.985725,
+        "coverage": 0.986,
+        "full_passes": 219,
+        "full_score": 0.695238,
+        "max_wrong_rate": 0.008,
+        "questions_at_primary": 310.464,
+        "random_stage1_share_at_primary": 0.044,
+        "stage1_share_all_thresholds": 0.672984,
+        "stage1_share_at_primary": 0.018,
+        "wrong_at_primary": 8
+      },
+      "questions": 315,
+      "secondary": {
+        "cost_fraction_at_primary": 0.985725,
+        "coverage": 0.986,
+        "full_passes": 219,
+        "full_score": 0.695238,
+        "max_wrong_rate": 0.008,
+        "questions_at_primary": 310.464,
+        "random_stage1_share_at_primary": 0.044,
+        "stage1_share_all_thresholds": 0.672984,
+        "stage1_share_at_primary": 0.018,
+        "wrong_at_primary": 8
+      }
+    }
+  ],
+  "models": 28,
+  "policy": {
+    "frozen": true,
+    "key": "threshold-policy@v1",
+    "sha256": "2b9e1d771567788ad4ee9213ab09484b7d0dce81c884782d949d5dde2814f1a8"
+  },
+  "primary_threshold": "0.70",
+  "questions": 315,
+  "reference_holdout": [
+    {
+      "benchmark": "live_code_bench_v5",
+      "decisions": 20,
+      "escalate": 17,
+      "full_passes": 241,
+      "full_score": 0.765079,
+      "mean_cost_fraction": 0.875297,
+      "mean_questions": 277.2,
+      "model": "gpt-oss-120b",
+      "stage1_go": 3,
+      "stage1_no_go": 0,
+      "threshold": 0.7,
+      "truth": "GO",
+      "wrong": 0
+    },
+    {
+      "benchmark": "live_code_bench_v5",
+      "decisions": 20,
+      "escalate": 12,
+      "full_passes": 198,
+      "full_score": 0.628571,
+      "mean_cost_fraction": 0.68172,
+      "mean_questions": 214.2,
+      "model": "kimi-k2.5",
+      "stage1_go": 0,
+      "stage1_no_go": 8,
+      "threshold": 0.7,
+      "truth": "NO GO",
+      "wrong": 0
+    },
+    {
+      "benchmark": "live_code_bench_v5",
+      "decisions": 20,
+      "escalate": 14,
+      "full_passes": 195,
+      "full_score": 0.619048,
+      "mean_cost_fraction": 0.759942,
+      "mean_questions": 239.4,
+      "model": "minimax-m2.5",
+      "stage1_go": 0,
+      "stage1_no_go": 6,
+      "threshold": 0.7,
+      "truth": "NO GO",
+      "wrong": 0
+    },
+    {
+      "benchmark": "aa_lcr",
+      "decisions": 20,
+      "escalate": 16,
+      "full_passes": 48,
+      "full_score": 0.48,
+      "mean_cost_fraction": 0.860039,
+      "mean_questions": 86.0,
+      "model": "gpt-oss-120b",
+      "stage1_go": 0,
+      "stage1_no_go": 4,
+      "threshold": 0.6,
+      "truth": "NO GO",
+      "wrong": 0
+    },
+    {
+      "benchmark": "aa_lcr",
+      "decisions": 20,
+      "escalate": 20,
+      "full_passes": 66,
+      "full_score": 0.66,
+      "mean_cost_fraction": 1.0,
+      "mean_questions": 100.0,
+      "model": "kimi-k2.5",
+      "stage1_go": 0,
+      "stage1_no_go": 0,
+      "threshold": 0.6,
+      "truth": "GO",
+      "wrong": 0
+    },
+    {
+      "benchmark": "aa_lcr",
+      "decisions": 20,
+      "escalate": 19,
+      "full_passes": 64,
+      "full_score": 0.64,
+      "mean_cost_fraction": 0.965074,
+      "mean_questions": 96.5,
+      "model": "minimax-m2.5",
+      "stage1_go": 1,
+      "stage1_no_go": 0,
+      "threshold": 0.6,
+      "truth": "GO",
+      "wrong": 0
+    }
+  ],
+  "rerun_reason": null,
+  "schema_version": 1,
+  "seeds": 1000,
+  "simulated_d95": {
+    "d95": 0.18,
+    "d95_above": 0.16,
+    "d95_below": 0.18,
+    "rasch": 0.18,
+    "reference_flip": 0.18
+  },
+  "stage1_size": 63
+}

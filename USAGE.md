@@ -315,8 +315,9 @@ Use `--workers` to set the number of processes.
 The outputs do not change with the number of processes.
 Open `report.html` directly from the file system.
 The report makes no network requests.
-The command uses simulated models only.
+Without `--real-grades`, the command uses simulated models only.
 It refuses `--real-grades` unless the policy is frozen and its hash is committed.
+The [real replay](task2/README.md#real-replay) of policy v1 is recorded, and a second run needs a reason.
 
 Run frozen policy v1 on simulated models in the same way:
 
