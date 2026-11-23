@@ -183,6 +183,8 @@ def _replay(
     authorize_real_replay(loaded)
     _protect_inputs(args, OUTPUT_NAMES)
     _refuse_overwrite(loaded, args.output_dir, OUTPUT_NAMES)
+    if args.output_dir.exists() and not args.output_dir.is_dir():
+        raise AnalysisError(f"{args.output_dir} is a file, not a folder")
     run = run_real_replay(
         loaded,
         panel_dir=args.panel_dir,
@@ -247,8 +249,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     parser.add_argument(
         "--rerun-reason",
-        help="Reason for a second replay on real grades, for example a code fault. The report "
-        "states it.",
+        help="Reason for a second replay, for example a code fault. The report states it. "
+        "Used with --real-grades only",
     )
     parser.add_argument(
         "--workers",

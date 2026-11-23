@@ -1,13 +1,14 @@
 """Load the inputs of the real replay, check each one against the frozen policy, and run it.
 
-The frozen-policy check runs first, before any public grade is read. Each
-other input must match its pin in the policy: the public file, the question
+The frozen-policy check runs first, before the command reads a public grade.
+Each other input must match its pin in the policy: the public file, the question
 mapping, the reference panel, the model names, and the question count.
 
-The replay runs one time. The command refuses to run when git HEAD already
-records a replay of the same policy, unless the caller gives a reason. The
-report then states that reason. The command also needs a clean ``task2`` folder,
-so the recorded commit is the code that ran.
+The replay runs one time. The command writes a start marker before it reads the
+public grades. It refuses to run when a marker of the same policy exists, or when
+git HEAD already records a replay of that policy. The caller can give a reason
+for a second replay, and the report then states that reason. The command also
+needs a clean ``task2`` folder, so the recorded commit is the code that ran.
 """
 
 import hashlib
@@ -20,6 +21,7 @@ from benchmark_reference.public_lcb import (
     PublicShape,
     load_mapping,
     load_public_grades,
+    load_public_results,
 )
 from benchmark_reference.threshold_benchmarks import (
     BENCHMARKS,
@@ -46,6 +48,8 @@ from benchmark_reference.threshold_tokens import estimate_question_costs, load_t
 
 TASK2 = Path(__file__).resolve().parents[2]
 RECORD = TASK2.parent / "docs" / "data" / "task2-real-replay" / "manifest.json"
+# Git ignores this folder, so a marker does not change the clean-folder check.
+MARKER_DIR = TASK2 / "output"
 
 
 def _git(*arguments: str, cwd: Path) -> subprocess.CompletedProcess[bytes]:
@@ -81,6 +85,39 @@ def recorded_replay(record: Path = RECORD) -> str | None:
         raise AnalysisError(f"The recorded replay manifest {record} is invalid") from exc
 
 
+def _marker(loaded: LoadedPolicy) -> Path:
+    return MARKER_DIR / f"real-replay-started-{loaded.sha256[:16]}.jsonl"
+
+
+def _check_first_run(loaded: LoadedPolicy, rerun_reason: str | None) -> None:
+    """Stop a second replay of one policy that has no reason."""
+    if rerun_reason is not None:
+        if not rerun_reason.strip():
+            raise AnalysisError("--rerun-reason needs a reason")
+        return
+    advice = (
+        "The replay runs one time. Use --rerun-reason only for a code fault or to reproduce "
+        "the result."
+    )
+    if recorded_replay() == loaded.key:
+        raise AnalysisError(
+            f"git HEAD already records the replay of {loaded.key} ({RECORD}). {advice}"
+        )
+    if _marker(loaded).exists():
+        raise AnalysisError(
+            f"A replay of {loaded.key} already started on this computer "
+            f"({_marker(loaded)}). {advice}"
+        )
+
+
+def _mark_start(loaded: LoadedPolicy, entry: dict[str, str | None]) -> None:
+    """Add one line for this run. A crash after this point leaves the line."""
+    path = _marker(loaded)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(entry, sort_keys=True) + "\n")
+
+
 def _pinned(name: str, actual: object, expected: object) -> None:
     if actual != expected:
         raise AnalysisError(f"The policy pins {name} {expected}, but the input has {actual}")
@@ -111,14 +148,7 @@ def run_real_replay(
 ) -> ReplayRun:
     """The whole replay under one frozen policy."""
     authorize_real_replay(loaded)
-    if rerun_reason is not None and not rerun_reason.strip():
-        raise AnalysisError("--rerun-reason needs a reason")
-    recorded = recorded_replay()
-    if recorded == loaded.key and rerun_reason is None:
-        raise AnalysisError(
-            f"git HEAD already records the replay of {loaded.key} ({RECORD}). The replay runs one "
-            "time. Use --rerun-reason only for a code fault or to reproduce the result."
-        )
+    _check_first_run(loaded, rerun_reason)
     commit = clean_commit()
     assert loaded.protocol is not None
     replay, public = loaded.protocol["unseen_model_replay"], loaded.protocol["public_panel"]
@@ -153,19 +183,17 @@ def run_real_replay(
     for name, reference_panel in panels.items():
         hold_out.extend(hold_out_references(reference_panel, loaded.benchmarks[name], costs[name]))
 
-    # Everything above reads no public grade. A fault there costs no run.
-    cells = load_public_grades(
-        public_file,
-        loaded,
-        sha256=public["sha256"],
-        shape=PublicShape(models=public["models"], questions=public["questions"]),
-    )
-    inputs[public_file.name] = public["sha256"]
+    shape = PublicShape(models=public["models"], questions=public["questions"])
+    # Model names and question metadata only. A fault up to here uses no run.
+    names = load_public_results(public_file, sha256=public["sha256"], shape=shape).models
     groups = loaded.protocol["reference_panel_study"]["developer_groups"]
-    _pinned("model names", sorted(cells), sorted(m for names in groups.values() for m in names))
-    if set(cells) & set(panel.references):
+    _pinned("model names", sorted(names), sorted(m for group in groups.values() for m in group))
+    if set(names) & set(panel.references):
         raise AnalysisError("A public model is in the reference panel; the targets must be unseen")
-    raw = public_targets(cells, mapping)
+    inputs[public_file.name] = public["sha256"]
+    _mark_start(loaded, {"commit": commit, "command": command, "rerun_reason": rerun_reason})
+    grades = load_public_grades(public_file, loaded, sha256=public["sha256"], shape=shape)
+    raw = public_targets(grades, mapping)
     rule = loaded.protocol["grade_rule"]
     rules = {
         name: replay_rule(

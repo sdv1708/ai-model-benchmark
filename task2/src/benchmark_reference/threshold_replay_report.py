@@ -90,9 +90,9 @@ DISCLOSURE_NOTES = {
         "confirmed this disclosure with this note on 23 November 2026."
     ),
     "ordering_criterion_change": (
-        "Before the freeze, the count of each pass@1 value was read, as disclosure 2 says. No "
-        "score, interval, or decision of a public model was computed. The owner confirmed this "
-        "disclosure with this note on 23 November 2026."
+        "Before the freeze, the author read the count of each pass@1 value, as disclosure 2 "
+        "says. Nobody computed a score, interval, or decision of a public model. The owner "
+        "confirmed this disclosure with this note on 23 November 2026."
     ),
 }
 LIMITS = (
@@ -107,17 +107,21 @@ LIMITS = (
     "because the public file has no token count.",
     "The thresholds reuse the same models and probes, so the cells of one model are not "
     "independent.",
-    "The result holds for these 315 LiveCodeBench questions. It is no evidence for another "
+    "The result holds for these {questions} LiveCodeBench questions. It is no evidence for another "
     "benchmark.",
 )
 HOLD_OUT_LIMITS = (
     "There are only 3 models.",
-    "The grades of these models were seen before the freeze, in a scratch replay.",
+    "Disclosure 1 applies: the author saw a replay on these models before the freeze.",
+    "The models are not independent of each other: they answer the same questions, and they "
+    "give each other the strata.",
     "The models are not independent of the policy: the simulated models that chose v1 start "
     "from their grades.",
     "The decisions of one model reuse the same grades.",
-    "An LLM judge gave the AA-LCR grades one time for each answer. The judge noise is not "
-    "measured.",
+    "The AA-LCR strata use the question metadata only. Each held-out AA-LCR model therefore "
+    "gets the same probes.",
+    "An LLM judge gave the AA-LCR grades one time for each answer. Nobody measured the judge "
+    "noise.",
 )
 
 
@@ -475,6 +479,7 @@ def summary_document(run: ReplayRun) -> dict[str, Any]:
         "seeds": len(run.settings.seeds),
         "stage1_size": run.loaded.benchmarks[replay["benchmark"]].stage1_size,
         "models": len(run.raw),
+        "questions": replay["questions"],
         "developer_groups": len(protocol["reference_panel_study"]["developer_groups"]),
         "criteria": {
             key: _mark_record(mark, replay["pass_criteria"][key]["statement"])
@@ -525,13 +530,13 @@ def result_section(doc: Mapping[str, Any]) -> str:
         verdict = f"**The replay passed all {len(doc['criteria'])} pass criteria of the policy.**"
     claim = (
         f"At the primary threshold {doc['primary_threshold']}, a probe of "
-        f"{doc['stage1_size']} of {doc['model_results'][0]['questions']} questions decided "
-        f"{_percent(at['stage1_share'])} of {at['decisions']:,} runs on {doc['models']} unseen "
-        f"models. The other runs graded the full set. Wrong decisions: {at['wrong']:,} of "
-        f"{at['decisions']:,}. The mean expected cost was "
+        f"{doc['stage1_size']} of {doc['questions']} questions made "
+        f"{_percent(at['stage1_share'])} of {at['decisions']:,} decisions on "
+        f"{doc['models']} unseen models. The other decisions graded the full set. "
+        f"Wrong decisions: {at['wrong']:,} of {at['decisions']:,}. The mean expected cost was "
         f"{at['mean_cost_fraction']['mean']:.3f} of a full run, as the mean token estimate. "
-        f"Across all thresholds, the probe decided {_percent(every['stage1_share'])} of "
-        f"{every['decisions']:,} runs. Wrong decisions: {every['wrong']:,} of "
+        f"Across all thresholds, the probe made {_percent(every['stage1_share'])} of "
+        f"{every['decisions']:,} decisions. Wrong decisions: {every['wrong']:,} of "
         f"{every['decisions']:,}. The mean expected cost was "
         f"{every['mean_cost_fraction']['mean']:.3f} of a full run."
     )
@@ -555,7 +560,7 @@ def result_section(doc: Mapping[str, Any]) -> str:
     )
     note = (
         "The cost criterion uses the mean token estimate. The cost in questions gives the same "
-        "mark, because both costs are 1.0 only when every run escalates."
+        "mark, because both costs are 1.0 only when every decision escalates."
     )
     return f"## Result\n\n{verdict}\n\n{claim}\n\n{table}\n\n{note}"
 
@@ -616,11 +621,11 @@ def _comparison_section(doc: Mapping[str, Any]) -> str:
         "## Stated comparisons\n\nThe policy gives these comparisons no pass or fail mark.\n\n"
         f"{probes}\n\nA cost is a share of a full run. The token cost is the mean estimate.\n\n"
         "### Real d95 against simulated d95\n\n"
-        "d95 is the smallest distance from the threshold at which the probe decides at least 95% "
-        "of the runs, at that distance and at every larger distance. A real d95 at one threshold "
-        "has one point for each model, so it is coarse. The second real row uses every "
-        'combination of model and threshold. A side with the value "none" has no model, or its '
-        "farthest model does not reach 95%.\n\n"
+        "d95 is a distance from the threshold. At d95 and at every larger distance, the probe "
+        "makes at least 95% of the decisions. d95 is the smallest such distance. A real d95 at "
+        "one threshold has one point for each model, so it is coarse. The second real row uses "
+        'every combination of model and threshold. A side with the value "none" has no model, '
+        "or its farthest model does not reach 95%.\n\n"
         f"{distances}"
     )
 
@@ -652,7 +657,8 @@ def _distance_section(doc: Mapping[str, Any]) -> str:
     )
     return (
         "## Results by distance\n\nThe table uses the stratified probe and every combination of "
-        f"model and threshold.\n\n{table}"
+        "model and threshold. The distance ranges are a layout choice of this report. The policy "
+        f"does not set them, and no mark uses them.\n\n{table}"
     )
 
 
@@ -716,7 +722,7 @@ def _secondary_section(doc: Mapping[str, Any]) -> str:
         f"Under the secondary grade rule (pass@1 of {second['min_pass_at_1']:g}), "
         f"{outside['wrong_decision_rate']} cells are above the wrong-rate limit and "
         f"{outside['coverage']} models are below the coverage limit. At the primary threshold, "
-        f"the probe decided {_percent(probe['stage1_share'])} of the runs, with "
+        f"the probe made {_percent(probe['stage1_share'])} of the decisions, with "
         f"{probe['wrong']:,} wrong decisions, at {probe['mean_cost_fraction']['mean']:.3f} of "
         "the cost of a full run. These values have no pass or fail mark."
     )
@@ -761,8 +767,9 @@ def _secondary_section(doc: Mapping[str, Any]) -> str:
         f"## Secondary results\n\n### Secondary grade rule\n\n{grade}\n\n"
         f"### Indifference zone\n\n{zones}\n\n"
         "### The 3 reference models\n\n"
-        "The replay holds out each saved model in turn. The strata come from the other two "
-        "models. Each model gets one decision for each seed of the policy section, at the "
+        "The replay holds out each saved model in turn. The LiveCodeBench strata come from the "
+        "other two models. The AA-LCR strata come from the question metadata. Each "
+        "model gets one decision for each seed of the policy section, at the "
         "primary threshold of the benchmark.\n\n"
         f"{table}\n\nLimits of this replay:\n\n{limits}"
     )
@@ -776,7 +783,7 @@ def _limits_section(doc: Mapping[str, Any]) -> str:
     )
     return (
         f"## Limits\n\n{limits}\n\n## Disclosures\n\n"
-        "The policy text is quoted from the frozen file. The notes belong to this report, and "
+        "The policy text is a quote from the frozen file. The notes belong to this report, and "
         f"they do not change the policy.\n\n{disclosures}"
     )
 
@@ -784,9 +791,9 @@ def _limits_section(doc: Mapping[str, Any]) -> str:
 def _provenance_section(run: ReplayRun) -> str:
     panel = run.protocol["public_panel"]
     rerun = (
-        "This is the first run of this policy on the public grades."
+        "git HEAD and the start marker recorded no earlier replay of this policy."
         if run.provenance.rerun_reason is None
-        else f"This is a repeated run. Reason: {run.provenance.rerun_reason}"
+        else f"The caller gave a reason for a second replay: {run.provenance.rerun_reason}"
     )
     inputs = "\n".join(f"- `{name}`: `{sha}`" for name, sha in run.provenance.inputs.items())
     return (

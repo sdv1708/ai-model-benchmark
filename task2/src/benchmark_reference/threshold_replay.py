@@ -4,8 +4,9 @@ The engine takes every setting from the frozen policy file. It reads no file.
 
 A cell is one model, one probe kind, and one threshold. Each cell has one
 decision for each selection seed. The probe of a seed and its interval do not
-depend on the threshold, so the engine grades each probe one time and applies
-every threshold to it. The decision is the decision of ``decide_two_stage``.
+depend on the threshold. The engine therefore grades each probe one time and
+applies every threshold to it. The decision is the decision of
+``decide_two_stage``.
 
 There are two probe kinds:
 
@@ -83,11 +84,11 @@ def replay_settings(loaded: LoadedPolicy) -> ReplaySettings:
 
 
 def public_targets(
-    cells: Mapping[str, Mapping[str, float]], mapping: Sequence[MappedQuestion]
+    grades: Mapping[str, Mapping[str, float]], mapping: Sequence[MappedQuestion]
 ) -> dict[str, dict[int, float]]:
     """The raw ``pass@1`` values of the mapped questions, keyed by panel index."""
     targets: dict[str, dict[int, float]] = {}
-    for model, values in cells.items():
+    for model, values in grades.items():
         for item in mapping:
             if item.question_id not in values:
                 raise AnalysisError(
@@ -106,8 +107,8 @@ def apply_grade_rule(values: Grades, minimum: float) -> dict[int, float]:
 class Probes:
     """The stage-1 probe of each seed, its interval method, and its tokens.
 
-    ``tokens`` holds low, mean, and high tokens of each probe as integers of
-    unit ``1 / denominator``, so that a sum over many decisions is exact and fast.
+    ``tokens`` holds the low, mean, and high tokens of each probe. The values are
+    integers of unit ``1 / denominator``, so a sum is exact and fast.
     """
 
     kind: str
@@ -422,8 +423,10 @@ def hold_out_references(
 ) -> tuple[HoldOutDecision, ...]:
     """Hold out each reference model in turn and decide it at the primary threshold.
 
-    The strata come from the other reference models only. The seeds are the
-    seeds of the policy section.
+    The grades of the held-out model are no input to the strata. A stratifier
+    that uses grades uses the other models only. A stratifier that uses only the
+    question metadata gives the same strata for each held-out model. The seeds
+    are the seeds of the policy section.
     """
     check_benchmark(panel, policy)
     rows: list[HoldOutDecision] = []

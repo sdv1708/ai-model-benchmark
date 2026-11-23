@@ -4,3 +4,4 @@ task2/data/aa-lcr-reference-panel.json text eol=lf
 task2/data/lcb-public-mapping.json text eol=lf
 *.pdf binary
 task2/policies/*.json text eol=lf
+docs/data/task2-real-replay/* text eol=lf

@@ -11,6 +11,7 @@ import json
 import random
 import shutil
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -136,6 +137,9 @@ def _open_gates(monkeypatch: pytest.MonkeyPatch, lock: str, recorded: str | None
     monkeypatch.setattr(threshold_policy, "committed_lock_text", lambda: lock)
     monkeypatch.setattr(threshold_replay_run, "clean_commit", lambda: "c" * 40)
     monkeypatch.setattr(threshold_replay_run, "recorded_replay", lambda: recorded)
+    # Each test starts without a marker of an earlier run.
+    markers = Path(tempfile.mkdtemp(prefix="replay-markers-"))
+    monkeypatch.setattr(threshold_replay_run, "MARKER_DIR", markers)
 
 
 @pytest.fixture(scope="module")
@@ -254,7 +258,9 @@ def test_the_report_states_each_mark_each_limit_and_each_disclosure(output: Path
         "reuse the same grades",
         "It uses the saved answers of the 3 reference models",
         "There are only 3 models.",
-        "seen before the freeze",
+        "before the freeze",
+        "The models are not independent of each other",
+        "The AA-LCR strata come from the question metadata.",
         "https://livecodebench.github.io/performances_generation.json",
         "states no license",
     ):
@@ -285,7 +291,7 @@ def test_the_verdict_names_each_failed_criterion_and_the_claim_that_stays(
     assert text.count("| FAIL |") == (0 if passed else 1)
 
 
-def test_two_runs_give_the_same_bytes(
+def test_two_runs_give_the_same_tables(
     output: Path, world: World, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _open_gates(monkeypatch, world.lock)
@@ -321,6 +327,50 @@ def test_a_repeated_run_states_its_reason(
     main(world.argv(output, "--rerun-reason", "The first run had a code fault in X."))
     assert "The first run had a code fault in X." in (output / "report.md").read_text("utf-8")
     assert _summary(output)["rerun_reason"] == "The first run had a code fault in X."
+
+
+def test_a_started_run_is_not_started_again_before_its_record(
+    world: World,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _open_gates(monkeypatch, world.lock)
+
+    def crash(*args: object, **kwargs: object) -> None:
+        raise AnalysisError("a fault after the grades are open")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(threshold_replay_run, "replay_rule", crash)
+        assert "a fault after the grades are open" in _stop(world, tmp_path / "one", capsys)
+    assert "already started" in _stop(world, tmp_path / "two", capsys)
+    main(world.argv(tmp_path / "two", "--rerun-reason", "A fault stopped the first run."))
+    markers = list(threshold_replay_run.MARKER_DIR.iterdir())
+    lines = [json.loads(line) for line in markers[0].read_text("utf-8").splitlines()]
+    assert [line["rerun_reason"] for line in lines] == [None, "A fault stopped the first run."]
+
+
+def test_a_stop_before_the_grades_uses_no_run(
+    world: World,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _open_gates(monkeypatch, world.lock)
+    _stop(world, tmp_path / "out", capsys, "--data-root", str(tmp_path / "no-data"))
+    assert not list(threshold_replay_run.MARKER_DIR.iterdir())
+
+
+def test_an_output_path_that_is_a_file_stops_before_the_run(
+    world: World,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _open_gates(monkeypatch, world.lock)
+    (tmp_path / "out").write_text("x", encoding="utf-8")
+    assert "is a file" in _stop(world, tmp_path / "out", capsys)
+    assert not list(threshold_replay_run.MARKER_DIR.iterdir())
 
 
 def test_an_uncommitted_change_stops_the_run(
