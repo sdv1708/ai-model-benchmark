@@ -1,18 +1,23 @@
 """Run the two-stage decision, its token cost, and the coverage and error-rate studies.
 
-Every study uses simulated models only.
+Every study uses simulated models only. The command runs every benchmark section
+of the policy file and writes one report.
 
-The command runs every benchmark section of the policy file and writes one report.
+With ``--real-grades``, the command runs the preregistered replay on real models
+instead. That run needs a frozen policy with a committed hash.
 """
 
 import argparse
 import hashlib
 import json
 import os
-from collections.abc import Sequence
+import subprocess
+import sys
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from benchmark_reference.models import AnalysisError
+from benchmark_reference.public_lcb import DEFAULT_MAPPING_PATH, DEFAULT_SOURCE_PATH
 from benchmark_reference.reporting import validate_output_location, write_atomic
 from benchmark_reference.threshold_benchmarks import BENCHMARKS, load_reference_panel
 from benchmark_reference.threshold_cost import (
@@ -26,10 +31,14 @@ from benchmark_reference.threshold_coverage import run_coverage_study, summarize
 from benchmark_reference.threshold_error_rate import run_error_rate_study, summarize_error_rate
 from benchmark_reference.threshold_frozen_report import console_lines
 from benchmark_reference.threshold_policy import (
+    LoadedPolicy,
     ThresholdPolicy,
     authorize_real_replay,
     load_policy,
 )
+from benchmark_reference.threshold_replay_report import OUTPUT_NAMES
+from benchmark_reference.threshold_replay_report import build_outputs as build_replay_outputs
+from benchmark_reference.threshold_replay_run import run_real_replay
 from benchmark_reference.threshold_report import (
     JUDGE_NOISE,
     BenchmarkRun,
@@ -141,9 +150,68 @@ def _print_run(run: BenchmarkRun) -> None:
         print(f"{title}, d95: {claim['smallest_sentence']}")
 
 
+def _protect_inputs(args: argparse.Namespace, names: Sequence[str]) -> None:
+    """Stop when an output path would replace an input."""
+    validate_output_location(args.output_dir, args.panel_dir, output_names=names)
+    validate_output_location(args.output_dir, args.data_root, output_names=names)
+    if args.policy.resolve() in {(args.output_dir / n).resolve() for n in names}:
+        raise AnalysisError(f"An output path would overwrite the policy {args.policy}")
+
+
+def _refuse_overwrite(loaded: LoadedPolicy, output_dir: Path, names: Sequence[str]) -> None:
+    """This command never overwrites the results of a frozen policy (#62)."""
+    existing = [n for n in names if (output_dir / n).exists()]
+    if existing:
+        raise AnalysisError(
+            f"{output_dir} already holds {existing[0]}. This command never "
+            f"overwrites the results of frozen policy {loaded.key}. Choose a new "
+            "output folder."
+        )
+
+
+def _write(output_dir: Path, names: Sequence[str], outputs: Mapping[str, bytes]) -> None:
+    for name in names:
+        path = output_dir / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        write_atomic(path, outputs[name])
+
+
+def _replay(
+    loaded: LoadedPolicy, args: argparse.Namespace, arguments: Sequence[str]
+) -> dict[str, bytes]:
+    """Run the replay on real grades and write its outputs."""
+    authorize_real_replay(loaded)
+    _protect_inputs(args, OUTPUT_NAMES)
+    _refuse_overwrite(loaded, args.output_dir, OUTPUT_NAMES)
+    run = run_real_replay(
+        loaded,
+        panel_dir=args.panel_dir,
+        data_root=args.data_root,
+        public_file=args.public_file,
+        mapping_file=args.mapping,
+        command=subprocess.list2cmdline(["threshold-decision", *arguments]),
+        rerun_reason=args.rerun_reason,
+    )
+    outputs = build_replay_outputs(run)
+    _write(args.output_dir, OUTPUT_NAMES, outputs)
+    return outputs
+
+
+def _print_replay(outputs: Mapping[str, bytes], output_dir: Path) -> None:
+    summary = json.loads(outputs["summary.json"])
+    for name, criterion in summary["criteria"].items():
+        print(
+            f"{'PASS' if criterion['passed'] else 'FAIL'} {name}: value {criterion['value']}, "
+            f"limit {criterion['limit']}"
+        )
+    print(f"Wrote the real replay of {summary['policy']['key']} to {output_dir}")
+    print(f"Manifest SHA-256: {hashlib.sha256(outputs['manifest.json']).hexdigest()}")
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
-        description="Decide GO, NO GO, or ESCALATE for simulated models under one policy file."
+        description="Decide GO, NO GO, or ESCALATE under one policy file. The models are "
+        "simulated, unless --real-grades is set."
     )
     parser.add_argument("--policy", type=Path, required=True, help="Versioned policy JSON file")
     parser.add_argument(
@@ -166,31 +234,39 @@ def main(argv: Sequence[str] | None = None) -> None:
         help="Replay on real model grades; requires a frozen policy with a committed hash",
     )
     parser.add_argument(
+        "--public-file",
+        type=Path,
+        default=DEFAULT_SOURCE_PATH,
+        help="Public LiveCodeBench file of 'lcb-public fetch'; used with --real-grades only",
+    )
+    parser.add_argument(
+        "--mapping",
+        type=Path,
+        default=DEFAULT_MAPPING_PATH,
+        help="Committed question mapping; used with --real-grades only",
+    )
+    parser.add_argument(
+        "--rerun-reason",
+        help="Reason for a second replay on real grades, for example a code fault. The report "
+        "states it.",
+    )
+    parser.add_argument(
         "--workers",
         type=int,
         default=os.cpu_count() or 1,
         help="Processes for the cost and coverage studies. The outputs do not change with it.",
     )
-    args = parser.parse_args(argv)
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    args = parser.parse_args(arguments)
     try:
         loaded = load_policy(args.policy)
         if args.real_grades:
-            authorize_real_replay(loaded)
-            raise AnalysisError("The real-grade replay is not part of this command yet (#63)")
+            _print_replay(_replay(loaded, args, arguments), args.output_dir)
+            return
         names = output_names(loaded.benchmarks)
-        validate_output_location(args.output_dir, args.panel_dir, output_names=names)
-        validate_output_location(args.output_dir, args.data_root, output_names=names)
-        if args.policy.resolve() in {(args.output_dir / n).resolve() for n in names}:
-            raise AnalysisError(f"An output path would overwrite the policy {args.policy}")
+        _protect_inputs(args, names)
         if loaded.frozen:
-            # This command never overwrites the results of a frozen policy (#62).
-            existing = [n for n in names if (args.output_dir / n).exists()]
-            if existing:
-                raise AnalysisError(
-                    f"{args.output_dir} already holds {existing[0]}. This command never "
-                    f"overwrites the results of frozen policy {loaded.key}. Choose a new "
-                    "output folder."
-                )
+            _refuse_overwrite(loaded, args.output_dir, names)
         runs = [
             run_benchmark(
                 policy, panel_dir=args.panel_dir, data_root=args.data_root, workers=args.workers
@@ -198,10 +274,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             for policy in loaded.benchmarks.values()
         ]
         outputs = build_outputs(loaded, runs)
-        for name in names:
-            path = args.output_dir / name
-            path.parent.mkdir(parents=True, exist_ok=True)
-            write_atomic(path, outputs[name])
+        _write(args.output_dir, names, outputs)
     except (AnalysisError, OSError) as exc:
         parser.exit(2, f"threshold-decision: {exc}\n")
     for run in runs:
