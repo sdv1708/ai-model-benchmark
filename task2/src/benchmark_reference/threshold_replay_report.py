@@ -120,8 +120,8 @@ HOLD_OUT_LIMITS = (
     "The decisions of one model reuse the same grades.",
     "The AA-LCR strata use the question metadata only. Each held-out AA-LCR model therefore "
     "gets the same probes.",
-    "An LLM judge gave the AA-LCR grades one time for each answer. Nobody measured the judge "
-    "noise.",
+    "An LLM judge gave the AA-LCR grades one time for each answer. The replay "
+    "excludes judge noise. Issue #76 measured it after the replay of v1.",
 )
 
 

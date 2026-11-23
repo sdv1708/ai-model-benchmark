@@ -133,6 +133,8 @@ def test_command_measures_the_scripted_noise(finished: tuple[Data, Path], tmp_pa
     assert a["pass_decisions"] == ["GO", "NO GO", "GO", "NO GO", "GO"]
     # 3 GO passes and 2 NO GO passes give 6 pairs that differ.
     assert (a["decision_changes"], a["pass_pairs_that_differ"]) == (True, 6)
+    # The majority has 24 of 40, and the saved grades have 26 of 40.
+    assert (a["saved_score"], a["majority_score"], a["majority_shift"]) == (0.65, 0.6, -0.05)
     assert a["score_standard_deviation"] == pytest.approx(0.013693, abs=1e-6)
     assert (b["score_range"], set(b["pass_decisions"])) == (0.0, {"GO"})
     assert (c["score_range"], set(c["pass_decisions"])) == (0.0, {"NO GO"})

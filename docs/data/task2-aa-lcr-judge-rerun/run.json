@@ -1,0 +1,62 @@
+{
+  "approval_url": "https://github.com/sdv1708/ai-model-benchmark/issues/76#issuecomment-7115460027",
+  "command": "aa-lcr-judge run",
+  "estimate": {
+    "calls": {
+      "answers": 300,
+      "judgments": 1500,
+      "judgments_per_answer": 5,
+      "max_requests": 4500
+    },
+    "command": "aa-lcr-judge estimate",
+    "cost_usd": {
+      "expected": 0.1429,
+      "high": 0.3146,
+      "limit": "1"
+    },
+    "inputs": {
+      "AA-LCR_Dataset.csv": "2f90d9c30cfb4dd8df2c0f46547c384065e4c76917bd347a9a97bf797235c1ea",
+      "Part 1/reviews/aa_lcr__gpt-oss-120b.jsonl": "48bbf552c15031126616a6a3c3759c81d8b948e8520e2d4bc25e496e2d33d94f",
+      "Part 1/reviews/aa_lcr__kimi-k2.5.jsonl": "b9b78dfdc58bbe5aa72248a960698d25e9474dd163f5d67abf6edceb6bf60f0b",
+      "Part 1/reviews/aa_lcr__minimax-m2.5.jsonl": "ba543c9d91f23c758ce0449ece4af6720a24478a42c69b2d818a6b0273e12a32",
+      "aa-lcr-reference-panel.json": "06e76276c366112af5ee056ba6d2bcdab13521bfce85d4f9294ce5864075a4e6"
+    },
+    "issue": "https://github.com/sdv1708/ai-model-benchmark/issues/76",
+    "judge": {
+      "base_url": "https://api.deepinfra.com/v1/openai",
+      "max_tokens": 4096,
+      "model": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+      "original_model": "qwen-3-235b-a22b-instruct-2507",
+      "same_judge": true,
+      "temperature": 0.0
+    },
+    "prices_usd_per_million": {
+      "input": "0.09",
+      "output": "0.55",
+      "read_on": "2026-11-23",
+      "source": "https://deepinfra.com/pricing"
+    },
+    "prompt": {
+      "commit": "67fbe5e092a4739d23f5d8cc95319d8b19dc1a24",
+      "files": [
+        "evalscope/benchmarks/aa_lcr/aa_lcr_adapter.py",
+        "evalscope/api/judge/contracts.py"
+      ],
+      "prompts_sha256": "c1ca698f66eeded19c7e144c6f5431440525ee1d3cffaeb98df179a084bae563",
+      "source": "https://github.com/sdv1708/evalscope-pruning"
+    },
+    "schema_version": 1,
+    "tokens": {
+      "expected": {
+        "input": 487390,
+        "output": 180000
+      },
+      "high": {
+        "input": 745765,
+        "output": 450000
+      }
+    }
+  },
+  "estimate_sha256": "5bf6a1484cb293351dca31620052182fc239058ba7bc6d3c2706c213c78b1655",
+  "schema_version": 1
+}

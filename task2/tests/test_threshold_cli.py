@@ -88,13 +88,27 @@ def _measured_record() -> dict[str, Any]:
         "loopback_test": False,
         "reference_panel_sha256": _sha(PANELS / "aa-lcr-reference-panel.json"),
         "judge_model": "judge-x",
+        "temperature": 0.0,
         "original_judge": "judge-y",
         "same_judge": False,
         "run_dates": "2026-12-01",
         "passes": 5,
         "disagreement": {"answers": 300, "not_unanimous": 12, "share": 0.04},
-        "agreement_with_saved_judgment": {"answers": 300, "agree": 288, "share": 0.96},
-        "models": [{"model": "model-a", "lowest_score": 0.59, "highest_score": 0.61}],
+        "agreement_with_saved_judgment": {
+            "answers": 300,
+            "agree": 288,
+            "share": 0.96,
+            "saved_incorrect_majority_correct": 9,
+            "saved_correct_majority_incorrect": 3,
+        },
+        "models": [
+            {
+                "model": "model-a",
+                "lowest_score": 0.59,
+                "highest_score": 0.61,
+                "majority_shift": -0.03,
+            }
+        ],
         "full_set_score": {"largest_range": 0.02},
         "decisions": {"threshold": 0.6, "models": 3, "models_that_change": 1},
         "stage1_interval": {"policy": "threshold-policy@v1", "mean_width": 0.297333},
@@ -280,6 +294,8 @@ def test_a_measured_record_replaces_the_limit_and_changes_no_table(tmp_path: Pat
         assert "mean width of 0.297" in block
         assert "The saved reviews name another judge, judge-y." in block
         assert "for 288 of 300 answers (96.0%)" in block
+        assert "9 answers change from INCORRECT to CORRECT" in block
+        assert "differs from its saved score by at most 0.03" in block
         assert "model-a 0.59 to 0.61" in block
         assert "The policy interval excludes judge noise" in block
     assert JUDGE_NOISE not in _section(html, LCB)

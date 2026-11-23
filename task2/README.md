@@ -391,11 +391,10 @@ The error-rate study uses a second generator. It flips random grades of one refe
 Both generators start from the reference grades, so a simulated model is not an unseen model.
 
 AA-LCR grades come from an LLM judge, and the saved data has one judgment for each answer.
-Judge noise is therefore not measured.
-The simulated grades have no judge noise, so the AA-LCR results do not include it.
-The report states this limit beside every AA-LCR result.
-When the panel folder holds `aa-lcr-judge-noise.json`, the report gives the measured values instead.
-The [judge-noise measurement](#judge-noise-measurement) writes that file.
+The [judge-noise measurement](#judge-noise-measurement) gives the judge noise on the saved answers.
+The simulated grades have no judge noise, and the policy interval excludes it.
+The report gives the measured values and this limit beside every AA-LCR result.
+It reads them from `data/aa-lcr-judge-noise.json`.
 
 ### Interval coverage study
 
@@ -480,7 +479,7 @@ The token loader test checks the totals of all six predictions files.
 
 The draft AA-LCR section uses threshold `0.60`, a 20-question probe, the pooled exact interval, and `length_difficulty_stratified`.
 The run draws 1,000 simulated AA-LCR models at each true score, 13,000 models in total.
-Judge noise is not measured: the saved data has one judgment for each answer, and the simulated grades have none.
+The simulated grades have no judge noise. The [judge-noise measurement](#judge-noise-measurement) gives the noise on the saved answers.
 
 | Result                                | LiveCodeBench, 63 of 315 |  AA-LCR, 20 of 100 |
 | ------------------------------------- | -----------------------: | -----------------: |
@@ -521,7 +520,7 @@ It writes one folder of tables for each benchmark and three shared files:
 `<benchmark>` is `live_code_bench_v5` or `aa_lcr`.
 The report starts with a side-by-side table of both benchmarks.
 Each benchmark then has its own section with the same charts and tables.
-Every AA-LCR chart and table has the judge-noise limit beside it.
+Every AA-LCR chart and table has the measured judge noise and its limit beside it.
 
 The command prints the manifest SHA-256.
 Two runs with the same policy file give identical bytes.
@@ -537,7 +536,25 @@ The default is the `Evals` folder at the repository root.
 
 `aa-lcr-judge` measures how much an AA-LCR score changes when the judge grades the same answer again (issue [#76](https://github.com/sdv1708/ai-model-benchmark/issues/76)).
 It sends each of the 300 saved answers to the judge 5 times. It generates no answer.
-The paid run is not done, so judge noise is not measured yet.
+
+The run of 2026-11-23 is recorded in [`docs/data/task2-aa-lcr-judge-rerun`](../docs/data/task2-aa-lcr-judge-rerun/report.md).
+It used the judge `Qwen/Qwen3-235B-A22B-Instruct-2507` on DeepInfra, at temperature `0.0`.
+It made 1,500 requests. Each request gave a valid verdict, and the cost was $0.1413.
+
+| Result                                        | gpt-oss-120b | kimi-k2.5 | minimax-m2.5 |
+| --------------------------------------------- | -----------: | --------: | -----------: |
+| Answers with unequal judgments                |     2 of 100 |  5 of 100 |     1 of 100 |
+| Lowest to highest score across the 5 passes   | 0.52 to 0.53 | 0.71 to 0.73 | 0.65 to 0.66 |
+| Full-set decision at 0.60 in each pass        |        NO GO |        GO |           GO |
+| Mean stage-1 interval width of policy v1      |        0.305 |     0.292 |        0.294 |
+| Saved score                                   |         0.48 |      0.66 |         0.64 |
+| Majority score of the 5 judgments             |         0.52 |      0.73 |         0.66 |
+
+- The judgments are not all equal for 8 of 300 answers (2.7%).
+- No full-set decision at threshold 0.60 changes between passes. The largest score range is 0.02, which is 0.067 of the mean interval width (0.297).
+- The majority agrees with the saved judgment for 287 of 300 answers (95.7%). All 13 changes are from INCORRECT to CORRECT, and each model score rises by 0.02 to 0.07.
+- That shift is larger than the noise between passes. The run cannot give its cause: the saved reviews record no endpoint, no precision, no settings, and no prompt. The saved decisions at 0.60 do not change.
+- The measured values hold for temperature `0.0` and one endpoint on one day.
 
 The saved reviews name the judge `qwen-3-235b-a22b-instruct-2507`.
 `estimate` refuses another judge unless `--allow-different-judge` is set.
@@ -589,8 +606,7 @@ A loopback judge gets no key and needs no approval. The tests use a scripted loo
 | `report.md`       | The result, the judge and its settings, the cost, and the limits.                    |
 | `run.json`        | The estimate and the approval comment.                                               |
 
-The report compares the score range across passes with the stage-1 interval width of policy v1.
-On the saved grades, that interval has a mean width of 0.297 (60 probes: 3 models and 20 seeds).
+The report compares the score range across passes with the stage-1 interval width of policy v1 (60 probes: 3 models and 20 seeds).
 Policy v1 does not change. Its interval excludes judge noise.
 
 ## Public LiveCodeBench results

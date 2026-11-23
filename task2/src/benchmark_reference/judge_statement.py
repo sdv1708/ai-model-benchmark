@@ -42,9 +42,14 @@ def _judge_text(record: Mapping[str, Any]) -> str:
         source = "The saved reviews name no judge, so the judge can differ"
     else:
         source = f"The saved reviews name another judge, {original}"
+    shift = max(abs(m["majority_shift"]) for m in record["models"])
     return (
         f"{source}. The majority of the new judgments agrees with the saved judgment for "
-        f"{agreement['agree']} of {agreement['answers']} answers ({agreement['share']:.1%})."
+        f"{agreement['agree']} of {agreement['answers']} answers ({agreement['share']:.1%}). "
+        f"{agreement['saved_incorrect_majority_correct']} answers change from INCORRECT to "
+        f"CORRECT, and {agreement['saved_correct_majority_incorrect']} change from CORRECT to "
+        f"INCORRECT. The majority score of a model differs from its saved score by at most "
+        f"{shift:.2f}."
     )
 
 
@@ -60,7 +65,8 @@ def statement_and_cell(record: Mapping[str, Any]) -> tuple[str, str]:
     statement = (
         f"Judge noise is measured on the saved answers, not on the simulated ones. The judge "
         f"{record['judge_model']} graded each of {disagree['answers']} answers "
-        f"{record['passes']} times ({record['run_dates']}). The judgments are not all equal for "
+        f"{record['passes']} times at temperature {record['temperature']} "
+        f"({record['run_dates']}). The judgments are not all equal for "
         f"{disagree['not_unanimous']} answers ({share}). {_judge_text(record)} The lowest and "
         f"highest full-set scores across the passes are: {ranges}. The largest change is "
         f"{spread['largest_range']:.2f}. Between passes, "

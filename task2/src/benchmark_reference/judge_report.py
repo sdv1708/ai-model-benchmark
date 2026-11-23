@@ -219,6 +219,7 @@ def _models(
         size = len(grades)
         decisions = [full_set_decision(c, size, threshold) for c in counts]
         saved = sum(i.saved_grade for i in inputs.items if i.model == model)
+        voted = sum(majority(g) for g in grades.values())
         rows.append(
             {
                 "model": model,
@@ -231,6 +232,8 @@ def _models(
                 "score_range": _round(Fraction(max(counts) - min(counts), size)),
                 "score_standard_deviation": _round(statistics.stdev(c / size for c in counts)),
                 "saved_score": _round(Fraction(saved, size)),
+                "majority_score": _round(Fraction(voted, size)),
+                "majority_shift": _round(Fraction(voted - saved, size)),
                 "saved_decision": full_set_decision(saved, size, threshold),
                 "pass_decisions": decisions,
                 "decision_changes": len(set(decisions)) > 1,
@@ -340,6 +343,7 @@ def noise_record(summary: Mapping[str, Any], *, panel_sha256: str) -> dict[str, 
         "loopback_test": summary["loopback_test"],
         "reference_panel_sha256": panel_sha256,
         "judge_model": summary["judge"]["model"],
+        "temperature": summary["judge"]["temperature"],
         "original_judge": summary["judge"]["original_model"],
         "same_judge": summary["judge"]["same_judge"],
         "run_dates": dates[0] if len(dates) == 1 else f"{dates[0]} to {dates[-1]}",
@@ -430,6 +434,7 @@ def _score_table(summary: Mapping[str, Any]) -> str:
             "Highest",
             "Standard deviation",
             "Saved score",
+            "Majority score",
             "Decisions in the passes",
             "Decision changes",
         ),
@@ -442,6 +447,7 @@ def _score_table(summary: Mapping[str, Any]) -> str:
                 f"{m['highest_score']:.2f}",
                 f"{m['score_standard_deviation']:.4f}",
                 f"{m['saved_score']:.2f}",
+                f"{m['majority_score']:.2f} ({m['majority_shift']:+.2f})",
                 ", ".join(m["pass_decisions"]),
                 "yes" if m["decision_changes"] else "no",
             )
@@ -505,6 +511,8 @@ The interval describes sampling error on fixed grades. It excludes judge noise.
 ## Limits
 
 - The judgments show the variation of one judge at one endpoint. They do not show whether the judge is correct.
+- The passes measure the noise between repeated calls with the same settings. They do not measure the difference between the saved judgments and this run. The agreement section gives that difference, and the run cannot give its cause.
+- The temperature was {summary["judge"]["temperature"]}. A higher temperature can give more noise.
 - All passes ran on the dates above. A later model version or another endpoint can differ.
 - A repeated request replaces a reply outside the contract. That rule can favor answers for which the judge replies in the correct format.
 - Policy v1 does not change. Its interval excludes judge noise.

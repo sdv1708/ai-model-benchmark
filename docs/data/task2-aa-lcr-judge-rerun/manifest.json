@@ -1,0 +1,42 @@
+{
+  "command": "aa-lcr-judge report",
+  "implementation_hash_policy": "SHA256 of source bytes after CRLF-to-LF normalization",
+  "implementation_sha256": {
+    "judge_cli.py": "5523bced452919267befad18895ec1372ff22e1b2a2c960f280b5b0d0bc73c3c",
+    "judge_estimate.py": "f2bc73d195c9f0e3f2c61d6497845230c87edae512bbd65d808be83898beba64",
+    "judge_items.py": "dfc9664727228b34271e6538ca8e1faf5f62b2ac157bfc0b39919982da4dd919",
+    "judge_prompt.py": "e75f4329f2bb257265f9f2802a7db952688cd9c8a65fd963832605467b574ab4",
+    "judge_report.py": "6839e88103fca090eda0ac1aca3350d95ec3d5d51073a552bc1ba22cfbf0b5c1",
+    "judge_run.py": "4c81ee4b06961416405ef67ed95b671e840d50e110dca02290736f632a034295",
+    "judge_statement.py": "29d31f9a403cdaf9a813b30b9fc75cfd9378c1faf8d122058b4f69aed9dc7fe7",
+    "long_context.py": "052adda89338304b04d463b3156523a02cc0ee2e92490b96e6442b43884819c2",
+    "pruning.py": "8b16a9c4a216cf0567a8f506bf5a3f64d2cbe5e113cf65e95d5cd4d9e781e66d",
+    "threshold_benchmarks.py": "e64aaf617d06ba4291752c2633c5d559518b79ad5e3c0ff448f6e2d0cda4e684",
+    "threshold_intervals.py": "8f6a42d351934ed89bcb4a9fb5aa63680b29dc5da5206f890ec5835cee8c960f",
+    "threshold_policy.py": "a787af0a72a0f5fd625fe5b9dbeccc1ab07eafd2ed1f176459cc76689bf63ced",
+    "two_stage.py": "b663adbd137bc18725ededab3f8b828b52a48b807779f2e11b5eaf0de630ffb4",
+    "uncertainty.py": "8d41bb1cb5a63f3fc40f506e46edc9e94b1f6c3a4f8f7ccfa6810575efa72a55"
+  },
+  "inputs": {
+    "AA-LCR_Dataset.csv": "2f90d9c30cfb4dd8df2c0f46547c384065e4c76917bd347a9a97bf797235c1ea",
+    "Part 1/reviews/aa_lcr__gpt-oss-120b.jsonl": "48bbf552c15031126616a6a3c3759c81d8b948e8520e2d4bc25e496e2d33d94f",
+    "Part 1/reviews/aa_lcr__kimi-k2.5.jsonl": "b9b78dfdc58bbe5aa72248a960698d25e9474dd163f5d67abf6edceb6bf60f0b",
+    "Part 1/reviews/aa_lcr__minimax-m2.5.jsonl": "ba543c9d91f23c758ce0449ece4af6720a24478a42c69b2d818a6b0273e12a32",
+    "aa-lcr-reference-panel.json": "06e76276c366112af5ee056ba6d2bcdab13521bfce85d4f9294ce5864075a4e6"
+  },
+  "loopback_test": false,
+  "output_sha256": {
+    "aa-lcr-judge-noise.json": "4397e9e14599caa284ea5a4c97dccc2edf8f28f912a2555a959ee3c6dbce466c",
+    "answers.csv": "e0d380c0d1a1f0fb1c07a2146ff7026a3608428e89af607b2afcc96d2b889b0f",
+    "judgments.jsonl": "689d0319375e26b899a6006d6f7552e80529f0bfe5ef3b4f76c527eeac318118",
+    "report.md": "66ac01041f18b3e1396d8ef41b94cf704876fbe15390d7cb8f8d1efae9e83696",
+    "run.json": "5ce88adfaf82fb7fecec56b02e70f364226f388a4b67df0b0dca501261920690",
+    "scores.csv": "2151ce8c3ecc42e4ebe1ece6399a9dd590c3de45fc6964b81698a26c7d3f9047",
+    "summary.json": "d25f6ce0c5ab64ad331483bdc27713870caac33bb666ca08279c3bdaf6d97bd9"
+  },
+  "policy": {
+    "key": "threshold-policy@v1",
+    "sha256": "2b9e1d771567788ad4ee9213ab09484b7d0dce81c884782d949d5dde2814f1a8"
+  },
+  "schema_version": 1
+}
