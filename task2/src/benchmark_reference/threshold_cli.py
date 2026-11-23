@@ -16,6 +16,7 @@ import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
+from benchmark_reference.judge_statement import RECORD_FILE, load_judge_noise
 from benchmark_reference.models import AnalysisError
 from benchmark_reference.public_lcb import DEFAULT_MAPPING_PATH, DEFAULT_SOURCE_PATH
 from benchmark_reference.reporting import validate_output_location, write_atomic
@@ -40,7 +41,6 @@ from benchmark_reference.threshold_replay_report import OUTPUT_NAMES
 from benchmark_reference.threshold_replay_report import build_outputs as build_replay_outputs
 from benchmark_reference.threshold_replay_run import run_real_replay
 from benchmark_reference.threshold_report import (
-    JUDGE_NOISE,
     BenchmarkRun,
     build_outputs,
     distance_claim,
@@ -59,6 +59,9 @@ def run_benchmark(
     """Every study of one policy section on its own reference panel."""
     panel_file = BENCHMARKS[policy.benchmark].panel_file
     panel = load_reference_panel(panel_dir / panel_file, benchmark=policy.benchmark)
+    judge_noise = None
+    if BENCHMARKS[policy.benchmark].judge_graded:
+        judge_noise = load_judge_noise(panel_dir / RECORD_FILE, panel_sha256=panel.sha256)
     tokens = load_token_counts(
         data_root,
         benchmark=policy.benchmark,
@@ -101,13 +104,14 @@ def run_benchmark(
         coverage=coverage,
         cost=cost,
         error_rate=error_rate,
+        judge_noise=judge_noise,
     )
 
 
 def _print_run(run: BenchmarkRun) -> None:
     title = run.benchmark.title
-    if run.benchmark.judge_graded:
-        print(f"{title}: {JUDGE_NOISE}")
+    if run.judge_statement is not None:
+        print(f"{title}: {run.judge_statement}")
     for row in run.summary:
         print(
             f"{title}, true score {row['true_score']}: decisive "

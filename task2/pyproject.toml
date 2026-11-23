@@ -22,6 +22,7 @@ mmmu-pairs = "benchmark_reference.mmmu_cli:main"
 threshold-decision = "benchmark_reference.threshold_cli:main"
 threshold-freeze = "benchmark_reference.threshold_freeze:main"
 lcb-public = "benchmark_reference.public_lcb_cli:main"
+aa-lcr-judge = "benchmark_reference.judge_cli:main"
 
 [dependency-groups]
 dev = ["pytest>=8.3,<10", "ruff>=0.11,<1", "mypy>=1.15,<2"]

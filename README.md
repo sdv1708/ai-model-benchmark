@@ -280,6 +280,9 @@ Errors include source paths and line numbers.
 | `experiments.py`, `transfer.py`                                 | Evaluate held-out models and independently held-out model pairs.                                                                |
 | `uncertainty.py`, `study_metrics.py`                            | Compute intervals, ordering evidence, and threshold outcomes.                                                                   |
 | `judge_noise.py`                                                | Report sensitivity to hypothetical changed judgments.                                                                           |
+| `judge_items.py`, `judge_prompt.py`                             | Load the saved AA-LCR answers and build the EvalScope judge prompt.                                                             |
+| `judge_estimate.py`, `judge_run.py`                             | Write the cost estimate and collect judgments under an approved estimate.                                                       |
+| `judge_report.py`, `judge_statement.py`, `judge_cli.py`         | Measure the judge noise and give it to the threshold report.                                                                    |
 | `operating_points.py`                                           | Apply score, ordering, uncertainty, and decision gates.                                                                         |
 | `threshold_policy.py`, `threshold_protocol.py`                  | Load a policy file, check the protocol of a frozen policy, record its hash, and enforce the frozen lock.                        |
 | `threshold_rules.py`, `threshold_freeze.py`                     | Apply the fixed rules to a simulated run and write a new frozen policy version.                                                 |
@@ -557,7 +560,8 @@ It includes LiveCodeBench and AA-LCR, the two benchmarks of the subset studies.
 
 ### Why this project extends EvalScope
 
-The `task2/` package works only on saved grades. It never calls a model.
+The `task2/` package works on saved grades and saved answers. It generates no model answer.
+Only the [`aa-lcr-judge run`](task2/README.md#judge-noise-measurement) command calls a model, the AA-LCR judge. It needs an approved cost estimate.
 To use a pruned benchmark on a new model, the subset selection must run inside a real evaluator.
 The [EvalScope pruning repository](https://github.com/sdv1708/evalscope-pruning) adds that selection to EvalScope.
 EvalScope continues to build prompts, call the model, run the coding sandbox, run the judge, and write reports.
@@ -687,7 +691,7 @@ All issues are in the [issue tracker](https://github.com/sdv1708/ai-model-benchm
 | No fixed pruned list is validated as a score estimator.                   | [#80](https://github.com/sdv1708/ai-model-benchmark/issues/80) tests fixed lists of 95 and 158 LiveCodeBench questions on the 28 models.             |
 | The EvalScope adapters run one stage only.                                | [#65](https://github.com/sdv1708/ai-model-benchmark/issues/65) adds the two-stage mode to both adapters and to `compare_runs`.                       |
 | The project measured no live inference saving.                            | [#78](https://github.com/sdv1708/ai-model-benchmark/issues/78) runs the two-stage mode on live model endpoints and measures tokens, time, and cost.  |
-| AA-LCR has one recorded judgment per answer. Judge noise is not measured. | [#76](https://github.com/sdv1708/ai-model-benchmark/issues/76) sends each of the 300 saved answers to the judge 5 times.                             |
+| AA-LCR has one recorded judgment per answer. Judge noise is not measured. | [#76](https://github.com/sdv1708/ai-model-benchmark/issues/76) sends each of the 300 saved answers to the judge 5 times. The paid run is not done.   |
 | The results are spread across JSON and CSV files.                         | [#64](https://github.com/sdv1708/ai-model-benchmark/issues/64) publishes one self-contained HTML results report, linked from the top of this README. |
 | The documents state the full-retention result.                            | [#66](https://github.com/sdv1708/ai-model-benchmark/issues/66) updates every document with the frozen v1 result.                                     |
 

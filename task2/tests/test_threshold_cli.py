@@ -12,6 +12,7 @@ import pytest
 from policy_fixtures import frozen_value
 
 from benchmark_reference import threshold_policy
+from benchmark_reference.judge_statement import RECORD_FILE
 from benchmark_reference.threshold_benchmarks import AA_LCR as AA_LCR_NAME
 from benchmark_reference.threshold_benchmarks import LIVE_CODE_BENCH
 from benchmark_reference.threshold_cli import main
@@ -67,6 +68,33 @@ def _small_policy(tmp_path: Path, *, frozen: bool = False) -> Path:
 
 def _run(policy: Path, output: Path, *extra: str, panels: Path = PANELS) -> None:
     main(["--policy", str(policy), "--panel-dir", str(panels), "--output-dir", str(output), *extra])
+
+
+def _panels(tmp_path: Path, record: dict[str, Any] | None = None) -> Path:
+    """A panel folder with no judge-noise record, or with the given one."""
+    panels = tmp_path / "panels"
+    panels.mkdir()
+    for name in ("lcb-reference-panel.json", "aa-lcr-reference-panel.json"):
+        shutil.copy(PANELS / name, panels / name)
+    if record is not None:
+        (panels / RECORD_FILE).write_text(json.dumps(record), encoding="utf-8")
+    return panels
+
+
+def _measured_record() -> dict[str, Any]:
+    """A judge-noise record with invented values, for the report tests only."""
+    return {
+        "schema_version": 1,
+        "loopback_test": False,
+        "reference_panel_sha256": _sha(PANELS / "aa-lcr-reference-panel.json"),
+        "judge_model": "judge-x",
+        "run_dates": "2026-12-01",
+        "passes": 5,
+        "disagreement": {"answers": 300, "not_unanimous": 12, "share": 0.04},
+        "full_set_score": {"largest_range": 0.02},
+        "decisions": {"threshold": 0.6, "models": 3, "models_that_change": 1},
+        "stage1_interval": {"policy": "threshold-two-stage/v1", "mean_width": 0.297333},
+    }
 
 
 def _sha(path: Path) -> str:
@@ -142,7 +170,7 @@ def test_command_writes_decision_table_manifest_and_report(tmp_path: Path) -> No
 
 def test_aa_lcr_runs_on_its_own_questions_policy_and_probe(tmp_path: Path) -> None:
     output = tmp_path / "out"
-    _run(_small_policy(tmp_path), output)
+    _run(_small_policy(tmp_path), output, panels=_panels(tmp_path))
     rows = _rows(output / AA_LCR / "decisions.csv")
     assert len(rows) == 30
     for row in rows:
@@ -213,7 +241,7 @@ def test_report_shows_both_benchmarks_in_matching_sections_with_the_same_charts(
 
 def test_judge_noise_limit_appears_next_to_every_aa_lcr_result(tmp_path: Path) -> None:
     output = tmp_path / "out"
-    _run(_small_policy(tmp_path), output)
+    _run(_small_policy(tmp_path), output, panels=_panels(tmp_path))
     html = (output / "report.html").read_text(encoding="utf-8")
     section = _section(html, AA_LCR)
     # A result is a chart or a table. Each one has the note under the same heading.
@@ -229,6 +257,53 @@ def test_judge_noise_limit_appears_next_to_every_aa_lcr_result(tmp_path: Path) -
     assert "<th>AA-LCR *</th>" in html and "<th>LiveCodeBench</th>" in html
     note = re.search(r'<p class="judge-noise" data-overview-note>([^<]+)</p>', html)
     assert note is not None and note.group(1).startswith("* AA-LCR: Judge noise is not measured")
+
+
+def test_a_measured_record_replaces_the_limit_and_changes_no_table(tmp_path: Path) -> None:
+    policy = _small_policy(tmp_path)
+    panels = _panels(tmp_path)
+    _run(policy, tmp_path / "before", panels=panels)
+    record = panels / RECORD_FILE
+    record.write_text(json.dumps(_measured_record()), encoding="utf-8")
+    _run(policy, tmp_path / "after", panels=panels)
+    html = (tmp_path / "after" / "report.html").read_text(encoding="utf-8")
+    assert "Judge noise is not measured" not in html
+    section = _section(html, AA_LCR)
+    blocks = [b for b in re.split(r"<h[34]>", section) if "<svg" in b or "<table" in b]
+    for block in blocks:
+        assert "The judgments are not all equal for 12 answers (4.0%)" in block
+        assert "1 of 3 full-set decisions at threshold 0.60 changed" in block
+        assert "mean width of 0.297" in block
+        assert "The policy interval excludes judge noise" in block
+    assert JUDGE_NOISE not in _section(html, LCB)
+    cell = re.search(r'<td data-overview="aa_lcr-judge-noise">([^<]+)</td>', html)
+    assert cell is not None and cell.group(1).startswith("4.0% of answers have unequal judgments")
+    manifest = json.loads((tmp_path / "after" / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["inputs"]["benchmarks"][AA_LCR]["judge_noise"]["sha256"] == _sha(record)
+    assert "judge_noise" not in manifest["inputs"]["benchmarks"][LCB]
+    for benchmark in (LCB, AA_LCR):
+        for name in BENCHMARK_FILES:
+            before = (tmp_path / "before" / benchmark / name).read_bytes()
+            assert (tmp_path / "after" / benchmark / name).read_bytes() == before
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ({"reference_panel_sha256": "0"}, "another reference panel"),
+        ({"loopback_test": True}, "loopback test"),
+        ({"schema_version": 2}, "unknown schema"),
+        ({"disagreement": {}}, "not a judge-noise record"),
+    ],
+)
+def test_a_bad_judge_noise_record_stops_the_command(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], change: dict[str, Any], message: str
+) -> None:
+    panels = _panels(tmp_path, {**_measured_record(), **change})
+    with pytest.raises(SystemExit):
+        _run(_small_policy(tmp_path), tmp_path / "out", panels=panels)
+    assert message in capsys.readouterr().err
+    assert not (tmp_path / "out").exists()
 
 
 def test_report_shows_decisive_fraction_and_wrong_rate_for_each_true_score(

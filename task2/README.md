@@ -137,6 +137,7 @@ AA-LCR has one recorded review per answer.
 Judge variance cannot be estimated from that record.
 `judge_noise.py` therefore reports hypothetical label-change sensitivity separately.
 Changed-judgment counts are analysis assumptions, not measured judge error rates.
+The [judge-noise measurement](#judge-noise-measurement) sends the saved answers to the judge again.
 
 ## Operating-point policy
 
@@ -393,6 +394,8 @@ AA-LCR grades come from an LLM judge, and the saved data has one judgment for ea
 Judge noise is therefore not measured.
 The simulated grades have no judge noise, so the AA-LCR results do not include it.
 The report states this limit beside every AA-LCR result.
+When the panel folder holds `aa-lcr-judge-noise.json`, the report gives the measured values instead.
+The [judge-noise measurement](#judge-noise-measurement) writes that file.
 
 ### Interval coverage study
 
@@ -530,6 +533,65 @@ The default is `task2/data`.
 `--data-root` sets the folder that holds `Part 1/predictions`.
 The default is the `Evals` folder at the repository root.
 
+## Judge-noise measurement
+
+`aa-lcr-judge` measures how much an AA-LCR score changes when the judge grades the same answer again (issue [#76](https://github.com/sdv1708/ai-model-benchmark/issues/76)).
+It sends each of the 300 saved answers to the judge 5 times. It generates no answer.
+The paid run is not done, so judge noise is not measured yet.
+
+The saved reviews name the judge `qwen-3-235b-a22b-instruct-2507`.
+`estimate` refuses another judge unless `--allow-different-judge` is set.
+The saved reviews hold no reference answers.
+The command reads them from the pinned public AA-LCR v1.0 file and checks its SHA-256.
+
+1. Write the estimate. This step makes no request.
+
+   ```powershell
+   uv run aa-lcr-judge estimate --source-csv output/aa-lcr-source/AA-LCR_Dataset.csv --base-url <endpoint> --judge-model <model> --input-price <USD for 1M tokens> --output-price <USD for 1M tokens> --price-source <URL> --limit-usd <USD> --output ../docs/data/task2-aa-lcr-judge-estimate.json
+   ```
+
+2. The owner approves the estimate and its SHA-256 in a comment on issue #76.
+3. Put the key in the environment variable `JUDGE_API_KEY`. Collect 5 judgments first, as a check of the endpoint.
+
+   ```powershell
+   uv run aa-lcr-judge run --source-csv output/aa-lcr-source/AA-LCR_Dataset.csv --estimate ../docs/data/task2-aa-lcr-judge-estimate.json --run-dir output/judge-run --approval-url <comment URL> --max-requests 5
+   ```
+
+   Run the same command without `--max-requests` for the remaining judgments.
+
+4. Write the report and the record of the threshold report.
+
+   ```powershell
+   uv run aa-lcr-judge report --source-csv output/aa-lcr-source/AA-LCR_Dataset.csv --run-dir output/judge-run --output-dir ../docs/data/task2-aa-lcr-judge-rerun --record data/aa-lcr-judge-noise.json
+   ```
+
+The run takes the endpoint, the model, the prices, and the cost limit from the estimate file only.
+It obeys these rules:
+
+- Each judgment is one request with one user message. The text is the judge prompt of the EvalScope AA-LCR adapter, with no change.
+- The settings are the EvalScope judge defaults: temperature `0.0` and at most `4096` output tokens. The run sends no seed.
+- A reply outside the output contract is not a verdict. The run repeats the request, at most 3 times, and keeps every attempt.
+- The run stops before the next request could pass the cost limit. It counts a request with no token count at its highest possible cost.
+- If the process stops during a request, the record does not hold the cost of that request. After such a stop, compare the account balance with the report.
+
+The run writes the key to no file.
+The client sends the key to the approved host only, because it follows no redirect.
+The record of an HTTP error holds the status code and no server text.
+A loopback judge gets no key and needs no approval. The tests use a scripted loopback judge.
+
+| Output            | Content                                                                              |
+| ----------------- | ------------------------------------------------------------------------------------ |
+| `judgments.jsonl` | Every attempt: the reply, the verdict, the tokens, the returned model, and the time. |
+| `answers.csv`     | The 5 grades, the majority, and the saved grade of each answer.                      |
+| `scores.csv`      | The full-set score and the decision of each model in each pass.                      |
+| `summary.json`    | Every measured value.                                                                |
+| `report.md`       | The result, the judge and its settings, the cost, and the limits.                    |
+| `run.json`        | The estimate and the approval comment.                                               |
+
+The report compares the score range across passes with the stage-1 interval width of policy v1.
+On the saved grades, that interval has a mean width of 0.297 (60 probes: 3 models and 20 seeds).
+Policy v1 does not change. Its interval excludes judge noise.
+
 ## Public LiveCodeBench results
 
 LiveCodeBench publishes one `pass@1` value for each model and question.
@@ -643,6 +705,7 @@ The following integration records remain available:
 `tools/export_lcb_panel.py` and `tools/export_aa_lcr_panel.py` produce reference panels.
 `tools/audit_evalscope_lcb.py` and `tools/audit_evalscope_aa_lcr.py` require an appropriate native checkout.
 Their optional tokenizer integration requires the `integration` dependency extra.
+`tools/audit_judge_prompt.py` requires the same checkout. It compares the judge prompt and the reply parser of this package with the adapter, on all 300 saved answers.
 The local reference, subset, and image commands work independently of that checkout.
 
 ## Image-pair prototype

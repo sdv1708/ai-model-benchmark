@@ -307,6 +307,7 @@ The command writes `decisions.csv`, `coverage.csv`, `cost.csv`, and `question_to
 It also writes `summary.json`, `report.html`, and `manifest.json` for both benchmarks.
 The report shows both benchmarks side by side, with the same charts for each.
 Every AA-LCR result states that judge noise is not measured.
+The [judge-noise measurement](task2/README.md#judge-noise-measurement) replaces that sentence with measured values.
 The command also runs the interval coverage study: 2,000 simulated draws for each cell.
 It reads the token counts of the saved answers from `../Evals/Part 1/predictions`.
 Use `--data-root` to read them from another folder.
