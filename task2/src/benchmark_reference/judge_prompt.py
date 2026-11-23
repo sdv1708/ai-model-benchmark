@@ -1,7 +1,7 @@
 """The AA-LCR judge prompt and reply parser of the EvalScope pruning repository.
 
-This module copies two parts of that repository with no change in behavior: the
-prompt of the AA-LCR adapter, and the output contract that the adapter adds to it.
+This module copies two parts of that repository with no change in behavior. The
+parts are the prompt of the AA-LCR adapter and the output contract.
 ``tools/audit_judge_prompt.py`` compares this copy with a checkout of the
 repository: it compares every rendered prompt and the result of every test reply.
 

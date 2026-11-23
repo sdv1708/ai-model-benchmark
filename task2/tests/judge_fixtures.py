@@ -12,7 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-from benchmark_reference.judge_items import question_fingerprint
+from benchmark_reference.public_lcb import question_fingerprint
 
 MODELS = ("model-a", "model-b", "model-c")
 QUESTIONS = 40
@@ -111,6 +111,8 @@ class Scripted:
     status: int = 200
     headers: Mapping[str, str] = field(default_factory=dict)
     raw: bytes | None = None
+    model: str | None = None
+    identity: str | None = None
     usage: Mapping[str, int] | None = field(
         default_factory=lambda: {"prompt_tokens": 300, "completion_tokens": 20}
     )
@@ -139,11 +141,12 @@ def scripted_judge(script: Script) -> Iterator[Judge]:
                 state.paths.append(self.path)
                 state.seen[prompt] = state.seen.get(prompt, 0) + 1
                 number = state.seen[prompt]
+                call = len(state.bodies)
             reply = script(prompt, number)
             document: dict[str, Any] = {
-                "id": f"call-{number}",
+                "id": reply.identity or f"call-{call}",
                 "object": "chat.completion",
-                "model": body["model"],
+                "model": reply.model or body["model"],
                 "choices": [
                     {
                         "index": 0,

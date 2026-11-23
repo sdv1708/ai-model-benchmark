@@ -550,7 +550,7 @@ The command reads them from the pinned public AA-LCR v1.0 file and checks its SH
    uv run aa-lcr-judge estimate --source-csv output/aa-lcr-source/AA-LCR_Dataset.csv --base-url <endpoint> --judge-model <model> --input-price <USD for 1M tokens> --output-price <USD for 1M tokens> --price-source <URL> --limit-usd <USD> --output ../docs/data/task2-aa-lcr-judge-estimate.json
    ```
 
-2. The owner approves the estimate and its SHA-256 in a comment on issue #76.
+2. The owner approves the estimate and its SHA-256 in a comment on issue #76. The `run` command checks only the form of the comment address.
 3. Put the key in the environment variable `JUDGE_API_KEY`. Collect 5 judgments first, as a check of the endpoint.
 
    ```powershell
@@ -570,8 +570,9 @@ It obeys these rules:
 
 - Each judgment is one request with one user message. The text is the judge prompt of the EvalScope AA-LCR adapter, with no change.
 - The settings are the EvalScope judge defaults: temperature `0.0` and at most `4096` output tokens. The run sends no seed.
-- A reply outside the output contract is not a verdict. The run repeats the request, at most 3 times, and keeps every attempt.
-- The run stops before the next request could pass the cost limit. It counts a request with no token count at its highest possible cost.
+- A reply outside the output contract is not a verdict. One run of the command sends at most 3 requests for it, and keeps every attempt.
+- A reply of another model, or a reply with a repeated response identifier, is not a verdict. It stops the run.
+- The run stops before the next request could pass the cost limit. It counts a lost reply, a server fault, and a reply with no token count at the highest possible cost of the request.
 - If the process stops during a request, the record does not hold the cost of that request. After such a stop, compare the account balance with the report.
 
 The run writes the key to no file.

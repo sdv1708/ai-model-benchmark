@@ -19,12 +19,13 @@ from itertools import combinations
 from pathlib import Path
 from typing import Any
 
-from benchmark_reference.judge_estimate import PASSES, Estimate, load_estimate
+from benchmark_reference.judge_estimate import PASSES, Estimate, load_estimate, model_key
 from benchmark_reference.judge_items import JudgeInputs
 from benchmark_reference.judge_prompt import parse_reply, prompt_sha256
 from benchmark_reference.judge_run import (
     JUDGMENTS,
     PARSE_ERROR,
+    REJECTED,
     SETTINGS,
     SUCCESS,
     TRANSPORT_ERROR,
@@ -33,7 +34,7 @@ from benchmark_reference.judge_run import (
     read_attempts,
     slot_of,
 )
-from benchmark_reference.judge_statement import RECORD_FILE, RECORD_SCHEMA, describe
+from benchmark_reference.judge_statement import RECORD_FILE, RECORD_SCHEMA, statement_and_cell
 from benchmark_reference.long_context_reporting import encode_json
 from benchmark_reference.models import AnalysisError
 from benchmark_reference.pruning import select_strata
@@ -91,9 +92,9 @@ def load_run(run_dir: Path, inputs: JudgeInputs) -> JudgeRecord:
         estimate = load_estimate(encode_json(settings["estimate"]))
         approval = settings["approval_url"]
         recorded = settings["estimate_sha256"]
+    except AnalysisError:
+        raise
     except (ValueError, KeyError, TypeError) as exc:
-        if isinstance(exc, AnalysisError):
-            raise
         raise AnalysisError(f"{settings_path} is not valid: {exc}") from exc
     if estimate.sha256 != recorded:
         raise AnalysisError(f"{settings_path} does not hold the estimate that it names")
@@ -105,6 +106,7 @@ def load_run(run_dir: Path, inputs: JudgeInputs) -> JudgeRecord:
     attempts = read_attempts(run_dir / JUDGMENTS)
     found: dict[Slot, int] = {}
     seen: set[tuple[Slot, int]] = set()
+    identities: set[str] = set()
     for attempt in attempts:
         slot = slot_of(attempt)
         key = (slot[1], slot[2])
@@ -119,6 +121,13 @@ def load_run(run_dir: Path, inputs: JudgeInputs) -> JudgeRecord:
             continue
         if slot in found:
             raise AnalysisError(f"The run holds two judgments for {slot}")
+        identity, returned = attempt["response_id"], attempt["response_model"]
+        if identity in identities:
+            raise AnalysisError(f"Two judgments have the response {identity!r}")
+        if identity is not None:
+            identities.add(identity)
+        if returned is not None and model_key(returned) != model_key(estimate.judge_model):
+            raise AnalysisError(f"The judgment of {slot} comes from model {returned!r}")
         verdict = parse_reply(attempt["reply"] or "").verdict
         if verdict is None or verdict != attempt["verdict"]:
             raise AnalysisError(f"The verdict of {slot} differs from its reply")
@@ -199,13 +208,16 @@ def _agreement(verdicts: Verdicts, inputs: JudgeInputs) -> dict[str, Any]:
 
 
 def _models(
-    record: JudgeRecord, inputs: JudgeInputs, widths: Mapping[str, Sequence[Fraction]], t: Fraction
+    record: JudgeRecord,
+    inputs: JudgeInputs,
+    widths: Mapping[str, Sequence[Fraction]],
+    threshold: Fraction,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for model, counts in pass_scores(record.verdicts).items():
         grades = {i: g for (m, i), g in record.verdicts.items() if m == model}
         size = len(grades)
-        decisions = [full_set_decision(c, size, t) for c in counts]
+        decisions = [full_set_decision(c, size, threshold) for c in counts]
         saved = sum(i.saved_grade for i in inputs.items if i.model == model)
         rows.append(
             {
@@ -219,7 +231,7 @@ def _models(
                 "score_range": _round(Fraction(max(counts) - min(counts), size)),
                 "score_standard_deviation": _round(statistics.stdev(c / size for c in counts)),
                 "saved_score": _round(Fraction(saved, size)),
-                "saved_decision": full_set_decision(saved, size, t),
+                "saved_decision": full_set_decision(saved, size, threshold),
                 "pass_decisions": decisions,
                 "decision_changes": len(set(decisions)) > 1,
                 "pass_pairs_that_differ": sum(a != b for a, b in combinations(decisions, 2)),
@@ -237,6 +249,7 @@ def _usage(record: JudgeRecord) -> dict[str, Any]:
         "judgments": status[SUCCESS],
         "replies_outside_the_contract": status[PARSE_ERROR],
         "requests_with_no_usable_reply": status[TRANSPORT_ERROR],
+        "rejected_replies": status[REJECTED],
         "input_tokens": sum(a["input_tokens"] or 0 for a in attempts),
         "output_tokens": sum(a["output_tokens"] or 0 for a in attempts),
         "requests_with_no_token_count": sum(
@@ -272,7 +285,6 @@ def summary_document(
         "loopback_test": estimate.loopback,
         "judge": {
             **estimate.document["judge"],
-            "same_judge": estimate.same_judge,
             "response_models": _values(record, "response_model"),
             "providers": _values(record, "provider"),
             "system_fingerprints": _values(record, "system_fingerprint"),
@@ -325,15 +337,24 @@ def noise_record(summary: Mapping[str, Any], *, panel_sha256: str) -> dict[str, 
     dates = summary["judge"]["run_dates_utc"]
     return {
         "schema_version": RECORD_SCHEMA,
-        "source": "docs/data/task2-aa-lcr-judge-rerun",
         "loopback_test": summary["loopback_test"],
         "reference_panel_sha256": panel_sha256,
         "judge_model": summary["judge"]["model"],
+        "original_judge": summary["judge"]["original_model"],
+        "same_judge": summary["judge"]["same_judge"],
         "run_dates": dates[0] if len(dates) == 1 else f"{dates[0]} to {dates[-1]}",
         "estimate_sha256": summary["estimate_sha256"],
         **{
             name: summary[name]
-            for name in ("passes", "disagreement", "full_set_score", "decisions", "stage1_interval")
+            for name in (
+                "passes",
+                "disagreement",
+                "agreement_with_saved_judgment",
+                "models",
+                "full_set_score",
+                "decisions",
+                "stage1_interval",
+            )
         },
     }
 
@@ -390,7 +411,6 @@ def _settings_table(summary: Mapping[str, Any]) -> str:
             ("Run dates (UTC)", ", ".join(judge["run_dates_utc"])),
             ("Temperature", judge["temperature"]),
             ("Maximum output tokens", judge["max_tokens"]),
-            ("Other request fields", f"`{json.dumps(judge['extra_body'], sort_keys=True)}`"),
             ("Seed", "none sent"),
             ("Judge prompt", f"{prompt['source']} at `{prompt['commit']}`, no change"),
             ("Prompts SHA-256", f"`{prompt['prompts_sha256']}`"),
@@ -478,7 +498,7 @@ The interval describes sampling error on fixed grades. It excludes judge noise.
 ## Requests and cost
 
 - The run made {usage["requests"]:,} requests and got {usage["judgments"]:,} judgments.
-- {usage["replies_outside_the_contract"]} replies did not satisfy the output contract, and {usage["requests_with_no_usable_reply"]} requests had no usable reply. The run repeated these requests, and `judgments.jsonl` keeps all of them.
+- {usage["replies_outside_the_contract"]} replies did not satisfy the output contract, and {usage["requests_with_no_usable_reply"]} requests had no usable reply. The run rejected {usage["rejected_replies"]} replies, which came from another model or repeated an earlier reply. The run repeated these requests, and `judgments.jsonl` keeps all of them.
 - The tokens were {usage["input_tokens"]:,} input and {usage["output_tokens"]:,} output. {usage["requests_with_no_token_count"]} requests had no token count.
 - The cost was at most ${usage["cost_bound_usd"]:.4f} at the prices of the estimate. The limit was ${usage["limit_usd"]:.2f}.
 
@@ -489,7 +509,8 @@ The interval describes sampling error on fixed grades. It excludes judge noise.
 - A repeated request replaces a reply outside the contract. That rule can favor answers for which the judge replies in the correct format.
 - Policy v1 does not change. Its interval excludes judge noise.
 """  # noqa: E501
-    return text.encode("utf-8")
+    # A model name from the endpoint can hold half of a character.
+    return text.encode("utf-8", errors="replace")
 
 
 def _answers_table(record: JudgeRecord, inputs: JudgeInputs) -> bytes:
@@ -529,8 +550,8 @@ def build_outputs(
     """All output files, with the manifest hashing the others."""
     summary = summary_document(record, inputs, panel, loaded)
     noise = noise_record(summary, panel_sha256=panel.sha256)
-    describe(noise)
-    lines = [json.dumps(a, sort_keys=True, ensure_ascii=False) + "\n" for a in record.attempts]
+    statement_and_cell(noise)
+    lines = [json.dumps(a, sort_keys=True) + "\n" for a in record.attempts]
     outputs = {
         JUDGMENTS: "".join(lines).encode("utf-8"),
         SETTINGS: record.settings_bytes,

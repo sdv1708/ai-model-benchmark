@@ -2,6 +2,7 @@
 
 import dataclasses
 import json
+import threading
 from collections.abc import Callable
 from datetime import UTC, datetime
 from fractions import Fraction
@@ -180,14 +181,6 @@ def test_the_endpoint_must_be_a_plain_https_address(url: str) -> None:
         check_url(url)
 
 
-@pytest.mark.parametrize("extra", [{"seed": 1}, {"api_key": "x"}, {"messages": []}])
-def test_extra_body_cannot_change_the_request_or_hold_a_key(
-    inputs: JudgeInputs, extra: dict[str, Any]
-) -> None:
-    with pytest.raises(AnalysisError, match="extra_body"):
-        _estimate(inputs, PAID_URL, extra_body=extra)
-
-
 # The run on loopback
 
 
@@ -195,7 +188,7 @@ def test_run_makes_five_independent_calls_for_each_answer(
     inputs: JudgeInputs, tmp_path: Path
 ) -> None:
     with scripted_judge(lambda _prompt, _n: verdict(True)) as judge:
-        estimate = _estimate(inputs, judge.url, extra_body={"provider": {"order": ["x"]}})
+        estimate = _estimate(inputs, judge.url)
         result = _run(estimate, inputs, tmp_path / "run")
     assert (result.complete, result.judgments, result.stopped) == (True, ANSWERS * 5, None)
     assert judge.seen == {item.prompt: 5 for item in inputs.items}
@@ -203,7 +196,7 @@ def test_run_makes_five_independent_calls_for_each_answer(
     for body in judge.bodies:
         assert [m["role"] for m in body["messages"]] == ["user"]
         assert (body["model"], body["temperature"], body["max_tokens"]) == (QWEN, 0.0, 4096)
-        assert "seed" not in body and body["provider"] == {"order": ["x"]}
+        assert set(body) == {"model", "messages", "temperature", "max_tokens"}
     # No credential goes to a loopback judge.
     assert not any("authorization" in {k.lower() for k in h} for h in judge.headers)
     attempts = read_attempts(tmp_path / "run" / "judgments.jsonl")
@@ -299,6 +292,114 @@ def test_a_malformed_reply_is_a_failed_attempt(
     assert result.cost_bound > 0
 
 
+@pytest.mark.parametrize("text", ["\u2028", "\u0085", "\ud800", "caf\u00e9"])
+def test_any_reply_text_survives_the_record(inputs: JudgeInputs, tmp_path: Path, text: str) -> None:
+    reply = Scripted(json.dumps({"reasoning": "x", "verdict": "CORRECT"}) + text)
+    with scripted_judge(lambda _prompt, _n: reply) as judge:
+        estimate = _estimate(inputs, judge.url)
+        _run(estimate, inputs, tmp_path / "run", max_new_requests=2)
+        attempts = read_attempts(tmp_path / "run" / "judgments.jsonl")
+        assert [a["reply"] for a in attempts] == [reply.content] * 2
+        assert _run(estimate, inputs, tmp_path / "run", max_new_requests=2).judgments == 4
+
+
+@pytest.mark.parametrize(
+    ("reply", "message"),
+    [
+        (Scripted(model="Qwen/Qwen3.5-9B"), "another model"),
+        (Scripted(identity="cached"), "repeated the reply"),
+    ],
+)
+def test_a_reply_that_is_not_independent_stops_the_run(
+    inputs: JudgeInputs, tmp_path: Path, reply: Scripted, message: str
+) -> None:
+    with scripted_judge(lambda _prompt, _n: reply) as judge:
+        result = _run(_estimate(inputs, judge.url), inputs, tmp_path / "run", workers=1)
+    assert result.stopped is not None and message in result.stopped
+    last = read_attempts(tmp_path / "run" / "judgments.jsonl")[-1]
+    assert (last["status"], last["verdict"]) == ("rejected", None)
+    assert Fraction(last["cost_bound_usd"]) > 0
+
+
+def test_a_server_fault_counts_at_the_highest_cost(inputs: JudgeInputs, tmp_path: Path) -> None:
+    def script(_prompt: str, _number: int) -> Scripted:
+        return Scripted(status=504)
+
+    with scripted_judge(script) as judge:
+        estimate = _estimate(inputs, judge.url, limit_usd=Fraction("0.02"))
+        result = _run(estimate, inputs, tmp_path / "run")
+    assert 0 < result.cost_bound <= Fraction("0.02")
+    assert result.stopped is not None and "cost limit" in result.stopped
+
+
+def test_an_interrupt_stops_the_run_and_releases_the_lock(
+    inputs: JudgeInputs, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real, calls = judge_run._wait, []
+
+    def wait(threads: Any) -> None:
+        calls.append(threads)
+        if len(calls) == 1:
+            raise KeyboardInterrupt
+        real(threads)
+
+    monkeypatch.setattr(judge_run, "_wait", wait)
+    with scripted_judge(lambda _prompt, _n: verdict(True)) as judge:
+        result = _run(_estimate(inputs, judge.url), inputs, tmp_path / "run")
+    assert result.stopped == "the user stopped the run" and not result.complete
+    assert not (tmp_path / "run" / "run.lock").exists()
+
+
+def test_the_lock_stays_while_a_worker_is_active(
+    inputs: JudgeInputs, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    release = threading.Event()
+
+    def script(_prompt: str, _number: int) -> Scripted:
+        release.wait(10)
+        return verdict(True)
+
+    def wait(_threads: Any) -> None:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(judge_run, "_wait", wait)
+    with scripted_judge(script) as judge:
+        estimate = _estimate(inputs, judge.url)
+        with pytest.raises(KeyboardInterrupt):
+            _run(estimate, inputs, tmp_path / "run")
+        assert (tmp_path / "run" / "run.lock").exists()
+        with pytest.raises(AnalysisError, match="Another run"):
+            _run(estimate, inputs, tmp_path / "run")
+        release.set()
+
+
+def test_an_estimate_with_other_line_ends_is_refused(inputs: JudgeInputs) -> None:
+    data = build_estimate(
+        inputs, base_url=PAID_URL, judge_model=QWEN, prices=PRICES, limit_usd=Fraction(1)
+    )
+    with pytest.raises(AnalysisError, match="line ends"):
+        load_estimate(data.replace(b"\n", b"\r\n"))
+
+
+def test_a_price_must_be_an_exact_decimal(inputs: JudgeInputs) -> None:
+    with pytest.raises(AnalysisError, match="exact decimal"):
+        _estimate(inputs, PAID_URL, limit_usd=Fraction(1, 3))
+
+
+@pytest.mark.parametrize(
+    "change", [{"cost_bound_usd": "-1"}, {"cost_bound_usd": "1/0"}, {"attempt": 0}]
+)
+def test_a_changed_attempt_stops_the_command(
+    inputs: JudgeInputs, tmp_path: Path, change: dict[str, Any]
+) -> None:
+    with scripted_judge(lambda _prompt, _n: verdict(True)) as judge:
+        _run(_estimate(inputs, judge.url), inputs, tmp_path / "run", max_new_requests=1)
+    path = tmp_path / "run" / "judgments.jsonl"
+    path.write_text(json.dumps({**json.loads(path.read_bytes()), **change}) + "\n", newline="\n")
+    with pytest.raises(AnalysisError, match="damaged attempt"):
+        read_attempts(path)
+
+
 # A paid endpoint: no test calls one
 
 
@@ -332,7 +433,7 @@ def test_the_key_reaches_the_judge_and_never_a_file(
     inputs: JudgeInputs, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     body = {
-        "model": f"echo-{KEY}",
+        "provider": f"echo-{KEY}",
         "choices": [{"message": {"content": f"{KEY} {CORRECT}"}}],
         "usage": {"prompt_tokens": 1, "completion_tokens": 1},
     }

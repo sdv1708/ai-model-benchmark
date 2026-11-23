@@ -33,17 +33,37 @@ class JudgeNoise:
     cell: str
 
 
-def describe(record: Mapping[str, Any]) -> tuple[str, str]:
+def _judge_text(record: Mapping[str, Any]) -> str:
+    """Whether the judge is the judge of the saved reviews, and the agreement."""
+    agreement, original = record["agreement_with_saved_judgment"], record["original_judge"]
+    if record["same_judge"]:
+        source = "The saved reviews name the same judge model"
+    elif original is None:
+        source = "The saved reviews name no judge, so the judge can differ"
+    else:
+        source = f"The saved reviews name another judge, {original}"
+    return (
+        f"{source}. The majority of the new judgments agrees with the saved judgment for "
+        f"{agreement['agree']} of {agreement['answers']} answers ({agreement['share']:.1%})."
+    )
+
+
+def statement_and_cell(record: Mapping[str, Any]) -> tuple[str, str]:
     """The note beside every AA-LCR result, and the cell of the side-by-side table."""
     disagree, spread = record["disagreement"], record["full_set_score"]
     changes, interval = record["decisions"], record["stage1_interval"]
     share = f"{disagree['share']:.1%}"
+    ranges = ", ".join(
+        f"{m['model']} {m['lowest_score']:.2f} to {m['highest_score']:.2f}"
+        for m in record["models"]
+    )
     statement = (
         f"Judge noise is measured on the saved answers, not on the simulated ones. The judge "
         f"{record['judge_model']} graded each of {disagree['answers']} answers "
         f"{record['passes']} times ({record['run_dates']}). The judgments are not all equal for "
-        f"{disagree['not_unanimous']} answers ({share}). Between passes, the full-set score of a "
-        f"model changed by at most {spread['largest_range']:.2f}, and "
+        f"{disagree['not_unanimous']} answers ({share}). {_judge_text(record)} The lowest and "
+        f"highest full-set scores across the passes are: {ranges}. The largest change is "
+        f"{spread['largest_range']:.2f}. Between passes, "
         f"{changes['models_that_change']} of {changes['models']} full-set decisions at threshold "
         f"{changes['threshold']:.2f} changed. The stage-1 interval of policy {interval['policy']} "
         f"has a mean width of {interval['mean_width']:.3f} on these answers. The policy interval "
@@ -70,9 +90,9 @@ def load_judge_noise(path: Path, *, panel_sha256: str) -> JudgeNoise | None:
             raise AnalysisError(f"{path} is a record of another reference panel")
         if record["loopback_test"] is not False:
             raise AnalysisError(f"{path} is a loopback test, which measures nothing")
-        statement, cell = describe(record)
+        statement, cell = statement_and_cell(record)
+    except AnalysisError:
+        raise
     except (ValueError, KeyError, TypeError) as exc:
-        if isinstance(exc, AnalysisError):
-            raise
         raise AnalysisError(f"{path} is not a judge-noise record: {exc}") from exc
     return JudgeNoise(hashlib.sha256(data).hexdigest(), statement, cell)

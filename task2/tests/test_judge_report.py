@@ -11,7 +11,16 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from judge_fixtures import MODELS, QUESTIONS, Data, Judge, scripted_judge, verdict, write_data
+from judge_fixtures import (
+    MODELS,
+    QUESTIONS,
+    Data,
+    Judge,
+    Scripted,
+    scripted_judge,
+    verdict,
+    write_data,
+)
 
 from benchmark_reference.judge_cli import main
 from benchmark_reference.judge_items import load_judge_inputs
@@ -22,7 +31,7 @@ from benchmark_reference.judge_report import (
     majority,
     pass_scores,
 )
-from benchmark_reference.judge_statement import RECORD_FILE, load_judge_noise
+from benchmark_reference.judge_statement import RECORD_FILE, load_judge_noise, statement_and_cell
 from benchmark_reference.models import AnalysisError
 from benchmark_reference.threshold_benchmarks import AA_LCR, load_reference_panel
 from benchmark_reference.threshold_policy import load_policy
@@ -224,6 +233,15 @@ def test_report_refuses_an_incomplete_or_changed_run(
         "holds 599 of 600 judgments": lines[1:],
         "repeats attempt": [*lines, lines[0]],
         "two judgments": [*lines, json.dumps({**first, "attempt": 2}) + "\n"],
+        "have the response": [
+            lines[0],
+            json.dumps({**json.loads(lines[1]), "response_id": first["response_id"]}) + "\n",
+            *lines[2:],
+        ],
+        "comes from model": [
+            json.dumps({**first, "response_model": "other"}) + "\n",
+            *lines[1:],
+        ],
         "differs from its reply": [json.dumps(flipped) + "\n", *lines[1:]],
         "another answer": [*lines, json.dumps({**first, "pass": 6}) + "\n"],
         "prompt of": [json.dumps({**first, "prompt_sha256": "0"}) + "\n", *lines[1:]],
@@ -259,6 +277,38 @@ def test_an_estimate_file_is_never_replaced(
     with scripted_judge(_script) as judge, pytest.raises(SystemExit):
         _estimate(data, judge, folder / "estimate.json")
     assert "must not change" in capsys.readouterr().err
+
+
+def test_an_unplanned_stop_gives_exit_code_1(tmp_path: Path) -> None:
+    data = write_data(tmp_path)
+    with scripted_judge(lambda _prompt, _n: Scripted(status=401)) as judge:
+        _estimate(data, judge, tmp_path / "estimate.json")
+        arguments = [
+            *("--estimate", str(tmp_path / "estimate.json")),
+            *("--run-dir", str(tmp_path / "run")),
+        ]
+        with pytest.raises(SystemExit) as stop:
+            _command(data, "run", *arguments)
+    assert stop.value.code == 1
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ({"same_judge": True}, "name the same judge model"),
+        ({"same_judge": False}, "name another judge, judge-y"),
+        ({"same_judge": None, "original_judge": None}, "the judge can differ"),
+    ],
+)
+def test_the_statement_says_whether_the_judge_differs(
+    finished: tuple[Data, Path], tmp_path: Path, change: dict[str, Any], message: str
+) -> None:
+    _report(finished, tmp_path / "out")
+    record = json.loads((tmp_path / "out" / RECORD_FILE).read_bytes())
+    assert (record["same_judge"], record["loopback_test"]) == (True, True)
+    statement, _cell = statement_and_cell({**record, "original_judge": "judge-y", **change})
+    assert message in statement and "agrees with the saved judgment" in statement
+    assert "model-a 0.57 to 0.60" in statement or "model-a 0.58 to 0.60" in statement
 
 
 def test_majority_and_pass_scores() -> None:

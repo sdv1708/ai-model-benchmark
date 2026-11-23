@@ -3,8 +3,9 @@
 The order is pass by pass: each pass covers every answer one time. Each judgment is
 one new request with one user message, so no judgment sees another judgment.
 
-``judgments.jsonl`` gets one line for each request, also for a failed one. A second
-run of the same command continues after the judgments that the file holds.
+``judgments.jsonl`` holds one line for each attempt. An attempt is one request. An
+attempt with a verdict is a judgment. A second run of the same command continues
+after the judgments that the file holds.
 
 Three guards protect the budget and the key:
 
@@ -30,7 +31,13 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from benchmark_reference.judge_estimate import ISSUE, MAX_ATTEMPTS, PASSES, Estimate
+from benchmark_reference.judge_estimate import (
+    ISSUE,
+    MAX_ATTEMPTS,
+    PASSES,
+    Estimate,
+    model_key,
+)
 from benchmark_reference.judge_items import JudgeInputs, JudgeItem
 from benchmark_reference.judge_prompt import parse_reply, prompt_sha256
 from benchmark_reference.long_context_reporting import encode_json
@@ -40,6 +47,9 @@ from benchmark_reference.reporting import write_atomic
 JUDGMENTS = "judgments.jsonl"
 SETTINGS = "run.json"
 SUCCESS, PARSE_ERROR, TRANSPORT_ERROR = "success", "parse_error", "transport_error"
+# A reply from another model, or a repeated reply. It is not an independent judgment.
+REJECTED = "rejected"
+STATUSES = (SUCCESS, PARSE_ERROR, TRANSPORT_ERROR, REJECTED)
 TIMEOUT_SECONDS = 120
 _RETRY_STATUS = {408, 409, 425, 429}
 # The bytes of the chat template around the one message. It is a generous bound.
@@ -59,7 +69,7 @@ class Reply:
     error: str | None = None
     status: int | None = None
     retry_after: float | None = None
-    # A lost reply can have a cost. An HTTP error reply has none.
+    # A lost reply, a timeout, or a server fault can have a cost.
     billable: bool = True
 
 
@@ -96,13 +106,14 @@ def post(estimate: Estimate, payload: Mapping[str, Any], key: str | None) -> Rep
     except urllib.error.HTTPError as exc:
         with exc:
             wait = _retry_after(exc.headers.get("Retry-After"))
-        return Reply(error=f"HTTP {exc.code}", status=exc.code, retry_after=wait, billable=False)
+        billable = exc.code >= 500 or exc.code == 408
+        return Reply(error=f"HTTP {exc.code}", status=exc.code, retry_after=wait, billable=billable)
     except (OSError, http.client.HTTPException) as exc:
         # The text of the exception can hold request data, so keep the type only.
         return Reply(error=type(exc).__name__)
     try:
         body = json.loads(raw)
-    except ValueError:
+    except (ValueError, RecursionError):
         return Reply(error="The reply body is not JSON")
     if not isinstance(body, dict):
         return Reply(error="The reply body is not a JSON object")
@@ -111,7 +122,6 @@ def post(estimate: Estimate, payload: Mapping[str, Any], key: str | None) -> Rep
 
 def _payload(estimate: Estimate, item: JudgeItem) -> dict[str, Any]:
     return {
-        **estimate.extra_body,
         "model": estimate.judge_model,
         "messages": [{"role": "user", "content": item.prompt}],
         "temperature": estimate.temperature,
@@ -219,15 +229,17 @@ def read_attempts(path: Path) -> list[dict[str, Any]]:
     if text and not text.endswith("\n"):
         raise AnalysisError(f"The last line of {path} is not complete. Check the file by hand.")
     attempts: list[dict[str, Any]] = []
-    for number, line in enumerate(text.splitlines(), start=1):
+    for number, line in enumerate(text.split("\n")[:-1], start=1):
         try:
             record = json.loads(line)
             slot_of(record)
-            Fraction(record["cost_bound_usd"])
-            if record["status"] not in (SUCCESS, PARSE_ERROR, TRANSPORT_ERROR):
-                raise ValueError("unknown status")
-        except (ValueError, KeyError, TypeError) as exc:
-            raise AnalysisError(f"{path}:{number}: damaged judgment record") from exc
+            attempt = record["attempt"]
+            if Fraction(record["cost_bound_usd"]) < 0 or record["status"] not in STATUSES:
+                raise ValueError("invalid cost or status")
+            if type(attempt) is not int or attempt < 1:
+                raise ValueError("invalid attempt number")
+        except (ValueError, KeyError, TypeError, ZeroDivisionError) as exc:
+            raise AnalysisError(f"{path}:{number}: damaged attempt") from exc
         attempts.append(record)
     return attempts
 
@@ -238,13 +250,17 @@ def slot_of(record: Mapping[str, Any]) -> Slot:
 
 @dataclass(slots=True)
 class RunResult:
-    """``complete`` is true when every slot has a verdict. ``stopped`` gives a reason to stop."""
+    """``complete`` is true when every slot has a verdict. ``stopped`` gives a reason to stop.
+
+    ``limited`` is true when the reason is the request limit of the user.
+    """
 
     judgments: int
     needed: int
     new_requests: int
     cost_bound: Fraction
     stopped: str | None = None
+    limited: bool = False
     failed_slots: list[Slot] = field(default_factory=list)
 
     @property
@@ -277,7 +293,11 @@ class _Runner:
         for attempt in attempts:
             slot = slot_of(attempt)
             self.numbers[slot] = max(self.numbers.get(slot, 0), attempt["attempt"])
+        self.response_ids = {
+            a["response_id"] for a in attempts if a["status"] == SUCCESS and a["response_id"]
+        }
         self.stopped: str | None = None
+        self.limited = False
         self.failed: list[Slot] = []
 
     def stop(self, reason: str) -> None:
@@ -290,6 +310,7 @@ class _Runner:
                 raise StopRun(self.stopped)
             if self.max_new_requests is not None and self.new_requests >= self.max_new_requests:
                 self.stopped = f"the run reached --max-requests {self.max_new_requests}"
+                self.limited = True
             elif self.requests >= self.estimate.max_requests:
                 self.stopped = f"the run reached {self.requests} requests of the estimate"
             elif self.spent + self.reserved + bound > self.estimate.limit_usd:
@@ -306,13 +327,29 @@ class _Runner:
             return self.numbers[slot]
 
     def _write(self, record: dict[str, Any], bound: Fraction) -> None:
-        line = json.dumps(_scrub(record, self.key), sort_keys=True, ensure_ascii=False) + "\n"
         with self.lock:
+            self._check_source(record)
+            # ASCII output: a reply can hold a Unicode line end or half of a character.
+            line = json.dumps(_scrub(record, self.key), sort_keys=True) + "\n"
             self.reserved -= bound
             self.spent += Fraction(record["cost_bound_usd"])
             self.judgments += record["status"] == SUCCESS
             with self.path.open("a", encoding="utf-8", newline="\n") as handle:
                 handle.write(line)
+
+    def _check_source(self, record: dict[str, Any]) -> None:
+        """Reject a reply of another model, and a reply that the endpoint repeats."""
+        returned, identity = record["response_model"], record["response_id"]
+        fault = None
+        if returned is not None and model_key(returned) != model_key(self.estimate.judge_model):
+            fault = f"the endpoint returned another model, {returned!r}"
+        elif identity is not None and identity in self.response_ids:
+            fault = f"the endpoint repeated the reply {identity!r}"
+        if fault is not None:
+            record.update(status=REJECTED, verdict=None, error=fault)
+            self.stopped = self.stopped or _scrub(fault, self.key)
+        elif record["status"] == SUCCESS and identity is not None:
+            self.response_ids.add(identity)
 
     def judge(self, slot: Slot, item: JudgeItem) -> None:
         """Up to ``MAX_ATTEMPTS`` requests for one judgment."""
@@ -323,7 +360,7 @@ class _Runner:
             reply = post(self.estimate, _payload(self.estimate, item), self.key)
             record = _attempt_record(self.estimate, item, slot, number, started, reply)
             self._write(record, bound)
-            if record["status"] == SUCCESS:
+            if record["status"] in (SUCCESS, REJECTED):
                 return
             status = reply.status
             if status is not None and status < 500 and status not in _RETRY_STATUS:
@@ -393,6 +430,13 @@ def _claim(run_dir: Path, settings: bytes) -> Path:
     return lock
 
 
+def _wait(threads: Sequence[threading.Thread]) -> None:
+    """Wait in short steps. On Windows, a wait with no limit also blocks Ctrl+C."""
+    while any(thread.is_alive() for thread in threads):
+        for thread in threads:
+            thread.join(0.1)
+
+
 def run_judge(
     estimate: Estimate,
     inputs: JudgeInputs,
@@ -411,6 +455,7 @@ def run_judge(
     if inputs.prompts_sha256 != estimate.prompts_sha256:
         raise AnalysisError("The prompts differ from the prompts of the estimate")
     lock = _claim(run_dir, _settings(estimate, approval_url))
+    threads: list[threading.Thread] = []
     try:
         path = run_dir / JUDGMENTS
         attempts = read_attempts(path)
@@ -447,16 +492,14 @@ def run_judge(
                 runner.stop("a worker had a fault")
                 faults.append(exc)
 
-        threads = [threading.Thread(target=work) for _ in range(workers)]
+        threads.extend(threading.Thread(target=work) for _ in range(workers))
         for thread in threads:
             thread.start()
         try:
-            for thread in threads:
-                thread.join()
+            _wait(threads)
         except KeyboardInterrupt:
             runner.stop("the user stopped the run")
-            for thread in threads:
-                thread.join()
+            _wait(threads)
         if faults:
             raise faults[0]
         return RunResult(
@@ -465,7 +508,10 @@ def run_judge(
             new_requests=runner.new_requests,
             cost_bound=runner.spent,
             stopped=runner.stopped,
+            limited=runner.limited,
             failed_slots=sorted(runner.failed),
         )
     finally:
-        lock.unlink(missing_ok=True)
+        # An active worker can still write, so the lock stays until the last one ends.
+        if not any(thread.is_alive() for thread in threads):
+            lock.unlink(missing_ok=True)

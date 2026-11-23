@@ -6,7 +6,6 @@
 """
 
 import argparse
-import json
 import os
 from collections.abc import Sequence
 from datetime import UTC, datetime
@@ -25,6 +24,8 @@ from benchmark_reference.threshold_benchmarks import AA_LCR, load_reference_pane
 from benchmark_reference.threshold_policy import load_policy
 
 TASK2 = Path(__file__).resolve().parents[2]
+# The console lines and the exit code of one command.
+type Result = tuple[list[str], int]
 
 
 def _inputs(args: argparse.Namespace) -> JudgeInputs:
@@ -40,20 +41,13 @@ def _number(text: str) -> Fraction:
         raise argparse.ArgumentTypeError(f"{text!r} is not a number") from None
 
 
-def _estimate(args: argparse.Namespace) -> list[str]:
-    try:
-        extra = json.loads(args.extra_body)
-    except ValueError as exc:
-        raise AnalysisError("--extra-body must be a JSON object") from exc
-    if not isinstance(extra, dict):
-        raise AnalysisError("--extra-body must be a JSON object")
+def _estimate(args: argparse.Namespace) -> Result:
     data = build_estimate(
         _inputs(args),
         base_url=args.base_url,
         judge_model=args.judge_model,
         prices=Prices(args.input_price, args.output_price, args.price_source, args.price_date),
         limit_usd=args.limit_usd,
-        extra_body=extra,
         allow_different_judge=args.allow_different_judge,
     )
     if args.output.exists():
@@ -61,15 +55,18 @@ def _estimate(args: argparse.Namespace) -> list[str]:
     validate_output_location(args.output.parent, args.data_root, output_names=[args.output.name])
     args.output.parent.mkdir(parents=True, exist_ok=True)
     write_atomic(args.output, data)
-    return [*judge_estimate.console_lines(load_estimate(data)), f"Wrote {args.output}"]
+    return [*judge_estimate.console_lines(load_estimate(data)), f"Wrote {args.output}"], 0
 
 
-def _run(args: argparse.Namespace) -> list[str]:
+def _run(args: argparse.Namespace) -> Result:
+    """Exit code 1 means that the run stopped before the end for an unplanned reason."""
     estimate = load_estimate(args.estimate.read_bytes())
     inputs = _inputs(args)
     validate_output_location(args.run_dir, args.data_root, output_names=[])
     # A loopback judge takes no credential, so the command does not read one.
     key = None if estimate.loopback else os.environ.get(args.api_key_env)
+    if not estimate.loopback and not key:
+        raise AnalysisError(f"Put the judge key in the environment variable {args.api_key_env}")
     result = run_judge(
         estimate,
         inputs,
@@ -89,10 +86,10 @@ def _run(args: argparse.Namespace) -> list[str]:
         lines.append(f"No verdict for pass {number}, {model} question {index}")
     if result.complete:
         lines.append("The run is complete. Next: aa-lcr-judge report")
-    return lines
+    return lines, 0 if result.complete or result.limited else 1
 
 
-def _report(args: argparse.Namespace) -> list[str]:
+def _report(args: argparse.Namespace) -> Result:
     inputs = _inputs(args)
     record = load_run(args.run_dir, inputs)
     if args.record is not None and record.estimate.loopback:
@@ -108,7 +105,7 @@ def _report(args: argparse.Namespace) -> list[str]:
     if args.record is not None:
         write_atomic(args.record, outputs[RECORD_FILE])
         lines.append(f"Wrote the record of the threshold report to {args.record}")
-    return lines
+    return lines, 0
 
 
 def main(argv: Sequence[str] | None = None) -> None:
@@ -134,9 +131,6 @@ def main(argv: Sequence[str] | None = None) -> None:
     estimate.add_argument("--price-source", required=True, help="Where the prices come from")
     estimate.add_argument("--price-date", default=datetime.now(UTC).date().isoformat())
     estimate.add_argument("--limit-usd", type=_number, required=True, help="Hard cost limit")
-    estimate.add_argument(
-        "--extra-body", default="{}", help="JSON object of other request fields, never a key"
-    )
     estimate.add_argument("--allow-different-judge", action="store_true")
     estimate.add_argument("--output", type=Path, required=True)
     estimate.set_defaults(run=_estimate)
@@ -161,11 +155,13 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     args = parser.parse_args(argv)
     try:
-        lines = args.run(args)
+        lines, code = args.run(args)
     except (AnalysisError, OSError) as exc:
         parser.exit(2, f"aa-lcr-judge {args.command}: {exc}\n")
     for line in lines:
         print(line)
+    if code:
+        parser.exit(code)
 
 
 if __name__ == "__main__":

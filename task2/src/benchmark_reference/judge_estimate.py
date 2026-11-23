@@ -37,22 +37,11 @@ HIGH_OUTPUT_TOKENS = 300
 TEMPERATURE = 0.0
 MAX_TOKENS = 4096
 _LOOPBACK = ("127.0.0.1", "localhost", "::1")
-_RESERVED = {
-    "model",
-    "messages",
-    "temperature",
-    "max_tokens",
-    "stream",
-    "n",
-    "seed",
-    "api_key",
-    "authorization",
-}
 
 
 @dataclass(frozen=True, slots=True)
 class Prices:
-    """US dollars for one million tokens, where they come from, and when they were read."""
+    """US dollars for one million tokens, their source, and the date of the reading."""
 
     input: Fraction
     output: Fraction
@@ -74,7 +63,6 @@ class Estimate:
     original_judge: str | None
     temperature: float
     max_tokens: int
-    extra_body: Mapping[str, Any]
     prices: Prices
     limit_usd: Fraction
     max_requests: int
@@ -86,10 +74,7 @@ class Estimate:
 
     @property
     def same_judge(self) -> bool | None:
-        """True or False when the saved reviews name the judge, else None."""
-        if self.original_judge is None:
-            return None
-        return model_key(self.original_judge) == model_key(self.judge_model)
+        return same_model(self.original_judge, self.judge_model)
 
 
 def is_loopback(url: str) -> bool:
@@ -109,6 +94,11 @@ def check_url(url: str) -> str:
 def model_key(name: str) -> str:
     """Provider names of one model differ in the prefix, the case, and the separators."""
     return re.sub(r"[^a-z0-9]", "", name.rsplit("/", 1)[-1].lower())
+
+
+def same_model(original: str | None, judge: str) -> bool | None:
+    """True or False when the saved reviews name the judge, else None."""
+    return None if original is None else model_key(original) == model_key(judge)
 
 
 def _tokens(text: str, characters_per_token: float) -> int:
@@ -135,13 +125,11 @@ def build_estimate(
     judge_model: str,
     prices: Prices,
     limit_usd: Fraction,
-    extra_body: Mapping[str, Any] | None = None,
     allow_different_judge: bool = False,
 ) -> bytes:
     """The estimate document. It stops when the judge is not the judge of the saved reviews."""
-    extra = dict(extra_body or {})
     original = inputs.original_judge
-    same = None if original is None else model_key(original) == model_key(judge_model)
+    same = same_model(original, judge_model)
     if same is False and not allow_different_judge:
         raise AnalysisError(
             f"The saved reviews name the judge {original!r}, not {judge_model!r}. Issue #76 "
@@ -165,7 +153,6 @@ def build_estimate(
             "base_url": check_url(base_url),
             "temperature": TEMPERATURE,
             "max_tokens": MAX_TOKENS,
-            "extra_body": extra,
         },
         "prompt": {
             "source": SOURCE,
@@ -220,11 +207,13 @@ def load_estimate(data: bytes) -> Estimate:
             document["prices_usd_per_million"],
             document["calls"],
         )
-        extra = judge["extra_body"]
-        if document["schema_version"] != SCHEMA_VERSION or not isinstance(extra, dict):
+        if document["schema_version"] != SCHEMA_VERSION:
             raise AnalysisError("The estimate has an unknown schema")
-        if clash := sorted(_RESERVED & set(extra)):
-            raise AnalysisError(f"extra_body must not set {clash}")
+        # The report hashes the document again, so the file must have the same bytes.
+        if encode_json(document) != data:
+            raise AnalysisError(
+                "The estimate file differs from the written form. Check its line ends"
+            )
         if calls["judgments_per_answer"] != PASSES or calls["max_requests"] != (
             calls["judgments"] * MAX_ATTEMPTS
         ):
@@ -240,7 +229,6 @@ def load_estimate(data: bytes) -> Estimate:
             original_judge=judge["original_model"],
             temperature=float(judge["temperature"]),
             max_tokens=int(judge["max_tokens"]),
-            extra_body=extra,
             prices=Prices(
                 _fraction(prices["input"], "input price"),
                 _fraction(prices["output"], "output price"),
@@ -251,9 +239,9 @@ def load_estimate(data: bytes) -> Estimate:
             max_requests=int(calls["max_requests"]),
             prompts_sha256=str(document["prompt"]["prompts_sha256"]),
         )
+    except AnalysisError:
+        raise
     except (ValueError, KeyError, TypeError) as exc:
-        if isinstance(exc, AnalysisError):
-            raise
         raise AnalysisError(f"The estimate file is not valid: {exc}") from exc
 
 

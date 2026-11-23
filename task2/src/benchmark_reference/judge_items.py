@@ -18,6 +18,7 @@ from typing import Any
 from benchmark_reference.inputs import index_rows, read_jsonl
 from benchmark_reference.judge_prompt import prompt_sha256, render_prompt
 from benchmark_reference.models import AnalysisError
+from benchmark_reference.public_lcb import question_fingerprint
 from benchmark_reference.threshold_benchmarks import AA_LCR, load_reference_panel
 
 SOURCE_URL = (
@@ -66,12 +67,6 @@ class JudgeInputs:
         """The judge model of the saved reviews, or None when they do not name one."""
         names = {item.saved_judge for item in self.items}
         return names.pop() if len(names) == 1 else None
-
-
-def question_fingerprint(question: str) -> str:
-    """The question identity of the reference panel and of the native loader."""
-    text = question.replace("\r\n", "\n").replace("\r", "\n").strip()
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def _object(value: object, name: str) -> dict[str, Any]:
