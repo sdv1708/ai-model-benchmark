@@ -7,6 +7,7 @@ The command runs every benchmark section of the policy file and writes one repor
 
 import argparse
 import hashlib
+import json
 import os
 from collections.abc import Sequence
 from pathlib import Path
@@ -23,6 +24,7 @@ from benchmark_reference.threshold_cost import (
 )
 from benchmark_reference.threshold_coverage import run_coverage_study, summarize_coverage
 from benchmark_reference.threshold_error_rate import run_error_rate_study, summarize_error_rate
+from benchmark_reference.threshold_frozen_report import console_lines
 from benchmark_reference.threshold_policy import (
     ThresholdPolicy,
     authorize_real_replay,
@@ -180,6 +182,15 @@ def main(argv: Sequence[str] | None = None) -> None:
         validate_output_location(args.output_dir, args.data_root, output_names=names)
         if args.policy.resolve() in {(args.output_dir / n).resolve() for n in names}:
             raise AnalysisError(f"An output path would overwrite the policy {args.policy}")
+        if loaded.frozen:
+            # This command never overwrites the results of a frozen policy (#62).
+            existing = [n for n in names if (args.output_dir / n).exists()]
+            if existing:
+                raise AnalysisError(
+                    f"{args.output_dir} already holds {existing[0]}. This command never "
+                    f"overwrites the results of frozen policy {loaded.key}. Choose a new "
+                    "output folder."
+                )
         runs = [
             run_benchmark(
                 policy, panel_dir=args.panel_dir, data_root=args.data_root, workers=args.workers
@@ -195,6 +206,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         parser.exit(2, f"threshold-decision: {exc}\n")
     for run in runs:
         _print_run(run)
+    summary = json.loads(outputs["summary.json"])
+    for line in console_lines(summary.get("frozen_policy")):
+        print(line)
     manifest_sha256 = hashlib.sha256(outputs["manifest.json"]).hexdigest()
     simulated = sum(len(run.rows) for run in runs)
     print(f"Wrote {simulated} simulated decisions to {args.output_dir}")

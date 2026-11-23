@@ -310,15 +310,45 @@ Every AA-LCR result states that judge noise is not measured.
 The command also runs the interval coverage study: 2,000 simulated draws for each cell.
 It reads the token counts of the saved answers from `../Evals/Part 1/predictions`.
 Use `--data-root` to read them from another folder.
-On 12 CPUs the full run of both benchmarks takes about 5.5 minutes.
+On 12 CPUs the full run of both benchmarks takes about 21 minutes.
 Use `--workers` to set the number of processes.
 The outputs do not change with the number of processes.
 Open `report.html` directly from the file system.
 The report makes no network requests.
 The command uses simulated models only.
-It refuses `--real-grades` until a policy is frozen and its hash is committed.
+It refuses `--real-grades` unless the policy is frozen and its hash is committed.
+
+Run frozen policy v1 on simulated models in the same way:
+
+```powershell
+uv run threshold-decision --policy policies/threshold-v1.json --output-dir output/threshold-v1
+```
+
+The report then adds a "Frozen policy" section.
+The command refuses to write the results of a frozen policy into a folder that already holds them.
+Use a new output folder for each run.
 
 The [benchmark reference](task2/README.md#two-stage-threshold-decision) explains the rule and its limits.
+
+## Freeze a threshold policy
+
+Policy v1 is already frozen and committed.
+Use this procedure only to make a new version, for example `v2`.
+From `task2/`, run the draft on simulated models, then apply the fixed rules to that run:
+
+```powershell
+uv run threshold-decision --policy policies/threshold-draft.json --output-dir output/draft-run
+```
+
+```powershell
+uv run threshold-freeze --simulated-run output/draft-run --output policies/threshold-v2.json --version v2 --public-file external/livecodebench/performances_generation.json
+```
+
+The command writes the new frozen policy and adds its hash to `policies/frozen-policies.json`.
+It refuses an existing policy file and a version that the lock file already holds.
+`--public-file` is optional. With it, the command checks the developer groups against the 28 public model names. It reads no grade.
+Commit the policy file and the lock file together: the real-grade gate reads the lock file from git `HEAD`.
+The [benchmark reference](task2/README.md#frozen-policy-v1) gives the rules and the values of v1.
 
 ## Prepare the public LiveCodeBench results
 

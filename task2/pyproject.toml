@@ -20,6 +20,7 @@ aa-lcr-pruning = "benchmark_reference.long_context_cli:main"
 part-a-operating-points = "benchmark_reference.operating_cli:main"
 mmmu-pairs = "benchmark_reference.mmmu_cli:main"
 threshold-decision = "benchmark_reference.threshold_cli:main"
+threshold-freeze = "benchmark_reference.threshold_freeze:main"
 lcb-public = "benchmark_reference.public_lcb_cli:main"
 
 [dependency-groups]

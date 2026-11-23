@@ -1,0 +1,668 @@
+{
+  "benchmarks": {
+    "aa_lcr": {
+      "alpha": 0.05,
+      "cost": {
+        "bands": [
+          [
+            0.3,
+            0.4
+          ],
+          [
+            0.45,
+            0.55
+          ],
+          [
+            0.6,
+            0.65
+          ],
+          [
+            0.7,
+            0.9
+          ]
+        ],
+        "stage_sizes": [
+          12,
+          20,
+          30,
+          50,
+          70
+        ]
+      },
+      "coverage": {
+        "stage_sizes": [
+          12,
+          20,
+          30,
+          50,
+          70
+        ],
+        "subsets": 2000
+      },
+      "error_rate": {
+        "draws": 1000,
+        "stage_sizes": [
+          12,
+          20,
+          30,
+          50,
+          70
+        ],
+        "true_scores": {
+          "start": 0.3,
+          "step": 0.01,
+          "stop": 0.9
+        }
+      },
+      "interval_method": "pooled_exact_hypergeometric",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "simulation": {
+        "models_per_seed": 50,
+        "seed": 56,
+        "true_scores": [
+          0.3,
+          0.35,
+          0.4,
+          0.45,
+          0.5,
+          0.55,
+          0.6,
+          0.65,
+          0.7,
+          0.75,
+          0.8,
+          0.85,
+          0.9
+        ]
+      },
+      "stage1_size": 30,
+      "stratifier": "metadata_stratified",
+      "threshold": 0.6
+    },
+    "live_code_bench_v5": {
+      "alpha": 0.05,
+      "cost": {
+        "bands": [
+          [
+            0.3,
+            0.5
+          ],
+          [
+            0.55,
+            0.65
+          ],
+          [
+            0.7,
+            0.75
+          ],
+          [
+            0.8,
+            0.9
+          ]
+        ],
+        "stage_sizes": [
+          32,
+          63,
+          95,
+          158,
+          221
+        ]
+      },
+      "coverage": {
+        "stage_sizes": [
+          32,
+          63,
+          95,
+          158,
+          221
+        ],
+        "subsets": 2000
+      },
+      "error_rate": {
+        "draws": 1000,
+        "stage_sizes": [
+          32,
+          63,
+          95,
+          158,
+          221
+        ],
+        "true_scores": {
+          "start": 0.3,
+          "step": 0.01,
+          "stop": 0.9
+        }
+      },
+      "interval_method": "stratified_wilson",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "simulation": {
+        "models_per_seed": 50,
+        "seed": 56,
+        "true_scores": [
+          0.3,
+          0.35,
+          0.4,
+          0.45,
+          0.5,
+          0.55,
+          0.6,
+          0.65,
+          0.7,
+          0.75,
+          0.8,
+          0.85,
+          0.9
+        ]
+      },
+      "stage1_size": 63,
+      "stratifier": "difficulty_stratified",
+      "threshold": 0.7
+    }
+  },
+  "frozen": true,
+  "policy_id": "threshold-policy",
+  "protocol": {
+    "decision": {
+      "indifference_zone": {
+        "primary": 0,
+        "secondary": 0.02
+      },
+      "stages": 2
+    },
+    "disclosures": {
+      "ordering_criterion_change": "The ordering criterion of the pruned-set test changed after the author saw the 3-model results. The criterion now applies only to model pairs with a full-set gap of 0.10 or more. The author fixed this change before anyone read a public grade.",
+      "public_panel_read": "Before this freeze, the author read these facts from the public panel: the file shape, the model names, and the count of each pass@1 value. The author also read the question dates, difficulty labels, and platforms, and the release_date field. Nobody computed a score or a decision of a public model.",
+      "reference_replay_seen": "The author saw a scratch replay on the 3 reference models before this freeze. The rules choose every tuned value from simulated results only. This choice reduces the bias from that replay, but it does not remove it. The simulated models start from the grades of the same 3 reference models."
+    },
+    "grade_rule": {
+      "field": "pass@1",
+      "full_set_uses_same_rule": true,
+      "primary_min_pass_at_1": 50,
+      "secondary_min_pass_at_1": 100,
+      "statement": "A question passes when pass@1 is 50 or more. The secondary rule is pass@1 equal to 100. The full-set score uses the same rule as the probe."
+    },
+    "pruned_set_test": {
+      "benchmark": "live_code_bench_v5",
+      "coverage_subsets": 2000,
+      "interval_method": "stratified_wilson",
+      "issue": 80,
+      "pass_criteria": {
+        "coverage": {
+          "min": 0.935,
+          "statement": "Coverage: for each model, the interval holds the full-set score in at least 0.935 of 2,000 new subsets."
+        },
+        "ordering": {
+          "min_gap": 0.1,
+          "min_share": 0.95,
+          "statement": "Ordering: for each model pair with a full-set gap of 0.10 or more, the pruned scores give the full-set order in at least 95% of the seeds."
+        },
+        "published_max_abs_error": {
+          "max": 0.08,
+          "statement": "Published set: the largest absolute error across the 28 models is at most 0.08."
+        },
+        "published_mean_abs_error": {
+          "max": 0.03,
+          "statement": "Published set: the mean absolute error across the 28 models is at most 0.03."
+        },
+        "seed_abs_error_share": {
+          "error_max": 0.08,
+          "min_share": 0.95,
+          "statement": "Seeds: for each model, the absolute error is at most 0.08 in at least 95% of the seeds."
+        },
+        "seed_mean_abs_error": {
+          "max": 0.03,
+          "statement": "Seeds: for each model, the mean absolute error across the 1,000 seeds is at most 0.03."
+        }
+      },
+      "published_seed": 42,
+      "reported_sizes": [
+        63
+      ],
+      "score": "weighted",
+      "selection_seeds": {
+        "first": 0,
+        "last": 999
+      },
+      "sizes": [
+        95,
+        158
+      ],
+      "strata": "committed_reference_panel"
+    },
+    "public_panel": {
+      "issue": 75,
+      "mapped_questions": 315,
+      "mapping_sha256": "fe59fae621c4a514e5f72838cb140a091f02926752436ba2b2d5bb62aa2a0e75",
+      "models": 28,
+      "questions": 1055,
+      "sha256": "17f9a1d69e3f6290fc8b967a4dd13fbb46e34dd05716fdee793780a1cfadd0c1",
+      "url": "https://livecodebench.github.io/performances_generation.json"
+    },
+    "reference_panel_study": {
+      "developer_groups": {
+        "Alibaba": [
+          "Qwen3-235B-A22B"
+        ],
+        "Anthropic": [
+          "Claude-3-Haiku",
+          "Claude-3.5-Sonnet-20241022",
+          "Claude-Opus-4",
+          "Claude-Opus-4 (Thinking)",
+          "Claude-Sonnet-4",
+          "Claude-Sonnet-4 (Thinking)"
+        ],
+        "DeepSeek": [
+          "DeepSeek-R1-0528",
+          "DeepSeek-V3"
+        ],
+        "Developer of XBai-o4-medium": [
+          "XBai-o4-medium"
+        ],
+        "Google": [
+          "Gemini-2.5-Flash-04-17",
+          "Gemini-2.5-Flash-05-20",
+          "Gemini-2.5-Pro-05-06",
+          "Gemini-2.5-Pro-06-05"
+        ],
+        "LG": [
+          "EXAONE-4.0-32B"
+        ],
+        "NVIDIA": [
+          "OpenCodeReasoning-Nemotron-1.1-32B",
+          "OpenReasoning-Nemotron-32B"
+        ],
+        "OpenAI": [
+          "GPT-4-Turbo-2024-04-09",
+          "GPT-4O-2024-08-06",
+          "GPT-4O-mini-2024-07-18",
+          "O3 (High)",
+          "O3-Mini-2025-01-31 (High)",
+          "O3-Mini-2025-01-31 (Low)",
+          "O3-Mini-2025-01-31 (Med)",
+          "O4-Mini (High)",
+          "O4-Mini (Low)",
+          "O4-Mini (Medium)"
+        ],
+        "xAI": [
+          "Grok-3-Mini (High)"
+        ]
+      },
+      "full_panel_questions": 1055,
+      "full_panel_stage1_size": 211,
+      "group_sizes": "near_equal",
+      "groups": 4,
+      "issue": 77,
+      "secondary_groups": 8,
+      "strata": "reference_pass_rate"
+    },
+    "unseen_model_replay": {
+      "baseline": {
+        "interval_method": "pooled_exact_hypergeometric",
+        "same_stage1_size": true,
+        "selector": "uniform_random"
+      },
+      "benchmark": "live_code_bench_v5",
+      "coverage_subsets": 2000,
+      "issue": 63,
+      "pass_criteria": {
+        "coverage": {
+          "min": 0.935,
+          "statement": "For each model, the interval holds the full-set score in at least 0.935 of the 2,000 subsets at the policy stage-1 size."
+        },
+        "mean_cost_at_primary_threshold": {
+          "below": 1.0,
+          "statement": "At the primary threshold, the mean expected cost across the models is below 1.0 of a full run."
+        },
+        "wrong_decision_rate": {
+          "max": 0.071,
+          "statement": "For each model and threshold, the wrong-decision rate across the 1,000 seeds is at most 0.071. This is the pass rule of #60."
+        }
+      },
+      "questions": 315,
+      "reference_panel_sha256": "e328aac064023db8ba3fa2b5ab423ff057c966d0733c4f52b63201dc35bdf83c",
+      "selection_seeds": {
+        "first": 0,
+        "last": 999
+      },
+      "stated_comparisons": {
+        "real_vs_simulated_d95": {
+          "simulated": {
+            "d95": 0.18,
+            "d95_above": 0.16,
+            "d95_below": 0.18,
+            "rasch": 0.18,
+            "reference_flip": 0.18
+          },
+          "statement": "The real d95 against the simulated d95 of #60 for the policy setting. No pass or fail mark."
+        },
+        "stage1_share_vs_random_probe": {
+          "statement": "The share decided at stage 1 for the stratified probe against the random probe. No pass or fail mark."
+        }
+      },
+      "strata": "committed_reference_panel",
+      "targets": 28,
+      "thresholds": {
+        "start": 0.3,
+        "step": 0.01,
+        "stop": 0.9
+      }
+    }
+  },
+  "schema_version": 6,
+  "selection": {
+    "benchmarks": {
+      "aa_lcr": {
+        "interval_method": {
+          "candidates": [
+            {
+              "cells": 130,
+              "cells_failed": 0,
+              "mean_width": 0.283143,
+              "method": "pooled_exact_hypergeometric"
+            },
+            {
+              "cells": 130,
+              "cells_failed": 0,
+              "mean_width": 0.623785,
+              "method": "stratified_bonferroni_hypergeometric"
+            },
+            {
+              "cells": 130,
+              "cells_failed": 1,
+              "mean_width": 0.278414,
+              "method": "stratified_wilson"
+            },
+            {
+              "cells": 130,
+              "cells_failed": 79,
+              "mean_width": 0.176048,
+              "method": "stratified_bootstrap_percentile"
+            }
+          ],
+          "chosen": "pooled_exact_hypergeometric"
+        },
+        "probe": {
+          "candidates": [
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.823411,
+                "reference_flip": 0.829056
+              },
+              "passes_both_generators": true,
+              "stage_size": 12,
+              "stratifier": "length_difficulty_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.772106,
+                "reference_flip": 0.767287
+              },
+              "passes_both_generators": true,
+              "stage_size": 20,
+              "stratifier": "length_difficulty_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.639324,
+                "reference_flip": 0.646745
+              },
+              "passes_both_generators": true,
+              "stage_size": 30,
+              "stratifier": "length_difficulty_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.657861,
+                "reference_flip": 0.661392
+              },
+              "passes_both_generators": true,
+              "stage_size": 50,
+              "stratifier": "length_difficulty_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.761622,
+                "reference_flip": 0.761968
+              },
+              "passes_both_generators": true,
+              "stage_size": 70,
+              "stratifier": "length_difficulty_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.827841,
+                "reference_flip": 0.832036
+              },
+              "passes_both_generators": true,
+              "stage_size": 12,
+              "stratifier": "metadata_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.758091,
+                "reference_flip": 0.758045
+              },
+              "passes_both_generators": true,
+              "stage_size": 20,
+              "stratifier": "metadata_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.635911,
+                "reference_flip": 0.636753
+              },
+              "passes_both_generators": true,
+              "stage_size": 30,
+              "stratifier": "metadata_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.660618,
+                "reference_flip": 0.661887
+              },
+              "passes_both_generators": true,
+              "stage_size": 50,
+              "stratifier": "metadata_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.763062,
+                "reference_flip": 0.762834
+              },
+              "passes_both_generators": true,
+              "stage_size": 70,
+              "stratifier": "metadata_stratified"
+            }
+          ],
+          "chosen": {
+            "stage_size": 30,
+            "stratifier": "metadata_stratified"
+          }
+        }
+      },
+      "live_code_bench_v5": {
+        "interval_method": {
+          "candidates": [
+            {
+              "cells": 130,
+              "cells_failed": 0,
+              "mean_width": 0.167217,
+              "method": "pooled_exact_hypergeometric"
+            },
+            {
+              "cells": 130,
+              "cells_failed": 0,
+              "mean_width": 0.34905,
+              "method": "stratified_bonferroni_hypergeometric"
+            },
+            {
+              "cells": 130,
+              "cells_failed": 0,
+              "mean_width": 0.158909,
+              "method": "stratified_wilson"
+            },
+            {
+              "cells": 130,
+              "cells_failed": 27,
+              "mean_width": 0.132938,
+              "method": "stratified_bootstrap_percentile"
+            }
+          ],
+          "chosen": "stratified_wilson"
+        },
+        "probe": {
+          "candidates": [
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.550513,
+                "reference_flip": 0.556083
+              },
+              "passes_both_generators": true,
+              "stage_size": 32,
+              "stratifier": "difficulty_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.460711,
+                "reference_flip": 0.460344
+              },
+              "passes_both_generators": true,
+              "stage_size": 63,
+              "stratifier": "difficulty_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.481873,
+                "reference_flip": 0.483124
+              },
+              "passes_both_generators": true,
+              "stage_size": 95,
+              "stratifier": "difficulty_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.584357,
+                "reference_flip": 0.584088
+              },
+              "passes_both_generators": true,
+              "stage_size": 158,
+              "stratifier": "difficulty_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.733541,
+                "reference_flip": 0.733302
+              },
+              "passes_both_generators": true,
+              "stage_size": 221,
+              "stratifier": "difficulty_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.5449,
+                "reference_flip": 0.563136
+              },
+              "passes_both_generators": true,
+              "stage_size": 32,
+              "stratifier": "response_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.461453,
+                "reference_flip": 0.479053
+              },
+              "passes_both_generators": true,
+              "stage_size": 63,
+              "stratifier": "response_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.478475,
+                "reference_flip": 0.481221
+              },
+              "passes_both_generators": true,
+              "stage_size": 95,
+              "stratifier": "response_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.585343,
+                "reference_flip": 0.58505
+              },
+              "passes_both_generators": true,
+              "stage_size": 158,
+              "stratifier": "response_stratified"
+            },
+            {
+              "mean_cost_fraction": {
+                "rasch": 0.734147,
+                "reference_flip": 0.734919
+              },
+              "passes_both_generators": true,
+              "stage_size": 221,
+              "stratifier": "response_stratified"
+            }
+          ],
+          "chosen": {
+            "stage_size": 63,
+            "stratifier": "difficulty_stratified"
+          }
+        }
+      }
+    },
+    "rules": {
+      "interval_method": "A method passes the coverage study when it passes every cell: each stratifier, stage size, and true score. Choose the passing method with the smallest mean width. A tie goes to the earlier method in the fixed method order.",
+      "probe": "Take the error-rate settings of the chosen interval method. Keep the settings that pass for both generators. Choose the stratifier and stage-1 size with the lowest expected token cost. The cost is the mean-estimate cost fraction under a uniform prior on the true scores from 0.30 to 0.90. Each true score of the error-rate grid has equal weight. Each generator has equal weight. A tie goes to the smaller stage size, then to the stratifier name in alphabetical order."
+    },
+    "source": {
+      "analysis_version": "threshold-two-stage-v5",
+      "manifest_sha256": "87c7d68a5bfa9d95fb58ca589351b8b784f28b9da944831c5b4e63d709d3a31c",
+      "policy": "threshold-policy@draft-1",
+      "policy_sha256": "fcc642ce416871285946e1f2376234240260e7822070955227cff2c831d52d0d",
+      "summary_sha256": "e19829bbb9f223d5e15ca4b57de42adcb07b27f9c0f5b3cc8cca8afc752f9e1e"
+    }
+  },
+  "version": "v1"
+}

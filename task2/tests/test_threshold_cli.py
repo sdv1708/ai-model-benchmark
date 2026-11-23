@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from policy_fixtures import frozen_value
 
 from benchmark_reference import threshold_policy
 from benchmark_reference.threshold_benchmarks import AA_LCR as AA_LCR_NAME
@@ -36,7 +37,8 @@ METHODS = (
 JUDGE_NOISE = 'class="judge-noise"'
 
 
-def _small_policy(tmp_path: Path, **changes: object) -> Path:
+def _small_policy(tmp_path: Path, *, frozen: bool = False) -> Path:
+    """The draft with small studies. A frozen copy holds a valid protocol and selection."""
     value: dict[str, Any] = json.loads(DRAFT.read_text(encoding="utf-8"))
     lcb, aa_lcr = value["benchmarks"][LCB], value["benchmarks"][AA_LCR]
     lcb["seeds"] = aa_lcr["seeds"] = [0, 1]
@@ -56,7 +58,8 @@ def _small_policy(tmp_path: Path, **changes: object) -> Path:
         "stage_sizes": [12, 20],
         "true_scores": {"start": 0.4, "stop": 0.8, "step": 0.1},
     }
-    value.update(changes)
+    if frozen:
+        value = frozen_value(value)
     path = tmp_path / "policy.json"
     path.write_bytes((json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8"))
     return path
@@ -302,7 +305,7 @@ def test_hash_mismatch_stops_the_command(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     policy = _small_policy(tmp_path, frozen=True)
-    lock = json.dumps({"schema_version": 1, "policies": {"threshold-policy@draft-1": "0" * 64}})
+    lock = json.dumps({"schema_version": 1, "policies": {"threshold-policy@v1": "0" * 64}})
     monkeypatch.setattr(threshold_policy, "committed_lock_text", lambda: lock)
     output = tmp_path / "out"
     with pytest.raises(SystemExit) as stopped:
@@ -532,3 +535,46 @@ def test_report_has_an_error_rate_chart_for_each_method_and_a_distance_chart(
             assert d95.group(1) == expected
         sizes_seen = {setting["stage_size"] for setting in document["error_rate"]["combined"]}
         assert sizes_seen == set(sizes)
+
+
+def test_a_frozen_policy_adds_the_frozen_policy_section(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    draft, frozen = tmp_path / "draft", tmp_path / "frozen"
+    _run(_small_policy(tmp_path), draft)
+    policy = _small_policy(tmp_path, frozen=True)
+    _run(policy, frozen)
+    out = capsys.readouterr().out
+    html = (frozen / "report.html").read_text(encoding="utf-8")
+    summary = json.loads((frozen / "summary.json").read_text(encoding="utf-8"))
+    assert '<section data-frozen-policy id="frozen-policy">' in html
+    assert '<a href="#frozen-policy">Frozen policy</a>' in html
+    assert f"<code data-frozen-sha256>{_sha(policy)}</code>" in html
+    block = summary["frozen_policy"]
+    assert (block["key"], block["sha256"]) == ("threshold-policy@v1", _sha(policy))
+    assert [b["benchmark"] for b in block["benchmarks"]] == [LCB, AA_LCR]
+    # The small study grid is not the 0.30 to 0.90 prior of the cost rule, so the report
+    # says why it cannot re-apply the rules to this run.
+    for item in block["benchmarks"]:
+        assert item["recheck"]["available"] is False
+        assert "0.30 to 0.90" in item["recheck"]["reason"]
+    assert block["rules_reproduced_on_this_run"] is None
+    assert "Not available: The cost rule needs an error-rate grid" in html
+    assert "The rules cannot be applied to the results of this run." in html
+    assert "LiveCodeBench, frozen threshold-policy@v1:" in out
+    assert "data-frozen-policy" not in (draft / "report.html").read_text(encoding="utf-8")
+    assert "frozen_policy" not in json.loads((draft / "summary.json").read_text(encoding="utf-8"))
+
+
+def test_results_of_a_frozen_policy_are_never_overwritten(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    output = tmp_path / "out"
+    policy = _small_policy(tmp_path, frozen=True)
+    _run(policy, output)
+    before = (output / "manifest.json").read_bytes()
+    with pytest.raises(SystemExit) as stopped:
+        _run(policy, output)
+    assert stopped.value.code == 2
+    assert "never overwrites" in capsys.readouterr().err
+    assert (output / "manifest.json").read_bytes() == before

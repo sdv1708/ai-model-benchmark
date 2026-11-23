@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from policy_fixtures import frozen_value
 
 from benchmark_reference.models import AnalysisError
 from benchmark_reference.threshold_benchmarks import AA_LCR as AA_LCR_NAME
@@ -46,6 +47,13 @@ def _policy(section: str = LCB, /, **changes: object) -> dict[str, Any]:
 def _write(path: Path, value: object) -> Path:
     path.write_bytes((json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8"))
     return path
+
+
+def _frozen(section: str = LCB, /, **changes: object) -> dict[str, Any]:
+    """A valid frozen policy; keys change the benchmark section after the freeze."""
+    value = frozen_value()
+    value["benchmarks"][section].update(changes)
+    return value
 
 
 def _lock(policies: dict[str, str]) -> str:
@@ -183,6 +191,7 @@ def test_spent_alpha_is_at_most_005_for_the_committed_policy() -> None:
         ({"schema_version": 1}, "schema_version"),
         ({"schema_version": 3}, "schema_version"),
         ({"schema_version": 4}, "schema_version"),
+        ({"schema_version": 5}, "schema_version"),
         ({"error_rate": {"draws": 10, "stage_sizes": SIZES}}, "error_rate keys"),
         # The study must hold the stage-1 size and every coverage size, because #62 chooses
         # among them.
@@ -263,18 +272,18 @@ def test_real_replay_refuses_a_policy_that_is_not_frozen(tmp_path: Path) -> None
 
 
 def test_real_replay_refuses_a_frozen_policy_without_a_committed_hash(tmp_path: Path) -> None:
-    loaded = load_policy(_write(tmp_path / "policy.json", _policy(frozen=True)))
+    loaded = load_policy(_write(tmp_path / "policy.json", _frozen()))
     with pytest.raises(AnalysisError, match="no committed hash"):
         authorize_real_replay(loaded, lock_text=_lock({}))
 
 
 def test_hash_mismatch_stops_a_real_replay(tmp_path: Path) -> None:
-    path = _write(tmp_path / "policy.json", _policy(frozen=True))
+    path = _write(tmp_path / "policy.json", _frozen())
     loaded = load_policy(path)
     lock = _lock({loaded.key: loaded.sha256})
     authorize_real_replay(loaded, lock_text=lock)
     # One changed setting after the freeze changes the bytes and the hash.
-    edited = load_policy(_write(path, _policy(frozen=True, threshold=0.65)))
+    edited = load_policy(_write(path, _frozen(threshold=0.65)))
     with pytest.raises(AnalysisError, match="hash mismatch"):
         authorize_real_replay(edited, lock_text=lock)
 
@@ -299,9 +308,13 @@ def test_gate_refuses_when_the_lock_has_no_committed_copy(tmp_path: Path) -> Non
         committed_lock_text(lock)
 
 
-def test_committed_lock_file_records_no_frozen_policy_yet() -> None:
+def test_committed_lock_file_records_only_frozen_policy_v1() -> None:
     lock = json.loads((POLICY_DIR / "frozen-policies.json").read_text(encoding="utf-8"))
-    assert lock == {"schema_version": 1, "policies": {}}
+    v1 = POLICY_DIR / "threshold-v1.json"
+    assert lock == {
+        "schema_version": 1,
+        "policies": {"threshold-policy@v1": hashlib.sha256(v1.read_bytes()).hexdigest()},
+    }
     with pytest.raises(AnalysisError, match="not marked frozen"):
         authorize_real_replay(load_policy(DRAFT))
 

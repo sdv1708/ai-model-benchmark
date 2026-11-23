@@ -1,4 +1,6 @@
 {
-  "policies": {},
+  "policies": {
+    "threshold-policy@v1": "2b9e1d771567788ad4ee9213ab09484b7d0dce81c884782d949d5dde2814f1a8"
+  },
   "schema_version": 1
 }

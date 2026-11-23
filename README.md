@@ -21,8 +21,8 @@ This table gives the state of the project on 21 November 2026.
 | ---------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Performance Studio           | Complete and deployed      | Upload, compare, and evaluate workbook projections in the browser.                                                                                                       |
 | Subset studies               | Complete                   | No smaller tested subset passed every recorded policy gate. The recorded default keeps 315 of 315 and 100 of 100.                                                        |
-| Two-stage threshold decision | Simulated studies complete | Coverage, token cost, and error rate are measured on simulated models for both benchmarks. The policy is a draft.                                                        |
-| Test on real models          | Data path ready            | The package fetches, checks, and maps the public results of 28 LiveCodeBench models. Their grades stay locked until a policy is frozen. No replay on real grades exists. |
+| Two-stage threshold decision | Policy v1 frozen           | Coverage, token cost, and error rate are measured on simulated models for both benchmarks. Fixed rules chose frozen policy v1 from these results.                         |
+| Test on real models          | Data path ready            | The package fetches, checks, and maps the public results of 28 LiveCodeBench models. Only the frozen v1 replay (#63) can read their grades. No replay on real grades exists yet. |
 | EvalScope integration        | Complete for one stage     | Two pruned adapters and a run comparison tool work inside EvalScope. The two-stage mode is planned.                                                                      |
 | Image-pair prototype         | Prototype                  | Synthetic images and scripted answers only. No multimodal subset is validated.                                                                                           |
 
@@ -281,13 +281,14 @@ Errors include source paths and line numbers.
 | `uncertainty.py`, `study_metrics.py`                            | Compute intervals, ordering evidence, and threshold outcomes.                                                                   |
 | `judge_noise.py`                                                | Report sensitivity to hypothetical changed judgments.                                                                           |
 | `operating_points.py`                                           | Apply score, ordering, uncertainty, and decision gates.                                                                         |
-| `threshold_policy.py`                                           | Load a policy file, record its hash, and enforce the frozen lock.                                                               |
+| `threshold_policy.py`, `threshold_protocol.py`                  | Load a policy file, check the protocol of a frozen policy, record its hash, and enforce the frozen lock.                        |
+| `threshold_rules.py`, `threshold_freeze.py`                     | Apply the fixed rules to a simulated run and write a new frozen policy version.                                                 |
 | `threshold_benchmarks.py`                                       | Load each benchmark panel and give the strata of its stratifiers.                                                               |
 | `threshold_simulation.py`                                       | Draw simulated models with a known full-set score.                                                                              |
 | `two_stage.py`                                                  | Apply the stage-1 interval rule and the census on ESCALATE.                                                                     |
 | `public_lcb.py`, `public_lcb_cli.py`                            | Fetch and check the public LiveCodeBench results, and map the 315 panel questions. Grades stay locked until a policy is frozen. |
 | `threshold_tokens.py`, `threshold_cost.py`                      | Read token counts of saved answers and compute the expected cost.                                                               |
-| `threshold_study.py`, `threshold_report.py`, `threshold_cli.py` | Write the decision table, summary, HTML report, and manifest.                                                                   |
+| `threshold_study.py`, `threshold_report.py`, `threshold_cli.py` | Write the decision table, summary, HTML report, and manifest. `threshold_frozen_report.py` adds the frozen-policy section.      |
 | Reporting modules                                               | Write scores, selections, summaries, and manifests.                                                                             |
 | `mmmu_images.py`                                                | Build normalized original images and controlled variants.                                                                       |
 | `mmmu_requests.py`, `mmmu_measurements.py`                      | Export request plans and analyze saved paired attempts.                                                                         |
@@ -336,8 +337,8 @@ A model near the threshold costs the full benchmark.
 
 A versioned policy file in `task2/policies/` holds the threshold, alpha, probe size, interval method, stratifier, and seeds.
 The manifest records the SHA-256 of the exact policy file bytes.
-The command refuses a replay on real grades until a policy is marked frozen and its hash is committed in `policies/frozen-policies.json`.
-No policy is frozen yet.
+The command refuses a replay on real grades unless the policy is marked frozen and its hash is committed in `policies/frozen-policies.json`.
+Policy v1 is frozen (see [frozen policy v1](#frozen-policy-v1)).
 The [benchmark reference](task2/README.md#two-stage-threshold-decision) gives the full rule and its limits.
 
 ## Recorded results
@@ -399,7 +400,7 @@ The [benchmark reference](task2/README.md#aa-lcr-on-the-draft-policy) gives the 
 
 The published claim therefore stays full retention.
 [#75](https://github.com/sdv1708/ai-model-benchmark/issues/75) prepared the public results of 28 real LiveCodeBench models, with the grades locked.
-Issues [#62](https://github.com/sdv1708/ai-model-benchmark/issues/62) and [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) address these limits with a frozen policy and a replay on those models.
+[#62](https://github.com/sdv1708/ai-model-benchmark/issues/62) froze policy v1 before anyone read a public grade. [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) replays it on those models.
 To reproduce the table, run the command in the [usage guide](USAGE.md#run-a-two-stage-threshold-decision).
 
 ### Token cost on simulated models
@@ -477,6 +478,45 @@ The two generators differ in d95 by 0.02 or less.
 
 Both generators start from the reference grades, so a simulated model is not an unseen model.
 The replay on real models in [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) uses the same pass rule.
+
+### Frozen policy v1
+
+Fixed rules chose the tuned values of [`threshold-v1.json`](task2/policies/threshold-v1.json) from the simulated results above.
+The rules read no real grade, and nobody edited a chosen value by hand.
+The author froze policy v1 before anyone read a public grade. Its SHA-256 is `2b9e1d771567788ad4ee9213ab09484b7d0dce81c884782d949d5dde2814f1a8`.
+
+| Benchmark (threshold) | Interval method               | Stratifier              | Stage-1 size | Simulated d95 | Mean cost (share of a full run) |
+| --------------------- | ----------------------------- | ----------------------- | -----------: | ------------: | ------------------------------: |
+| LiveCodeBench (0.70)  | `stratified_wilson`           | `difficulty_stratified` |    63 of 315 |          0.18 |                           0.461 |
+| AA-LCR (0.60)         | `pooled_exact_hypergeometric` | `metadata_stratified`   |    30 of 100 |          0.28 |                           0.636 |
+
+- Interval method: the method that passes every coverage cell with the smallest mean width. For AA-LCR, Wilson is narrower but fails 1 of 130 cells, so pooled exact wins.
+- Stratifier and stage-1 size: among the settings that pass the error-rate study for both generators, the lowest expected token cost under a uniform prior on true scores from 0.30 to 0.90. Each generator alone gives the same choice.
+- The AA-LCR probe grows from 20 to 30 questions. Its stratifier does not use reference grades, so the simulation generator does not favor it.
+
+The mean cost above comes from the error-rate study, which the rule reads: 1,000 draws at each true score from 0.30 to 0.90 in steps of 0.01.
+A run of `threshold-decision` with v1 gives the decision study below: 13,000 simulated models for each benchmark, at true scores 0.30 to 0.90 in steps of 0.05.
+
+| Result                                 | LiveCodeBench, draft | LiveCodeBench, v1 | AA-LCR, draft | AA-LCR, v1 |
+| -------------------------------------- | -------------------: | ----------------: | ------------: | ---------: |
+| Share decided at stage 1               |                0.684 |             0.695 |         0.314 |      0.557 |
+| Wrong decisions                        |             8/13,000 |         11/13,000 |      6/13,000 |  12/13,000 |
+| Highest wrong-decision rate            |                0.007 |             0.009 |         0.006 |      0.010 |
+| Mean expected cost (share of full run) |                0.452 |             0.443 |         0.749 |      0.611 |
+
+Every wrong-decision rate stays below the one-tail bound 0.025.
+For AA-LCR, v1 decides 24 percentage points more models at stage 1, and its mean cost falls from 0.749 to 0.611 of a full run.
+The [run record](docs/data/task2-threshold-v1-run.json) gives the manifest, the frozen-policy section, and the rule check: the rules, applied to the results of this run, give the v1 values again.
+These are simulated models. The real test is [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63).
+
+Policy v1 also fixes the grade rule (`pass@1` of 50 or more), the replay settings, the random-probe baseline, the developer groups, the pruned-set test, every pass criterion, and the stated comparisons.
+The [benchmark reference](task2/README.md#frozen-policy-v1) gives every value.
+
+Three disclosures go with v1:
+
+- The author saw a scratch replay on the 3 reference models before the freeze. The simulated choice reduces that bias, but it does not remove it.
+- Before the freeze, the author read only these facts from the public panel: the file shape, the model names, and the count of each `pass@1` value. The author also read the question dates, difficulty labels, and platforms, and the `release_date` field. Nobody computed a score or a decision of a public model.
+- The ordering criterion of the pruned-set test changed after the author saw the 3-model results. It now applies only to pairs with a gap of 0.10 or more. The author fixed it before anyone read a public grade.
 
 ## EvalScope integration
 
@@ -586,7 +626,7 @@ Issue [#65](https://github.com/sdv1708/ai-model-benchmark/issues/65) adds the tw
 The user runs a stage-1 probe and gets GO, NO GO, or ESCALATE.
 On ESCALATE, the user runs the remaining questions.
 `compare_runs` then reports the decision, the interval, the stage that decided, and the tokens used.
-The mode reads its settings from frozen policy v1, so it starts after the freeze in [#62](https://github.com/sdv1708/ai-model-benchmark/issues/62).
+The mode reads its settings from frozen policy v1, which [#62](https://github.com/sdv1708/ai-model-benchmark/issues/62) froze.
 Issue [#78](https://github.com/sdv1708/ai-model-benchmark/issues/78) then runs the mode on live model endpoints and measures the tokens and the cost.
 
 ## Image-pair prototype
@@ -614,7 +654,6 @@ All issues are in the [issue tracker](https://github.com/sdv1708/ai-model-benchm
 
 | Gap                                                                                                                                                                     | Planned work                                                                                                                                                                                                                                                                                 |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A policy chosen after a look at real grades can be biased.                                                                                                              | [#62](https://github.com/sdv1708/ai-model-benchmark/issues/62) freezes policy v1 and the replay protocol with fixed rules, before any public grade is read.                                                                                                                                  |
 | The two-stage rule has no evidence on real grades. Both simulation generators start from the reference grades, so the error rate for an unseen real model is not known. | [#63](https://github.com/sdv1708/ai-model-benchmark/issues/63) runs frozen policy v1 one time on the 28 public models and publishes the result, pass or fail. [#75](https://github.com/sdv1708/ai-model-benchmark/issues/75) prepared their results. None of them is in the reference panel. |
 | The effect of the reference panel and of the benchmark size is not known.                                                                                               | [#77](https://github.com/sdv1708/ai-model-benchmark/issues/77) holds out one developer group at a time, on 315 and on 1,055 questions.                                                                                                                                                       |
 | No fixed pruned list is validated as a score estimator.                                                                                                                 | [#80](https://github.com/sdv1708/ai-model-benchmark/issues/80) tests fixed lists of 95 and 158 LiveCodeBench questions on the 28 models.                                                                                                                                                     |
@@ -635,7 +674,7 @@ Two issues are deferred.
 
 ```mermaid
 flowchart LR
-    I60["#60 Error rate (done)"] --> I62["#62 Freeze policy v1"]
+    I60["#60 Error rate (done)"] --> I62["#62 Freeze policy v1 (done)"]
     I75["#75 Public panel import (done)"] --> I62
     I62 --> I63["#63 Replay on 28 real models"]
     I62 --> I65["#65 EvalScope two-stage"]
@@ -652,7 +691,7 @@ flowchart LR
     I76["#76 Judge noise"]
 ```
 
-Issues #56 to #60, #74, and #75 are complete.
+Issues #56 to #60, #62, #74, and #75 are complete.
 Issues #76 and #78 need a model endpoint key and an approved cost estimate.
 
 ### Limits with no planned work
@@ -695,7 +734,7 @@ Production capacity and resource limits require separate validation.
 | Stage-1 probe     | The first, smaller set of questions in the two-stage rule.                                                |
 | ESCALATE          | The two-stage result when the probe interval crosses the threshold.                                       |
 | Census            | A run on every remaining question. It has no sampling error.                                              |
-| Frozen policy     | A policy file whose hash is committed. Only a frozen policy can run on real grades.                       |
+| Frozen policy     | A policy file whose hash is committed. Only a frozen policy can run on real grades. Policy v1 is frozen.  |
 | d95               | The smallest distance from the threshold at which the stage-1 probe decides in at least 95% of the draws. |
 
 The documentation uses ASD-STE100 writing principles: short sentences, active voice, consistent technical names, and ordered procedures.
