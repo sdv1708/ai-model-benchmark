@@ -401,7 +401,7 @@ The mean expected cost is 0.749 of a full run, against 0.452 for LiveCodeBench.
 AA-LCR has only 100 questions, so its probe interval is wide and most models near the threshold escalate.
 AA-LCR grades come from an LLM judge. The judge graded each saved answer 5 more times, and the judgments of 8 of 300 answers (2.7%) are not all equal.
 No full-set decision at 0.60 changed between passes. The policy interval excludes this judge noise.
-The majority of the new judgments gives each model a score 0.02 to 0.07 above its saved score. The [likely cause](task2/README.md#likely-cause-of-the-score-shift) is the judge prompt. Issue [#88](https://github.com/sdv1708/ai-model-benchmark/issues/88) tests it.
+The majority of the new judgments gives each model a score 0.02 to 0.07 above its saved score. The [judge prompt](task2/README.md#cause-of-the-score-shift) explains most of this shift, by the fixed rule of issue [#88](https://github.com/sdv1708/ai-model-benchmark/issues/88): 10 of the 13 changed answers are INCORRECT again with the old one-word prompt. 10 is the lowest count for this conclusion.
 The [benchmark reference](task2/README.md#aa-lcr-on-the-draft-policy) gives the full AA-LCR result.
 
 The published claim therefore stays full retention.
@@ -694,7 +694,6 @@ All issues are in the [issue tracker](https://github.com/sdv1708/ai-model-benchm
 | No fixed pruned list is validated as a score estimator.                   | [#80](https://github.com/sdv1708/ai-model-benchmark/issues/80) tests fixed lists of 95 and 158 LiveCodeBench questions on the 28 models.             |
 | The EvalScope adapters run one stage only.                                | [#65](https://github.com/sdv1708/ai-model-benchmark/issues/65) adds the two-stage mode to both adapters and to `compare_runs`.                       |
 | The project measured no live inference saving.                            | [#78](https://github.com/sdv1708/ai-model-benchmark/issues/78) runs the two-stage mode on live model endpoints and measures tokens, time, and cost.  |
-| The cause of the AA-LCR judge shift is not tested.                        | [#88](https://github.com/sdv1708/ai-model-benchmark/issues/88) sends the 300 saved answers to the judge with the old one-word prompt.                       |
 | The results are spread across JSON and CSV files.                         | [#64](https://github.com/sdv1708/ai-model-benchmark/issues/64) publishes one self-contained HTML results report, linked from the top of this README. |
 | The documents state the full-retention result.                            | [#66](https://github.com/sdv1708/ai-model-benchmark/issues/66) updates every document with the frozen v1 result.                                     |
 
@@ -723,11 +722,11 @@ flowchart LR
     I64 --> I66["#66 Documents"]
     I65 --> I66
     I74["#74 Links and data rights (done)"] --> I66
-    I76["#76 Judge noise (done)"] --> I88["#88 Old judge prompt"]
+    I76["#76 Judge noise (done)"] --> I88["#88 Old judge prompt (done)"]
 ```
 
-Issues #56 to #60, #62, #63, and #74 to #76 are complete.
-Issues #78 and #88 need a model endpoint key and an approved cost estimate.
+Issues #56 to #60, #62, #63, #74 to #76, and #88 are complete.
+Issue #78 needs a model endpoint key and an approved cost estimate.
 
 ### Limits with no planned work
 

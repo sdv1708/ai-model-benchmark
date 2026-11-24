@@ -1,0 +1,521 @@
+{
+  "agreement": {
+    "json_and_one_word": {
+      "agree": 289,
+      "answers": 300,
+      "correct_to_incorrect": 11,
+      "incorrect_to_correct": 0,
+      "share": 0.963333
+    },
+    "saved_and_json": {
+      "agree": 287,
+      "answers": 300,
+      "correct_to_incorrect": 0,
+      "incorrect_to_correct": 13,
+      "share": 0.956667
+    },
+    "saved_and_one_word": {
+      "agree": 296,
+      "answers": 300,
+      "correct_to_incorrect": 1,
+      "incorrect_to_correct": 3,
+      "share": 0.986667
+    }
+  },
+  "command": "aa-lcr-judge compare",
+  "decision_rule": {
+    "answers": 13,
+    "changed_answers": [
+      {
+        "index": 39,
+        "json_votes": 5,
+        "model": "gpt-oss-120b",
+        "one_word_majority": 0,
+        "one_word_votes": 0,
+        "reference_group": "date",
+        "saved_grade": 0
+      },
+      {
+        "index": 74,
+        "json_votes": 5,
+        "model": "gpt-oss-120b",
+        "one_word_majority": 1,
+        "one_word_votes": 3,
+        "reference_group": "list",
+        "saved_grade": 0
+      },
+      {
+        "index": 86,
+        "json_votes": 5,
+        "model": "gpt-oss-120b",
+        "one_word_majority": 0,
+        "one_word_votes": 0,
+        "reference_group": "decimal",
+        "saved_grade": 0
+      },
+      {
+        "index": 89,
+        "json_votes": 5,
+        "model": "gpt-oss-120b",
+        "one_word_majority": 0,
+        "one_word_votes": 2,
+        "reference_group": "decimal",
+        "saved_grade": 0
+      },
+      {
+        "index": 23,
+        "json_votes": 4,
+        "model": "kimi-k2.5",
+        "one_word_majority": 0,
+        "one_word_votes": 0,
+        "reference_group": "other",
+        "saved_grade": 0
+      },
+      {
+        "index": 37,
+        "json_votes": 5,
+        "model": "kimi-k2.5",
+        "one_word_majority": 0,
+        "one_word_votes": 1,
+        "reference_group": "list",
+        "saved_grade": 0
+      },
+      {
+        "index": 41,
+        "json_votes": 5,
+        "model": "kimi-k2.5",
+        "one_word_majority": 0,
+        "one_word_votes": 0,
+        "reference_group": "other",
+        "saved_grade": 0
+      },
+      {
+        "index": 60,
+        "json_votes": 5,
+        "model": "kimi-k2.5",
+        "one_word_majority": 0,
+        "one_word_votes": 1,
+        "reference_group": "other",
+        "saved_grade": 0
+      },
+      {
+        "index": 74,
+        "json_votes": 4,
+        "model": "kimi-k2.5",
+        "one_word_majority": 1,
+        "one_word_votes": 5,
+        "reference_group": "list",
+        "saved_grade": 0
+      },
+      {
+        "index": 86,
+        "json_votes": 3,
+        "model": "kimi-k2.5",
+        "one_word_majority": 0,
+        "one_word_votes": 0,
+        "reference_group": "decimal",
+        "saved_grade": 0
+      },
+      {
+        "index": 93,
+        "json_votes": 3,
+        "model": "kimi-k2.5",
+        "one_word_majority": 0,
+        "one_word_votes": 0,
+        "reference_group": "decimal",
+        "saved_grade": 0
+      },
+      {
+        "index": 74,
+        "json_votes": 5,
+        "model": "minimax-m2.5",
+        "one_word_majority": 1,
+        "one_word_votes": 5,
+        "reference_group": "list",
+        "saved_grade": 0
+      },
+      {
+        "index": 86,
+        "json_votes": 3,
+        "model": "minimax-m2.5",
+        "one_word_majority": 0,
+        "one_word_votes": 0,
+        "reference_group": "decimal",
+        "saved_grade": 0
+      }
+    ],
+    "conclusion": "The prompt explains most of the shift",
+    "incorrect_again": 10,
+    "rule": [
+      {
+        "conclusion": "The prompt explains most of the shift",
+        "high": 13,
+        "low": 10
+      },
+      {
+        "conclusion": "The prompt explains a part of the shift",
+        "high": 9,
+        "low": 4
+      },
+      {
+        "conclusion": "The prompt does not explain the shift",
+        "high": 3,
+        "low": 0
+      }
+    ]
+  },
+  "decisions": {
+    "policy": "threshold-policy@v1",
+    "threshold": 0.6
+  },
+  "json_run": {
+    "approval_url": "https://github.com/sdv1708/ai-model-benchmark/issues/76#issuecomment-7115460027",
+    "estimate_sha256": "5bf6a1484cb293351dca31620052182fc239058ba7bc6d3c2706c213c78b1655",
+    "judge": {
+      "base_url": "https://api.deepinfra.com/v1/openai",
+      "max_tokens": 4096,
+      "model": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+      "original_model": "qwen-3-235b-a22b-instruct-2507",
+      "providers": [],
+      "response_models": [
+        "Qwen/Qwen3-235B-A22B-Instruct-2507"
+      ],
+      "run_dates_utc": [
+        "2026-11-23"
+      ],
+      "same_judge": true,
+      "system_fingerprints": [],
+      "temperature": 0.0
+    },
+    "prompt": {
+      "commit": "67fbe5e092a4739d23f5d8cc95319d8b19dc1a24",
+      "files": [
+        "evalscope/benchmarks/aa_lcr/aa_lcr_adapter.py",
+        "evalscope/api/judge/contracts.py"
+      ],
+      "prompts_sha256": "c1ca698f66eeded19c7e144c6f5431440525ee1d3cffaeb98df179a084bae563",
+      "source": "https://github.com/sdv1708/evalscope-pruning",
+      "variant": "json-contract"
+    },
+    "usage": {
+      "cost_bound_usd": 0.141272,
+      "input_tokens": 499075,
+      "judgments": 1500,
+      "limit_usd": 1.0,
+      "output_tokens": 175192,
+      "rejected_replies": 0,
+      "replies_outside_the_contract": 0,
+      "requests": 1500,
+      "requests_with_no_token_count": 0,
+      "requests_with_no_usable_reply": 0
+    }
+  },
+  "loopback_test": false,
+  "models": [
+    {
+      "answers": 100,
+      "json": {
+        "agree_with_saved": 96,
+        "correct": 52,
+        "decision": "NO GO",
+        "pass_correct": [
+          52,
+          53,
+          53,
+          52,
+          53
+        ],
+        "pass_decisions": [
+          "NO GO",
+          "NO GO",
+          "NO GO",
+          "NO GO",
+          "NO GO"
+        ],
+        "pass_scores": [
+          0.52,
+          0.53,
+          0.53,
+          0.52,
+          0.53
+        ],
+        "score": 0.52,
+        "unequal": 2
+      },
+      "model": "gpt-oss-120b",
+      "one_word": {
+        "agree_with_saved": 99,
+        "correct": 49,
+        "decision": "NO GO",
+        "pass_correct": [
+          49,
+          49,
+          51,
+          48,
+          49
+        ],
+        "pass_decisions": [
+          "NO GO",
+          "NO GO",
+          "NO GO",
+          "NO GO",
+          "NO GO"
+        ],
+        "pass_scores": [
+          0.49,
+          0.49,
+          0.51,
+          0.48,
+          0.49
+        ],
+        "score": 0.49,
+        "unequal": 3
+      },
+      "one_word_agree_with_json": 97,
+      "saved": {
+        "correct": 48,
+        "decision": "NO GO",
+        "score": 0.48
+      }
+    },
+    {
+      "answers": 100,
+      "json": {
+        "agree_with_saved": 93,
+        "correct": 73,
+        "decision": "GO",
+        "pass_correct": [
+          71,
+          73,
+          72,
+          73,
+          72
+        ],
+        "pass_decisions": [
+          "GO",
+          "GO",
+          "GO",
+          "GO",
+          "GO"
+        ],
+        "pass_scores": [
+          0.71,
+          0.73,
+          0.72,
+          0.73,
+          0.72
+        ],
+        "score": 0.73,
+        "unequal": 5
+      },
+      "model": "kimi-k2.5",
+      "one_word": {
+        "agree_with_saved": 98,
+        "correct": 66,
+        "decision": "GO",
+        "pass_correct": [
+          66,
+          67,
+          66,
+          67,
+          66
+        ],
+        "pass_decisions": [
+          "GO",
+          "GO",
+          "GO",
+          "GO",
+          "GO"
+        ],
+        "pass_scores": [
+          0.66,
+          0.67,
+          0.66,
+          0.67,
+          0.66
+        ],
+        "score": 0.66,
+        "unequal": 2
+      },
+      "one_word_agree_with_json": 93,
+      "saved": {
+        "correct": 66,
+        "decision": "GO",
+        "score": 0.66
+      }
+    },
+    {
+      "answers": 100,
+      "json": {
+        "agree_with_saved": 98,
+        "correct": 66,
+        "decision": "GO",
+        "pass_correct": [
+          65,
+          66,
+          65,
+          66,
+          66
+        ],
+        "pass_decisions": [
+          "GO",
+          "GO",
+          "GO",
+          "GO",
+          "GO"
+        ],
+        "pass_scores": [
+          0.65,
+          0.66,
+          0.65,
+          0.66,
+          0.66
+        ],
+        "score": 0.66,
+        "unequal": 1
+      },
+      "model": "minimax-m2.5",
+      "one_word": {
+        "agree_with_saved": 99,
+        "correct": 65,
+        "decision": "GO",
+        "pass_correct": [
+          65,
+          65,
+          65,
+          65,
+          65
+        ],
+        "pass_decisions": [
+          "GO",
+          "GO",
+          "GO",
+          "GO",
+          "GO"
+        ],
+        "pass_scores": [
+          0.65,
+          0.65,
+          0.65,
+          0.65,
+          0.65
+        ],
+        "score": 0.65,
+        "unequal": 0
+      },
+      "one_word_agree_with_json": 99,
+      "saved": {
+        "correct": 64,
+        "decision": "GO",
+        "score": 0.64
+      }
+    }
+  ],
+  "one_word_run": {
+    "approval_url": "https://github.com/sdv1708/ai-model-benchmark/issues/88#issuecomment-7119429423",
+    "estimate_sha256": "fe15a9ab687f64d325b7d36dd21700548aec92fb3e39d1f7d4594d8132fa87de",
+    "judge": {
+      "base_url": "https://api.deepinfra.com/v1/openai",
+      "max_tokens": 1024,
+      "model": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+      "original_model": "qwen-3-235b-a22b-instruct-2507",
+      "providers": [],
+      "response_models": [
+        "Qwen/Qwen3-235B-A22B-Instruct-2507"
+      ],
+      "run_dates_utc": [
+        "2026-11-24"
+      ],
+      "same_judge": true,
+      "system_fingerprints": [],
+      "temperature": 0.0
+    },
+    "prompt": {
+      "commit": "457dc8cbc2539aca173b4a71bcb29e352804d4af",
+      "files": [
+        "evalscope/benchmarks/aa_lcr/aa_lcr_adapter.py",
+        "evalscope/metrics/llm_judge.py"
+      ],
+      "prompts_sha256": "4afca4cfe2793438fa330662f9a2ba0bd5415499d5629c0074cc5274b036277b",
+      "source": "https://github.com/modelscope/evalscope",
+      "tag": "v1.4.2",
+      "variant": "one-word"
+    },
+    "usage": {
+      "cost_bound_usd": 0.041375,
+      "input_tokens": 428575,
+      "judgments": 1500,
+      "limit_usd": 0.5,
+      "output_tokens": 5097,
+      "rejected_replies": 0,
+      "replies_outside_the_contract": 0,
+      "requests": 1500,
+      "requests_with_no_token_count": 0,
+      "requests_with_no_usable_reply": 0
+    }
+  },
+  "passes": 5,
+  "reference_groups": [
+    {
+      "answers": 27,
+      "changed": 5,
+      "group": "decimal",
+      "incorrect_again": 5,
+      "json_agree_with_saved": 22,
+      "json_correct": 11,
+      "json_unequal": 4,
+      "one_word_agree_with_json": 22,
+      "one_word_agree_with_saved": 27,
+      "one_word_correct": 6,
+      "one_word_unequal": 1,
+      "saved_correct": 6
+    },
+    {
+      "answers": 3,
+      "changed": 1,
+      "group": "date",
+      "incorrect_again": 1,
+      "json_agree_with_saved": 2,
+      "json_correct": 1,
+      "json_unequal": 0,
+      "one_word_agree_with_json": 2,
+      "one_word_agree_with_saved": 3,
+      "one_word_correct": 0,
+      "one_word_unequal": 0,
+      "saved_correct": 0
+    },
+    {
+      "answers": 24,
+      "changed": 4,
+      "group": "list",
+      "incorrect_again": 1,
+      "json_agree_with_saved": 20,
+      "json_correct": 24,
+      "json_unequal": 1,
+      "one_word_agree_with_json": 23,
+      "one_word_agree_with_saved": 21,
+      "one_word_correct": 23,
+      "one_word_unequal": 2,
+      "saved_correct": 20
+    },
+    {
+      "answers": 246,
+      "changed": 3,
+      "group": "other",
+      "incorrect_again": 3,
+      "json_agree_with_saved": 243,
+      "json_correct": 155,
+      "json_unequal": 3,
+      "one_word_agree_with_json": 242,
+      "one_word_agree_with_saved": 245,
+      "one_word_correct": 151,
+      "one_word_unequal": 2,
+      "saved_correct": 152
+    }
+  ],
+  "replies": {
+    "judgments": 1500,
+    "not_one_word": 0
+  },
+  "schema_version": 1
+}

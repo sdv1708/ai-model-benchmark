@@ -1,0 +1,64 @@
+{
+  "approval_url": "https://github.com/sdv1708/ai-model-benchmark/issues/88#issuecomment-7119429423",
+  "command": "aa-lcr-judge run",
+  "estimate": {
+    "calls": {
+      "answers": 300,
+      "judgments": 1500,
+      "judgments_per_answer": 5,
+      "max_requests": 4500
+    },
+    "command": "aa-lcr-judge estimate",
+    "cost_usd": {
+      "expected": 0.0399,
+      "high": 0.0733,
+      "limit": "0.5"
+    },
+    "inputs": {
+      "AA-LCR_Dataset.csv": "2f90d9c30cfb4dd8df2c0f46547c384065e4c76917bd347a9a97bf797235c1ea",
+      "Part 1/reviews/aa_lcr__gpt-oss-120b.jsonl": "48bbf552c15031126616a6a3c3759c81d8b948e8520e2d4bc25e496e2d33d94f",
+      "Part 1/reviews/aa_lcr__kimi-k2.5.jsonl": "b9b78dfdc58bbe5aa72248a960698d25e9474dd163f5d67abf6edceb6bf60f0b",
+      "Part 1/reviews/aa_lcr__minimax-m2.5.jsonl": "ba543c9d91f23c758ce0449ece4af6720a24478a42c69b2d818a6b0273e12a32",
+      "aa-lcr-reference-panel.json": "06e76276c366112af5ee056ba6d2bcdab13521bfce85d4f9294ce5864075a4e6"
+    },
+    "issue": "https://github.com/sdv1708/ai-model-benchmark/issues/88",
+    "judge": {
+      "base_url": "https://api.deepinfra.com/v1/openai",
+      "max_tokens": 1024,
+      "model": "Qwen/Qwen3-235B-A22B-Instruct-2507",
+      "original_model": "qwen-3-235b-a22b-instruct-2507",
+      "same_judge": true,
+      "temperature": 0.0
+    },
+    "prices_usd_per_million": {
+      "input": "0.09",
+      "output": "0.55",
+      "read_on": "2026-11-24",
+      "source": "https://deepinfra.com/pricing"
+    },
+    "prompt": {
+      "commit": "457dc8cbc2539aca173b4a71bcb29e352804d4af",
+      "files": [
+        "evalscope/benchmarks/aa_lcr/aa_lcr_adapter.py",
+        "evalscope/metrics/llm_judge.py"
+      ],
+      "prompts_sha256": "4afca4cfe2793438fa330662f9a2ba0bd5415499d5629c0074cc5274b036277b",
+      "source": "https://github.com/modelscope/evalscope",
+      "tag": "v1.4.2",
+      "variant": "one-word"
+    },
+    "schema_version": 1,
+    "tokens": {
+      "expected": {
+        "input": 415780,
+        "output": 4500
+      },
+      "high": {
+        "input": 631140,
+        "output": 30000
+      }
+    }
+  },
+  "estimate_sha256": "fe15a9ab687f64d325b7d36dd21700548aec92fb3e39d1f7d4594d8132fa87de",
+  "schema_version": 1
+}

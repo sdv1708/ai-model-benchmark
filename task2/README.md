@@ -553,12 +553,41 @@ It made 1,500 requests. Each request gave a valid verdict, and the cost was $0.1
 - The judgments are not all equal for 8 of 300 answers (2.7%).
 - No full-set decision at threshold 0.60 changes between passes. The largest score range is 0.02, which is 0.067 of the mean interval width (0.297).
 - The majority agrees with the saved judgment for 287 of 300 answers (95.7%). All 13 changes are from INCORRECT to CORRECT, and each model score rises by 0.02 to 0.07.
-- That shift is larger than the noise between passes. The run cannot give its cause: the saved reviews record no endpoint, no precision, no settings, and no prompt. The saved decisions at 0.60 do not change. The [likely cause](#likely-cause-of-the-score-shift) is the judge prompt.
+- That shift is larger than the noise between passes. The run cannot give its cause: the saved reviews record no endpoint, no precision, no settings, and no prompt. The saved decisions at 0.60 do not change. A [control run](#cause-of-the-score-shift) tested the cause.
 - The measured values hold for temperature `0.0` and one endpoint on one day.
 
-### Likely cause of the score shift
+### Cause of the score shift
 
-The likely cause is the judge prompt, not the judge model. Nobody tested this. Issue [#88](https://github.com/sdv1708/ai-model-benchmark/issues/88) tests it.
+The judge prompt explains most of the shift, by the decision rule that issue [#88](https://github.com/sdv1708/ai-model-benchmark/issues/88) fixed before the run.
+The control run of 2026-11-24 (UTC) sent the 300 saved answers to the same judge 5 times, with the old one-word prompt.
+It is recorded in [`docs/data/task2-aa-lcr-judge-one-word`](../docs/data/task2-aa-lcr-judge-one-word/report.md). It cost $0.0414.
+
+10 of the 13 answers that changed in #76 are INCORRECT again with the old prompt. The rule needs 10 to 13 for "most".
+
+| Grades (majority of 5 for each run) | gpt-oss-120b | kimi-k2.5 | minimax-m2.5 | Agreement with the saved grades |
+| ----------------------------------- | -----------: | --------: | -----------: | ------------------------------: |
+| Saved                               |         0.48 |      0.66 |         0.64 |                               - |
+| One-word prompt                     |         0.49 |      0.66 |         0.65 |              296 of 300 (98.7%) |
+| JSON prompt                         |         0.52 |      0.73 |         0.66 |              287 of 300 (95.7%) |
+
+The decisions at 0.60 are the same for all three sets of grades, and for each pass.
+The judgments of 5 of 300 answers are not all equal with the old prompt. They are unequal for 8 with the JSON prompt.
+
+| Reference answer                   | Changed by the JSON prompt | Of these, INCORRECT again |
+| ---------------------------------- | -------------------------: | ------------------------: |
+| Decimal, for example `0.1` for 10% |                          5 |                         5 |
+| Excel date number, `45444`         |                          1 |                         1 |
+| List with a literal `\n`           |                          4 |                         1 |
+| Other                              |                          3 |                         3 |
+
+Four limits apply to this conclusion:
+
+- **It is at the boundary:** 10 is the lowest count for "most". The single passes give 10, 9, 9, 10, and 10. A count of 9 gives "a part of the shift". The 13 answers come from 9 questions, so they are not independent.
+- **It does not explain question 74:** the 3 answers that stay CORRECT are all from question 74, a list with a literal `\n`. The old prompt gives CORRECT there in 3, 5, and 5 of 5 judgments.
+- **It also changes one other answer:** the old prompt gives INCORRECT for kimi-k2.5, question 55, in all 5 judgments. The saved grade is CORRECT.
+- **It does not separate the causes:** one run on another day does not separate the prompt from the endpoint, the precision, and the date of the saved judgments.
+
+This was the reasoning before the run:
 
 - EvalScope v1.1.1 to v1.5.0 (7 releases read) send the same base prompt as the current adapter, with no JSON contract. They ask for one word and store `LLM judge: <raw reply>`.
 - All 300 saved explanations are exactly `LLM judge: CORRECT` or `LLM judge: INCORRECT`. This fits those releases.
@@ -633,10 +662,10 @@ A loopback judge gets no key and needs no approval. The tests use a scripted loo
 
 ### Test the old judge prompt
 
-Issue [#88](https://github.com/sdv1708/ai-model-benchmark/issues/88) tests the [likely cause](#likely-cause-of-the-score-shift).
+Issue [#88](https://github.com/sdv1708/ai-model-benchmark/issues/88) tested the [cause of the score shift](#cause-of-the-score-shift).
 The control run sends the same 300 saved answers to the same judge, at the same endpoint, 5 times each.
 It uses the old one-word prompt of EvalScope `v1.4.2`.
-No paid run of this prompt is recorded yet.
+The run is recorded in [`docs/data/task2-aa-lcr-judge-one-word`](../docs/data/task2-aa-lcr-judge-one-word/report.md).
 
 | Item                  | JSON prompt (#76)                     | One-word prompt (#88)                                                                   |
 | --------------------- | ------------------------------------- | --------------------------------------------------------------------------------------- |
