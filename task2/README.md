@@ -137,6 +137,7 @@ AA-LCR has one recorded review per answer.
 Judge variance cannot be estimated from that record.
 `judge_noise.py` therefore reports hypothetical label-change sensitivity separately.
 Changed-judgment counts are analysis assumptions, not measured judge error rates.
+The [judge-noise measurement](#judge-noise-measurement) sends the saved answers to the judge again.
 
 ## Operating-point policy
 
@@ -390,9 +391,10 @@ The error-rate study uses a second generator. It flips random grades of one refe
 Both generators start from the reference grades, so a simulated model is not an unseen model.
 
 AA-LCR grades come from an LLM judge, and the saved data has one judgment for each answer.
-Judge noise is therefore not measured.
-The simulated grades have no judge noise, so the AA-LCR results do not include it.
-The report states this limit beside every AA-LCR result.
+The [judge-noise measurement](#judge-noise-measurement) gives the judge noise on the saved answers.
+The simulated grades have no judge noise, and the policy interval excludes it.
+The report gives the measured values and this limit beside every AA-LCR result.
+It reads them from `data/aa-lcr-judge-noise.json`.
 
 ### Interval coverage study
 
@@ -477,7 +479,7 @@ The token loader test checks the totals of all six predictions files.
 
 The draft AA-LCR section uses threshold `0.60`, a 20-question probe, the pooled exact interval, and `length_difficulty_stratified`.
 The run draws 1,000 simulated AA-LCR models at each true score, 13,000 models in total.
-Judge noise is not measured: the saved data has one judgment for each answer, and the simulated grades have none.
+The simulated grades have no judge noise. The [judge-noise measurement](#judge-noise-measurement) gives the noise on the saved answers.
 
 | Result                                | LiveCodeBench, 63 of 315 |  AA-LCR, 20 of 100 |
 | ------------------------------------- | -----------------------: | -----------------: |
@@ -518,7 +520,7 @@ It writes one folder of tables for each benchmark and three shared files:
 `<benchmark>` is `live_code_bench_v5` or `aa_lcr`.
 The report starts with a side-by-side table of both benchmarks.
 Each benchmark then has its own section with the same charts and tables.
-Every AA-LCR chart and table has the judge-noise limit beside it.
+Every AA-LCR chart and table has the measured judge noise and its limit beside it.
 
 The command prints the manifest SHA-256.
 Two runs with the same policy file give identical bytes.
@@ -529,6 +531,107 @@ The outputs are the same for every worker count.
 The default is `task2/data`.
 `--data-root` sets the folder that holds `Part 1/predictions`.
 The default is the `Evals` folder at the repository root.
+
+## Judge-noise measurement
+
+`aa-lcr-judge` measures how much an AA-LCR score changes when the judge grades the same answer again (issue [#76](https://github.com/sdv1708/ai-model-benchmark/issues/76)).
+It sends each of the 300 saved answers to the judge 5 times. It generates no answer.
+
+The run of 2026-11-23 is recorded in [`docs/data/task2-aa-lcr-judge-rerun`](../docs/data/task2-aa-lcr-judge-rerun/report.md).
+It used the judge `Qwen/Qwen3-235B-A22B-Instruct-2507` on DeepInfra, at temperature `0.0`.
+It made 1,500 requests. Each request gave a valid verdict, and the cost was $0.1413.
+
+| Result                                        | gpt-oss-120b | kimi-k2.5 | minimax-m2.5 |
+| --------------------------------------------- | -----------: | --------: | -----------: |
+| Answers with unequal judgments                |     2 of 100 |  5 of 100 |     1 of 100 |
+| Lowest to highest score across the 5 passes   | 0.52 to 0.53 | 0.71 to 0.73 | 0.65 to 0.66 |
+| Full-set decision at 0.60 in each pass        |        NO GO |        GO |           GO |
+| Mean stage-1 interval width of policy v1      |        0.305 |     0.292 |        0.294 |
+| Saved score                                   |         0.48 |      0.66 |         0.64 |
+| Majority score of the 5 judgments             |         0.52 |      0.73 |         0.66 |
+
+- The judgments are not all equal for 8 of 300 answers (2.7%).
+- No full-set decision at threshold 0.60 changes between passes. The largest score range is 0.02, which is 0.067 of the mean interval width (0.297).
+- The majority agrees with the saved judgment for 287 of 300 answers (95.7%). All 13 changes are from INCORRECT to CORRECT, and each model score rises by 0.02 to 0.07.
+- That shift is larger than the noise between passes. The run cannot give its cause: the saved reviews record no endpoint, no precision, no settings, and no prompt. The saved decisions at 0.60 do not change. The [likely cause](#likely-cause-of-the-score-shift) is the judge prompt.
+- The measured values hold for temperature `0.0` and one endpoint on one day.
+
+### Likely cause of the score shift
+
+The likely cause is the judge prompt, not the judge model. Nobody tested this. Issue [#88](https://github.com/sdv1708/ai-model-benchmark/issues/88) tests it.
+
+- EvalScope v1.1.1 to v1.5.0 (7 releases read) send the same base prompt as the current adapter, with no JSON contract. They ask for one word and store `LLM judge: <raw reply>`.
+- All 300 saved explanations are exactly `LLM judge: CORRECT` or `LLM judge: INCORRECT`. This fits those releases.
+- The current adapter asks for `reasoning` before `verdict`. The judge can then find that `0.1` and 10% are equal.
+
+An agent read the 13 changed answers. No human checked this reading.
+
+| Reference answer                  | Answers | Changed | Unequal judgments |
+| --------------------------------- | ------: | ------: | ----------------: |
+| Decimal, for example `0.1` for 10% |      27 |       5 |                 4 |
+| Excel date number, `45444`        |       3 |       1 |                 0 |
+| List with a literal `\n`          |      24 |       4 |                 1 |
+| Other                             |     246 |       3 |                 3 |
+
+- In 12 of the 13 changed answers, the answer matches the reference. The other one (kimi-k2.5, question 23) gives $205 million, and the reference is $204 million.
+- The new judge also makes errors. Seven answers equal the reference, but their majority is INCORRECT: question 59 (all 3 models), question 85 (gpt-oss-120b and kimi-k2.5), and question 93 (gpt-oss-120b and minimax-m2.5). Each one has a decimal reference.
+- With those 7 answers as CORRECT, the decisions at 0.60 stay the same. The score of gpt-oss-120b is then 0.55.
+- A consistent judge can repeat one error in every pass. Low judge noise does not show that the judge is correct.
+
+### Run the judge again
+
+The saved reviews name the judge `qwen-3-235b-a22b-instruct-2507`.
+`estimate` refuses another judge unless `--allow-different-judge` is set.
+The saved reviews hold no reference answers.
+The command reads them from the pinned public AA-LCR v1.0 file and checks its SHA-256.
+
+1. Write the estimate. This step makes no request.
+
+   ```powershell
+   uv run aa-lcr-judge estimate --source-csv output/aa-lcr-source/AA-LCR_Dataset.csv --base-url <endpoint> --judge-model <model> --input-price <USD for 1M tokens> --output-price <USD for 1M tokens> --price-source <URL> --limit-usd <USD> --output ../docs/data/task2-aa-lcr-judge-estimate.json
+   ```
+
+2. The owner approves the estimate and its SHA-256 in a comment on issue #76. The `run` command checks only the form of the comment address.
+3. Put the key in the environment variable `JUDGE_API_KEY`. Collect 5 judgments first, as a check of the endpoint.
+
+   ```powershell
+   uv run aa-lcr-judge run --source-csv output/aa-lcr-source/AA-LCR_Dataset.csv --estimate ../docs/data/task2-aa-lcr-judge-estimate.json --run-dir output/judge-run --approval-url <comment URL> --max-requests 5
+   ```
+
+   Run the same command without `--max-requests` for the remaining judgments.
+
+4. Write the report and the record of the threshold report.
+
+   ```powershell
+   uv run aa-lcr-judge report --source-csv output/aa-lcr-source/AA-LCR_Dataset.csv --run-dir output/judge-run --output-dir ../docs/data/task2-aa-lcr-judge-rerun --record data/aa-lcr-judge-noise.json
+   ```
+
+The run takes the endpoint, the model, the prices, and the cost limit from the estimate file only.
+It obeys these rules:
+
+- Each judgment is one request with one user message. The text is the judge prompt of the EvalScope AA-LCR adapter, with no change.
+- The settings are the EvalScope judge defaults: temperature `0.0` and at most `4096` output tokens. The run sends no seed.
+- A reply outside the output contract is not a verdict. One run of the command sends at most 3 requests for it, and keeps every attempt.
+- A reply of another model, or a reply with a repeated response identifier, is not a verdict. It stops the run.
+- The run stops before the next request could pass the cost limit. It counts a lost reply, a server fault, and a reply with no token count at the highest possible cost of the request.
+- If the process stops during a request, the record does not hold the cost of that request. After such a stop, compare the account balance with the report.
+
+The run writes the key to no file.
+The client sends the key to the approved host only, because it follows no redirect.
+The record of an HTTP error holds the status code and no server text.
+A loopback judge gets no key and needs no approval. The tests use a scripted loopback judge.
+
+| Output            | Content                                                                              |
+| ----------------- | ------------------------------------------------------------------------------------ |
+| `judgments.jsonl` | Every attempt: the reply, the verdict, the tokens, the returned model, and the time. |
+| `answers.csv`     | The 5 grades, the majority, and the saved grade of each answer.                      |
+| `scores.csv`      | The full-set score and the decision of each model in each pass.                      |
+| `summary.json`    | Every measured value.                                                                |
+| `report.md`       | The result, the judge and its settings, the cost, and the limits.                    |
+| `run.json`        | The estimate and the approval comment.                                               |
+
+The report compares the score range across passes with the stage-1 interval width of policy v1 (60 probes: 3 models and 20 seeds).
+Policy v1 does not change. Its interval excludes judge noise.
 
 ## Public LiveCodeBench results
 
@@ -643,6 +746,7 @@ The following integration records remain available:
 `tools/export_lcb_panel.py` and `tools/export_aa_lcr_panel.py` produce reference panels.
 `tools/audit_evalscope_lcb.py` and `tools/audit_evalscope_aa_lcr.py` require an appropriate native checkout.
 Their optional tokenizer integration requires the `integration` dependency extra.
+`tools/audit_judge_prompt.py` requires the same checkout. It compares the judge prompt and the reply parser of this package with the adapter, on all 300 saved answers.
 The local reference, subset, and image commands work independently of that checkout.
 
 ## Image-pair prototype

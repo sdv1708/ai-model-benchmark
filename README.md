@@ -280,6 +280,9 @@ Errors include source paths and line numbers.
 | `experiments.py`, `transfer.py`                                 | Evaluate held-out models and independently held-out model pairs.                                                                |
 | `uncertainty.py`, `study_metrics.py`                            | Compute intervals, ordering evidence, and threshold outcomes.                                                                   |
 | `judge_noise.py`                                                | Report sensitivity to hypothetical changed judgments.                                                                           |
+| `judge_items.py`, `judge_prompt.py`                             | Load the saved AA-LCR answers and build the EvalScope judge prompt.                                                             |
+| `judge_estimate.py`, `judge_run.py`                             | Write the cost estimate and collect judgments under an approved estimate.                                                       |
+| `judge_report.py`, `judge_statement.py`, `judge_cli.py`         | Measure the judge noise and give it to the threshold report.                                                                    |
 | `operating_points.py`                                           | Apply score, ordering, uncertainty, and decision gates.                                                                         |
 | `threshold_policy.py`, `threshold_protocol.py`                  | Load a policy file, check the protocol of a frozen policy, record its hash, and enforce the frozen lock.                        |
 | `threshold_rules.py`, `threshold_freeze.py`                     | Apply the fixed rules to a simulated run and write a new frozen policy version.                                                 |
@@ -395,7 +398,9 @@ The same command runs the AA-LCR section: threshold 0.60 and a 20-question probe
 The probe decides 31.4% of 13,000 simulated AA-LCR models at stage 1, with 6 wrong decisions, all at true score 0.60.
 The mean expected cost is 0.749 of a full run, against 0.452 for LiveCodeBench.
 AA-LCR has only 100 questions, so its probe interval is wide and most models near the threshold escalate.
-AA-LCR grades come from an LLM judge with one judgment for each answer, so judge noise is not measured.
+AA-LCR grades come from an LLM judge. The judge graded each saved answer 5 more times, and the judgments of 8 of 300 answers (2.7%) are not all equal.
+No full-set decision at 0.60 changed between passes. The policy interval excludes this judge noise.
+The majority of the new judgments gives each model a score 0.02 to 0.07 above its saved score. The [likely cause](task2/README.md#likely-cause-of-the-score-shift) is the judge prompt. Issue [#88](https://github.com/sdv1708/ai-model-benchmark/issues/88) tests it.
 The [benchmark reference](task2/README.md#aa-lcr-on-the-draft-policy) gives the full AA-LCR result.
 
 The published claim therefore stays full retention.
@@ -557,7 +562,8 @@ It includes LiveCodeBench and AA-LCR, the two benchmarks of the subset studies.
 
 ### Why this project extends EvalScope
 
-The `task2/` package works only on saved grades. It never calls a model.
+The `task2/` package works on saved grades and saved answers. It generates no model answer.
+Only the [`aa-lcr-judge run`](task2/README.md#judge-noise-measurement) command calls a model, the AA-LCR judge. It needs an approved cost estimate.
 To use a pruned benchmark on a new model, the subset selection must run inside a real evaluator.
 The [EvalScope pruning repository](https://github.com/sdv1708/evalscope-pruning) adds that selection to EvalScope.
 EvalScope continues to build prompts, call the model, run the coding sandbox, run the judge, and write reports.
@@ -631,7 +637,7 @@ Smaller ratios work, but they are experimental.
 
 The project ran no paid benchmark inference through the adapters.
 The verified runs are the synthetic smoke test and the replay of historical grades.
-AA-LCR has one recorded judgment per answer, so judge noise is not measured.
+The saved AA-LCR runs have one judgment per answer. The [judge-noise measurement](task2/README.md#judge-noise-measurement) adds 5 judgments of each saved answer, and the policy interval excludes judge noise.
 
 ### Run the EvalScope smoke test
 
@@ -687,7 +693,7 @@ All issues are in the [issue tracker](https://github.com/sdv1708/ai-model-benchm
 | No fixed pruned list is validated as a score estimator.                   | [#80](https://github.com/sdv1708/ai-model-benchmark/issues/80) tests fixed lists of 95 and 158 LiveCodeBench questions on the 28 models.             |
 | The EvalScope adapters run one stage only.                                | [#65](https://github.com/sdv1708/ai-model-benchmark/issues/65) adds the two-stage mode to both adapters and to `compare_runs`.                       |
 | The project measured no live inference saving.                            | [#78](https://github.com/sdv1708/ai-model-benchmark/issues/78) runs the two-stage mode on live model endpoints and measures tokens, time, and cost.  |
-| AA-LCR has one recorded judgment per answer. Judge noise is not measured. | [#76](https://github.com/sdv1708/ai-model-benchmark/issues/76) sends each of the 300 saved answers to the judge 5 times.                             |
+| The cause of the AA-LCR judge shift is not tested.                        | [#88](https://github.com/sdv1708/ai-model-benchmark/issues/88) sends the 300 saved answers to the judge with the old one-word prompt.                       |
 | The results are spread across JSON and CSV files.                         | [#64](https://github.com/sdv1708/ai-model-benchmark/issues/64) publishes one self-contained HTML results report, linked from the top of this README. |
 | The documents state the full-retention result.                            | [#66](https://github.com/sdv1708/ai-model-benchmark/issues/66) updates every document with the frozen v1 result.                                     |
 
@@ -716,11 +722,11 @@ flowchart LR
     I64 --> I66["#66 Documents"]
     I65 --> I66
     I74["#74 Links and data rights (done)"] --> I66
-    I76["#76 Judge noise"]
+    I76["#76 Judge noise (done)"] --> I88["#88 Old judge prompt"]
 ```
 
-Issues #56 to #60, #62, #63, #74, and #75 are complete.
-Issues #76 and #78 need a model endpoint key and an approved cost estimate.
+Issues #56 to #60, #62, #63, and #74 to #76 are complete.
+Issues #78 and #88 need a model endpoint key and an approved cost estimate.
 
 ### Limits with no planned work
 

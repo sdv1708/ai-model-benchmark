@@ -1,0 +1,16 @@
+model,pass,correct,answers,score,decision
+gpt-oss-120b,1,52,100,0.52,NO GO
+gpt-oss-120b,2,53,100,0.53,NO GO
+gpt-oss-120b,3,53,100,0.53,NO GO
+gpt-oss-120b,4,52,100,0.52,NO GO
+gpt-oss-120b,5,53,100,0.53,NO GO
+kimi-k2.5,1,71,100,0.71,GO
+kimi-k2.5,2,73,100,0.73,GO
+kimi-k2.5,3,72,100,0.72,GO
+kimi-k2.5,4,73,100,0.73,GO
+kimi-k2.5,5,72,100,0.72,GO
+minimax-m2.5,1,65,100,0.65,GO
+minimax-m2.5,2,66,100,0.66,GO
+minimax-m2.5,3,65,100,0.65,GO
+minimax-m2.5,4,66,100,0.66,GO
+minimax-m2.5,5,66,100,0.66,GO

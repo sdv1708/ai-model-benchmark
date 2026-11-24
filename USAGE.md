@@ -306,7 +306,7 @@ The policy file has one section for each benchmark.
 The command writes `decisions.csv`, `coverage.csv`, `cost.csv`, and `question_tokens.csv` in one folder for each benchmark: `live_code_bench_v5/` and `aa_lcr/`.
 It also writes `summary.json`, `report.html`, and `manifest.json` for both benchmarks.
 The report shows both benchmarks side by side, with the same charts for each.
-Every AA-LCR result states that judge noise is not measured.
+Every AA-LCR result gives the measured [judge noise](task2/README.md#judge-noise-measurement) and states that the policy interval excludes it.
 The command also runs the interval coverage study: 2,000 simulated draws for each cell.
 It reads the token counts of the saved answers from `../Evals/Part 1/predictions`.
 Use `--data-root` to read them from another folder.

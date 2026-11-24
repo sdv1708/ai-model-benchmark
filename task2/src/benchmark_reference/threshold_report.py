@@ -20,6 +20,12 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
+from benchmark_reference.judge_statement import (
+    NOT_MEASURED,
+    NOT_MEASURED_CELL,
+    JudgeNoise,
+)
+from benchmark_reference.judge_statement import RECORD_FILE as JUDGE_RECORD_FILE
 from benchmark_reference.long_context_reporting import encode_json
 from benchmark_reference.threshold_benchmarks import AA_LCR, BENCHMARKS, LIVE_CODE_BENCH, Benchmark
 from benchmark_reference.threshold_cost import (
@@ -130,13 +136,6 @@ LIMITATIONS = (
     "has one probe for each selector seed, so the probes limit its precision.",
 )
 DRAFT_LIMITATION = "The policy is a draft. It is not frozen and must not be used on real grades."
-# The judge-noise limit of a judge-graded benchmark. The report puts it beside every
-# result of that benchmark.
-JUDGE_NOISE = (
-    "Judge noise is not measured. An LLM judge grades each answer. The saved data has one "
-    "judgment for each answer. The simulated grades have no judge noise, so these results "
-    "do not include it. A real decision also carries the error of the judge."
-)
 BENCHMARK_LIMITATIONS: Mapping[str, tuple[str, ...]] = {
     LIVE_CODE_BENCH: (
         "LiveCodeBench grades come from the test results of each answer, not from a judge.",
@@ -145,7 +144,6 @@ BENCHMARK_LIMITATIONS: Mapping[str, tuple[str, ...]] = {
         "much less, because each estimate divides by its own full run.",
     ),
     AA_LCR: (
-        JUDGE_NOISE,
         "The simulated AA-LCR models take their difficulty from the AA-LCR reference grades. "
         "The question metadata gives the input length and the source document count of each "
         "question. This metadata defines the strata of both AA-LCR stratifiers. It does not "
@@ -163,6 +161,7 @@ IMPLEMENTATION_FILES = (
     "pruning.py",
     "long_context.py",
     "threshold_benchmarks.py",
+    "judge_statement.py",
     "uncertainty.py",
     "threshold_intervals.py",
     "threshold_rules.py",
@@ -297,7 +296,8 @@ class BenchmarkRun:
 
     ``summary`` holds one record for each true score; ``coverage`` is the
     coverage summary with its cells; ``error_rate`` is the error-rate summary
-    with its cells.
+    with its cells. ``judge_noise`` is the measured record of a judge-graded
+    benchmark, or None.
     """
 
     policy: ThresholdPolicy
@@ -309,10 +309,24 @@ class BenchmarkRun:
     coverage: Mapping[str, Any]
     cost: CostEvidence
     error_rate: Mapping[str, Any]
+    judge_noise: JudgeNoise | None = None
 
     @property
     def benchmark(self) -> Benchmark:
         return BENCHMARKS[self.policy.benchmark]
+
+    @property
+    def judge_statement(self) -> str | None:
+        """The judge-noise note beside every result of a judge-graded benchmark."""
+        if not self.benchmark.judge_graded:
+            return None
+        return NOT_MEASURED if self.judge_noise is None else self.judge_noise.statement
+
+    @property
+    def judge_cell(self) -> str:
+        if not self.benchmark.judge_graded:
+            return "No judge"
+        return NOT_MEASURED_CELL if self.judge_noise is None else self.judge_noise.cell
 
 
 def output_names(benchmarks: Iterable[str]) -> tuple[str, ...]:
@@ -779,7 +793,8 @@ def benchmark_document(run: BenchmarkRun) -> dict[str, Any]:
         "benchmark": policy.benchmark,
         "title": benchmark.title,
         "judge_graded": benchmark.judge_graded,
-        "judge_noise": JUDGE_NOISE if benchmark.judge_graded else None,
+        "judge_noise": run.judge_statement,
+        "judge_noise_cell": run.judge_cell,
         "reference_panel_sha256": run.panel_sha256,
         "population": run.population,
         "threshold": policy.threshold,
@@ -811,7 +826,10 @@ def benchmark_document(run: BenchmarkRun) -> dict[str, Any]:
             "stage_sizes": list(policy.error_stage_sizes),
             "claim": distance_claim(run.error_rate, policy),
         },
-        "limitations": list(BENCHMARK_LIMITATIONS.get(policy.benchmark, ())),
+        "limitations": [
+            *([run.judge_statement] if run.judge_statement is not None else []),
+            *BENCHMARK_LIMITATIONS.get(policy.benchmark, ()),
+        ],
     }
 
 
@@ -1911,7 +1929,7 @@ def _overview(documents: Sequence[Mapping[str, Any]]) -> str:
     e = html.escape
 
     def judge(d: Mapping[str, Any]) -> str:
-        return "One judgment for each answer; not measured" if d["judge_graded"] else "No judge"
+        return str(d["judge_noise_cell"])
 
     def cost(d: Mapping[str, Any]) -> str:
         values = [float(r["expected_cost_fraction"]["mean"]) for r in d["true_scores"]]
@@ -1970,11 +1988,11 @@ def _overview(documents: Sequence[Mapping[str, Any]]) -> str:
     head = "".join(
         f"<th>{e(str(d['title']))}{' *' if d['judge_graded'] else ''}</th>" for d in documents
     )
-    judged = [str(d["title"]) for d in documents if d["judge_graded"]]
-    footnote = (
-        f'<p class="judge-noise" data-overview-note>* {e(", ".join(judged))}: {e(JUDGE_NOISE)}</p>'
-        if judged
-        else ""
+    footnote = "\n".join(
+        f'<p class="judge-noise" data-overview-note>* {e(str(d["title"]))}: '
+        f"{e(str(d['judge_noise']))}</p>"
+        for d in documents
+        if d["judge_graded"]
     )
     body = "\n".join(
         f"<tr><td>{e(label)}</td>"
@@ -2069,6 +2087,8 @@ def build_outputs(loaded: LoadedPolicy, runs: Sequence[BenchmarkRun]) -> dict[st
     for run in runs:
         inputs[run.panel_file] = run.panel_sha256
         inputs.update(run.cost.tokens.files)
+        if run.judge_noise is not None:
+            inputs[JUDGE_RECORD_FILE] = run.judge_noise.sha256
     code_root = Path(__file__).parent
     outputs: dict[str, bytes] = {}
     for run in runs:
@@ -2102,6 +2122,16 @@ def build_outputs(loaded: LoadedPolicy, runs: Sequence[BenchmarkRun]) -> dict[st
                     "reference_panel": {"file": run.panel_file, "sha256": run.panel_sha256},
                     # Only the usage records of these files are read, never a grade.
                     "token_counts": dict(run.cost.tokens.files),
+                    **(
+                        {}
+                        if run.judge_noise is None
+                        else {
+                            "judge_noise": {
+                                "file": JUDGE_RECORD_FILE,
+                                "sha256": run.judge_noise.sha256,
+                            }
+                        }
+                    ),
                 }
                 for run in runs
             }

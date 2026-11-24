@@ -30,7 +30,7 @@ class Benchmark:
     ``metadata`` is true when the panel holds question metadata: the input
     length and the source documents of each question. The strata then use it.
     ``judge_graded`` is true when an LLM judge gives the grades. The saved data
-    has one judgment for each answer, so nobody can measure the judge noise.
+    has one judgment for each answer. ``aa-lcr-judge`` measures the judge noise (#76).
     """
 
     name: str
