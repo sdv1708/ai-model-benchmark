@@ -1,0 +1,289 @@
+arm,grade_rule,groups,target_developer,stratum,questions,reference_models,fewest_reference_passes,most_reference_passes
+315,primary,4,Alibaba,group:1/4,78,27,0,9
+315,primary,4,Alibaba,group:2/4,79,27,9,19
+315,primary,4,Alibaba,group:3/4,79,27,19,25
+315,primary,4,Alibaba,group:4/4,79,27,25,27
+315,primary,4,Anthropic,group:1/4,78,22,0,9
+315,primary,4,Anthropic,group:2/4,79,22,9,17
+315,primary,4,Anthropic,group:3/4,79,22,17,21
+315,primary,4,Anthropic,group:4/4,79,22,21,22
+315,primary,4,DeepSeek,group:1/4,78,26,0,9
+315,primary,4,DeepSeek,group:2/4,79,26,9,19
+315,primary,4,DeepSeek,group:3/4,79,26,19,24
+315,primary,4,DeepSeek,group:4/4,79,26,24,26
+315,primary,4,Developer of XBai-o4-medium,group:1/4,78,27,0,9
+315,primary,4,Developer of XBai-o4-medium,group:2/4,79,27,9,19
+315,primary,4,Developer of XBai-o4-medium,group:3/4,79,27,19,25
+315,primary,4,Developer of XBai-o4-medium,group:4/4,79,27,25,27
+315,primary,4,Google,group:1/4,78,24,0,8
+315,primary,4,Google,group:2/4,79,24,8,17
+315,primary,4,Google,group:3/4,79,24,17,22
+315,primary,4,Google,group:4/4,79,24,22,24
+315,primary,4,LG,group:1/4,78,27,0,9
+315,primary,4,LG,group:2/4,79,27,9,19
+315,primary,4,LG,group:3/4,79,27,19,25
+315,primary,4,LG,group:4/4,79,27,25,27
+315,primary,4,NVIDIA,group:1/4,78,26,0,8
+315,primary,4,NVIDIA,group:2/4,79,26,8,18
+315,primary,4,NVIDIA,group:3/4,79,26,18,24
+315,primary,4,NVIDIA,group:4/4,79,26,24,26
+315,primary,4,OpenAI,group:1/4,78,18,0,6
+315,primary,4,OpenAI,group:2/4,79,18,6,13
+315,primary,4,OpenAI,group:3/4,79,18,14,17
+315,primary,4,OpenAI,group:4/4,79,18,17,18
+315,primary,4,xAI,group:1/4,78,27,0,9
+315,primary,4,xAI,group:2/4,79,27,9,20
+315,primary,4,xAI,group:3/4,79,27,20,25
+315,primary,4,xAI,group:4/4,79,27,25,27
+315,primary,8,Alibaba,group:1/8,39,27,0,1
+315,primary,8,Alibaba,group:2/8,39,27,2,9
+315,primary,8,Alibaba,group:3/8,40,27,9,15
+315,primary,8,Alibaba,group:4/8,39,27,15,19
+315,primary,8,Alibaba,group:5/8,39,27,19,21
+315,primary,8,Alibaba,group:6/8,40,27,21,25
+315,primary,8,Alibaba,group:7/8,39,27,25,26
+315,primary,8,Alibaba,group:8/8,40,27,26,27
+315,primary,8,Anthropic,group:1/8,39,22,0,1
+315,primary,8,Anthropic,group:2/8,39,22,2,9
+315,primary,8,Anthropic,group:3/8,40,22,9,15
+315,primary,8,Anthropic,group:4/8,39,22,15,17
+315,primary,8,Anthropic,group:5/8,39,22,17,18
+315,primary,8,Anthropic,group:6/8,40,22,18,21
+315,primary,8,Anthropic,group:7/8,39,22,21,22
+315,primary,8,Anthropic,group:8/8,40,22,22,22
+315,primary,8,DeepSeek,group:1/8,39,26,0,1
+315,primary,8,DeepSeek,group:2/8,39,26,1,9
+315,primary,8,DeepSeek,group:3/8,40,26,9,15
+315,primary,8,DeepSeek,group:4/8,39,26,15,19
+315,primary,8,DeepSeek,group:5/8,39,26,19,21
+315,primary,8,DeepSeek,group:6/8,40,26,21,24
+315,primary,8,DeepSeek,group:7/8,39,26,24,25
+315,primary,8,DeepSeek,group:8/8,40,26,25,26
+315,primary,8,Developer of XBai-o4-medium,group:1/8,39,27,0,1
+315,primary,8,Developer of XBai-o4-medium,group:2/8,39,27,2,9
+315,primary,8,Developer of XBai-o4-medium,group:3/8,40,27,9,15
+315,primary,8,Developer of XBai-o4-medium,group:4/8,39,27,15,19
+315,primary,8,Developer of XBai-o4-medium,group:5/8,39,27,19,21
+315,primary,8,Developer of XBai-o4-medium,group:6/8,40,27,21,25
+315,primary,8,Developer of XBai-o4-medium,group:7/8,39,27,25,26
+315,primary,8,Developer of XBai-o4-medium,group:8/8,40,27,26,27
+315,primary,8,Google,group:1/8,39,24,0,1
+315,primary,8,Google,group:2/8,39,24,1,8
+315,primary,8,Google,group:3/8,40,24,8,13
+315,primary,8,Google,group:4/8,39,24,13,17
+315,primary,8,Google,group:5/8,39,24,17,18
+315,primary,8,Google,group:6/8,40,24,19,22
+315,primary,8,Google,group:7/8,39,24,22,23
+315,primary,8,Google,group:8/8,40,24,23,24
+315,primary,8,LG,group:1/8,39,27,0,1
+315,primary,8,LG,group:2/8,39,27,2,9
+315,primary,8,LG,group:3/8,40,27,9,15
+315,primary,8,LG,group:4/8,39,27,15,19
+315,primary,8,LG,group:5/8,39,27,19,21
+315,primary,8,LG,group:6/8,40,27,21,25
+315,primary,8,LG,group:7/8,39,27,25,26
+315,primary,8,LG,group:8/8,40,27,26,27
+315,primary,8,NVIDIA,group:1/8,39,26,0,1
+315,primary,8,NVIDIA,group:2/8,39,26,2,8
+315,primary,8,NVIDIA,group:3/8,40,26,8,14
+315,primary,8,NVIDIA,group:4/8,39,26,14,18
+315,primary,8,NVIDIA,group:5/8,39,26,18,20
+315,primary,8,NVIDIA,group:6/8,40,26,20,24
+315,primary,8,NVIDIA,group:7/8,39,26,24,25
+315,primary,8,NVIDIA,group:8/8,40,26,25,26
+315,primary,8,OpenAI,group:1/8,39,18,0,1
+315,primary,8,OpenAI,group:2/8,39,18,1,6
+315,primary,8,OpenAI,group:3/8,40,18,6,11
+315,primary,8,OpenAI,group:4/8,39,18,11,13
+315,primary,8,OpenAI,group:5/8,39,18,14,15
+315,primary,8,OpenAI,group:6/8,40,18,15,17
+315,primary,8,OpenAI,group:7/8,39,18,17,18
+315,primary,8,OpenAI,group:8/8,40,18,18,18
+315,primary,8,xAI,group:1/8,39,27,0,1
+315,primary,8,xAI,group:2/8,39,27,1,9
+315,primary,8,xAI,group:3/8,40,27,9,15
+315,primary,8,xAI,group:4/8,39,27,15,20
+315,primary,8,xAI,group:5/8,39,27,20,22
+315,primary,8,xAI,group:6/8,40,27,22,25
+315,primary,8,xAI,group:7/8,39,27,25,26
+315,primary,8,xAI,group:8/8,40,27,26,27
+315,secondary,4,Alibaba,group:1/4,78,27,0,7
+315,secondary,4,Alibaba,group:2/4,79,27,7,18
+315,secondary,4,Alibaba,group:3/4,79,27,18,23
+315,secondary,4,Alibaba,group:4/4,79,27,23,27
+315,secondary,4,Anthropic,group:1/4,78,22,0,7
+315,secondary,4,Anthropic,group:2/4,79,22,7,16
+315,secondary,4,Anthropic,group:3/4,79,22,16,19
+315,secondary,4,Anthropic,group:4/4,79,22,19,22
+315,secondary,4,DeepSeek,group:1/4,78,26,0,7
+315,secondary,4,DeepSeek,group:2/4,79,26,7,18
+315,secondary,4,DeepSeek,group:3/4,79,26,18,22
+315,secondary,4,DeepSeek,group:4/4,79,26,22,26
+315,secondary,4,Developer of XBai-o4-medium,group:1/4,78,27,0,7
+315,secondary,4,Developer of XBai-o4-medium,group:2/4,79,27,7,18
+315,secondary,4,Developer of XBai-o4-medium,group:3/4,79,27,18,23
+315,secondary,4,Developer of XBai-o4-medium,group:4/4,79,27,23,27
+315,secondary,4,Google,group:1/4,78,24,0,6
+315,secondary,4,Google,group:2/4,79,24,6,15
+315,secondary,4,Google,group:3/4,79,24,15,20
+315,secondary,4,Google,group:4/4,79,24,20,24
+315,secondary,4,LG,group:1/4,78,27,0,7
+315,secondary,4,LG,group:2/4,79,27,7,18
+315,secondary,4,LG,group:3/4,79,27,18,23
+315,secondary,4,LG,group:4/4,79,27,23,27
+315,secondary,4,NVIDIA,group:1/4,78,26,0,7
+315,secondary,4,NVIDIA,group:2/4,79,26,7,17
+315,secondary,4,NVIDIA,group:3/4,79,26,17,22
+315,secondary,4,NVIDIA,group:4/4,79,26,22,26
+315,secondary,4,OpenAI,group:1/4,78,18,0,3
+315,secondary,4,OpenAI,group:2/4,79,18,3,12
+315,secondary,4,OpenAI,group:3/4,79,18,12,16
+315,secondary,4,OpenAI,group:4/4,79,18,16,18
+315,secondary,4,xAI,group:1/4,78,27,0,7
+315,secondary,4,xAI,group:2/4,79,27,7,18
+315,secondary,4,xAI,group:3/4,79,27,18,23
+315,secondary,4,xAI,group:4/4,79,27,23,27
+1055,primary,4,Alibaba,group:1/4,263,27,0,14
+1055,primary,4,Alibaba,group:2/4,264,27,14,21
+1055,primary,4,Alibaba,group:3/4,264,27,21,26
+1055,primary,4,Alibaba,group:4/4,264,27,26,27
+1055,primary,4,Anthropic,group:1/4,263,22,0,14
+1055,primary,4,Anthropic,group:2/4,264,22,14,18
+1055,primary,4,Anthropic,group:3/4,264,22,18,21
+1055,primary,4,Anthropic,group:4/4,264,22,21,22
+1055,primary,4,DeepSeek,group:1/4,263,26,0,14
+1055,primary,4,DeepSeek,group:2/4,264,26,14,21
+1055,primary,4,DeepSeek,group:3/4,264,26,21,25
+1055,primary,4,DeepSeek,group:4/4,264,26,25,26
+1055,primary,4,Developer of XBai-o4-medium,group:1/4,263,27,0,14
+1055,primary,4,Developer of XBai-o4-medium,group:2/4,264,27,14,21
+1055,primary,4,Developer of XBai-o4-medium,group:3/4,264,27,21,26
+1055,primary,4,Developer of XBai-o4-medium,group:4/4,264,27,26,27
+1055,primary,4,Google,group:1/4,263,24,0,12
+1055,primary,4,Google,group:2/4,264,24,12,19
+1055,primary,4,Google,group:3/4,264,24,19,23
+1055,primary,4,Google,group:4/4,264,24,23,24
+1055,primary,4,LG,group:1/4,263,27,0,14
+1055,primary,4,LG,group:2/4,264,27,14,21
+1055,primary,4,LG,group:3/4,264,27,21,26
+1055,primary,4,LG,group:4/4,264,27,26,27
+1055,primary,4,NVIDIA,group:1/4,263,26,0,13
+1055,primary,4,NVIDIA,group:2/4,264,26,13,20
+1055,primary,4,NVIDIA,group:3/4,264,26,20,25
+1055,primary,4,NVIDIA,group:4/4,264,26,25,26
+1055,primary,4,OpenAI,group:1/4,263,18,0,10
+1055,primary,4,OpenAI,group:2/4,264,18,10,15
+1055,primary,4,OpenAI,group:3/4,264,18,15,17
+1055,primary,4,OpenAI,group:4/4,264,18,17,18
+1055,primary,4,xAI,group:1/4,263,27,0,15
+1055,primary,4,xAI,group:2/4,264,27,15,21
+1055,primary,4,xAI,group:3/4,264,27,21,26
+1055,primary,4,xAI,group:4/4,264,27,26,27
+1055,primary,8,Alibaba,group:1/8,131,27,0,5
+1055,primary,8,Alibaba,group:2/8,132,27,5,14
+1055,primary,8,Alibaba,group:3/8,132,27,14,19
+1055,primary,8,Alibaba,group:4/8,132,27,19,21
+1055,primary,8,Alibaba,group:5/8,132,27,21,23
+1055,primary,8,Alibaba,group:6/8,132,27,23,26
+1055,primary,8,Alibaba,group:7/8,132,27,26,27
+1055,primary,8,Alibaba,group:8/8,132,27,27,27
+1055,primary,8,Anthropic,group:1/8,131,22,0,4
+1055,primary,8,Anthropic,group:2/8,132,22,5,14
+1055,primary,8,Anthropic,group:3/8,132,22,14,17
+1055,primary,8,Anthropic,group:4/8,132,22,17,18
+1055,primary,8,Anthropic,group:5/8,132,22,18,20
+1055,primary,8,Anthropic,group:6/8,132,22,20,21
+1055,primary,8,Anthropic,group:7/8,132,22,21,22
+1055,primary,8,Anthropic,group:8/8,132,22,22,22
+1055,primary,8,DeepSeek,group:1/8,131,26,0,5
+1055,primary,8,DeepSeek,group:2/8,132,26,5,14
+1055,primary,8,DeepSeek,group:3/8,132,26,14,18
+1055,primary,8,DeepSeek,group:4/8,132,26,18,21
+1055,primary,8,DeepSeek,group:5/8,132,26,21,23
+1055,primary,8,DeepSeek,group:6/8,132,26,23,25
+1055,primary,8,DeepSeek,group:7/8,132,26,25,26
+1055,primary,8,DeepSeek,group:8/8,132,26,26,26
+1055,primary,8,Developer of XBai-o4-medium,group:1/8,131,27,0,5
+1055,primary,8,Developer of XBai-o4-medium,group:2/8,132,27,5,14
+1055,primary,8,Developer of XBai-o4-medium,group:3/8,132,27,14,19
+1055,primary,8,Developer of XBai-o4-medium,group:4/8,132,27,19,21
+1055,primary,8,Developer of XBai-o4-medium,group:5/8,132,27,21,23
+1055,primary,8,Developer of XBai-o4-medium,group:6/8,132,27,24,26
+1055,primary,8,Developer of XBai-o4-medium,group:7/8,132,27,26,27
+1055,primary,8,Developer of XBai-o4-medium,group:8/8,132,27,27,27
+1055,primary,8,Google,group:1/8,131,24,0,4
+1055,primary,8,Google,group:2/8,132,24,4,12
+1055,primary,8,Google,group:3/8,132,24,12,16
+1055,primary,8,Google,group:4/8,132,24,16,19
+1055,primary,8,Google,group:5/8,132,24,19,21
+1055,primary,8,Google,group:6/8,132,24,21,23
+1055,primary,8,Google,group:7/8,132,24,23,24
+1055,primary,8,Google,group:8/8,132,24,24,24
+1055,primary,8,LG,group:1/8,131,27,0,5
+1055,primary,8,LG,group:2/8,132,27,5,14
+1055,primary,8,LG,group:3/8,132,27,14,19
+1055,primary,8,LG,group:4/8,132,27,19,21
+1055,primary,8,LG,group:5/8,132,27,21,23
+1055,primary,8,LG,group:6/8,132,27,23,26
+1055,primary,8,LG,group:7/8,132,27,26,27
+1055,primary,8,LG,group:8/8,132,27,27,27
+1055,primary,8,NVIDIA,group:1/8,131,26,0,5
+1055,primary,8,NVIDIA,group:2/8,132,26,5,13
+1055,primary,8,NVIDIA,group:3/8,132,26,13,18
+1055,primary,8,NVIDIA,group:4/8,132,26,18,20
+1055,primary,8,NVIDIA,group:5/8,132,26,20,22
+1055,primary,8,NVIDIA,group:6/8,132,26,23,25
+1055,primary,8,NVIDIA,group:7/8,132,26,25,26
+1055,primary,8,NVIDIA,group:8/8,132,26,26,26
+1055,primary,8,OpenAI,group:1/8,131,18,0,2
+1055,primary,8,OpenAI,group:2/8,132,18,3,10
+1055,primary,8,OpenAI,group:3/8,132,18,10,13
+1055,primary,8,OpenAI,group:4/8,132,18,13,15
+1055,primary,8,OpenAI,group:5/8,132,18,15,16
+1055,primary,8,OpenAI,group:6/8,132,18,16,17
+1055,primary,8,OpenAI,group:7/8,132,18,17,18
+1055,primary,8,OpenAI,group:8/8,132,18,18,18
+1055,primary,8,xAI,group:1/8,131,27,0,5
+1055,primary,8,xAI,group:2/8,132,27,5,15
+1055,primary,8,xAI,group:3/8,132,27,15,19
+1055,primary,8,xAI,group:4/8,132,27,19,21
+1055,primary,8,xAI,group:5/8,132,27,21,24
+1055,primary,8,xAI,group:6/8,132,27,24,26
+1055,primary,8,xAI,group:7/8,132,27,26,27
+1055,primary,8,xAI,group:8/8,132,27,27,27
+1055,secondary,4,Alibaba,group:1/4,263,27,0,12
+1055,secondary,4,Alibaba,group:2/4,264,27,12,20
+1055,secondary,4,Alibaba,group:3/4,264,27,20,24
+1055,secondary,4,Alibaba,group:4/4,264,27,24,27
+1055,secondary,4,Anthropic,group:1/4,263,22,0,12
+1055,secondary,4,Anthropic,group:2/4,264,22,12,18
+1055,secondary,4,Anthropic,group:3/4,264,22,18,20
+1055,secondary,4,Anthropic,group:4/4,264,22,20,22
+1055,secondary,4,DeepSeek,group:1/4,263,26,0,12
+1055,secondary,4,DeepSeek,group:2/4,264,26,12,20
+1055,secondary,4,DeepSeek,group:3/4,264,26,20,24
+1055,secondary,4,DeepSeek,group:4/4,264,26,24,26
+1055,secondary,4,Developer of XBai-o4-medium,group:1/4,263,27,0,12
+1055,secondary,4,Developer of XBai-o4-medium,group:2/4,264,27,12,20
+1055,secondary,4,Developer of XBai-o4-medium,group:3/4,264,27,20,24
+1055,secondary,4,Developer of XBai-o4-medium,group:4/4,264,27,24,27
+1055,secondary,4,Google,group:1/4,263,24,0,10
+1055,secondary,4,Google,group:2/4,264,24,10,17
+1055,secondary,4,Google,group:3/4,264,24,17,21
+1055,secondary,4,Google,group:4/4,264,24,22,24
+1055,secondary,4,LG,group:1/4,263,27,0,12
+1055,secondary,4,LG,group:2/4,264,27,12,20
+1055,secondary,4,LG,group:3/4,264,27,20,24
+1055,secondary,4,LG,group:4/4,264,27,24,27
+1055,secondary,4,NVIDIA,group:1/4,263,26,0,12
+1055,secondary,4,NVIDIA,group:2/4,264,26,13,20
+1055,secondary,4,NVIDIA,group:3/4,264,26,20,24
+1055,secondary,4,NVIDIA,group:4/4,264,26,24,26
+1055,secondary,4,OpenAI,group:1/4,263,18,0,8
+1055,secondary,4,OpenAI,group:2/4,264,18,8,14
+1055,secondary,4,OpenAI,group:3/4,264,18,14,17
+1055,secondary,4,OpenAI,group:4/4,264,18,17,18
+1055,secondary,4,xAI,group:1/4,263,27,0,12
+1055,secondary,4,xAI,group:2/4,264,27,12,20
+1055,secondary,4,xAI,group:3/4,264,27,20,24
+1055,secondary,4,xAI,group:4/4,264,27,25,27

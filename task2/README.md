@@ -411,6 +411,8 @@ The study runs one time. A second run needs `--rerun-reason`, and the report sta
 | `manifest.json` | The command, the commit, the input hashes, the code hashes, and the output hashes                          |
 
 The outputs hold derived values for each model. They hold no grade of one question.
+The recorded study of v1 is in [`docs/data/task2-panel-study`](../docs/data/task2-panel-study/report.md).
+Each arm passed the 3 pass criteria.
 
 ### Simulated models
 
