@@ -11,12 +11,12 @@ import hashlib
 import io
 import json
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
 from benchmark_reference.inputs import index_rows, read_jsonl
-from benchmark_reference.judge_prompt import prompt_sha256, render_prompt
+from benchmark_reference.judge_prompt import JSON_CONTRACT, PromptVariant, prompt_sha256
 from benchmark_reference.models import AnalysisError
 from benchmark_reference.public_lcb import question_fingerprint
 from benchmark_reference.threshold_benchmarks import AA_LCR, load_reference_panel
@@ -38,6 +38,7 @@ class JudgeItem:
     answer: str
     saved_grade: int
     saved_judge: str | None
+    variant: PromptVariant = JSON_CONTRACT
 
     @property
     def key(self) -> tuple[str, int]:
@@ -45,7 +46,9 @@ class JudgeItem:
 
     @property
     def prompt(self) -> str:
-        return render_prompt(question=self.question, reference=self.reference, answer=self.answer)
+        return self.variant.render(
+            question=self.question, reference=self.reference, answer=self.answer
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,6 +64,10 @@ class JudgeInputs:
         """One hash for all prompts, so a run and its estimate use the same text."""
         lines = [f"{i.model}:{i.index}:{prompt_sha256(i.prompt)}\n" for i in self.items]
         return hashlib.sha256("".join(lines).encode("utf-8")).hexdigest()
+
+    def for_variant(self, variant: PromptVariant) -> "JudgeInputs":
+        """The same answers with another judge prompt."""
+        return replace(self, items=tuple(replace(i, variant=variant) for i in self.items))
 
     @property
     def original_judge(self) -> str | None:

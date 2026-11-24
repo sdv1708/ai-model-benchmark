@@ -32,14 +32,13 @@ from pathlib import Path
 from typing import Any
 
 from benchmark_reference.judge_estimate import (
-    ISSUE,
     MAX_ATTEMPTS,
     PASSES,
     Estimate,
     model_key,
 )
 from benchmark_reference.judge_items import JudgeInputs, JudgeItem
-from benchmark_reference.judge_prompt import parse_reply, prompt_sha256
+from benchmark_reference.judge_prompt import prompt_sha256
 from benchmark_reference.long_context_reporting import encode_json
 from benchmark_reference.models import AnalysisError
 from benchmark_reference.reporting import write_atomic
@@ -204,7 +203,11 @@ def _attempt_record(
         record["error"] = "The reply has no message"
         return record
     record["reply"], record["finish_reason"] = content
-    parsed = parse_reply(content[0])
+    # The old parser reads any text, so the text of an error must not reach it.
+    if body.get("error") is not None or record["finish_reason"] == "error":
+        record["error"] = "The reply carries an error of the endpoint"
+        return record
+    parsed = estimate.variant.parse(content[0])
     record["status"] = PARSE_ERROR if parsed.verdict is None else SUCCESS
     record["verdict"], record["error"] = parsed.verdict, parsed.error
     return record
@@ -372,13 +375,13 @@ class _Runner:
             self.failed.append(slot)
 
 
-def check_approval_url(approval_url: str | None) -> None:
+def check_approval_url(approval_url: str | None, issue: str) -> None:
     """The URL must be a comment on the issue, where the owner approves the estimate."""
     if approval_url is None or not re.fullmatch(
-        re.escape(ISSUE) + r"#issuecomment-\d+", approval_url
+        re.escape(issue) + r"#issuecomment-\d+", approval_url
     ):
         raise AnalysisError(
-            f"A paid run needs --approval-url with the comment of the owner on {ISSUE} "
+            f"A paid run needs --approval-url with the comment of the owner on {issue} "
             "that approves this estimate"
         )
 
@@ -389,7 +392,7 @@ def check_approval(estimate: Estimate, approval_url: str | None, key: str | None
         if key is not None:
             raise AnalysisError("A loopback run takes no key. Remove it, so that no test sends it")
         return
-    check_approval_url(approval_url)
+    check_approval_url(approval_url, estimate.variant.issue)
     if not key:
         raise AnalysisError("A paid run needs the judge key in the environment variable")
     # The HTTP library puts an invalid header value in its error text, so check it here.
@@ -412,21 +415,26 @@ def _settings(estimate: Estimate, approval_url: str | None) -> bytes:
 def _claim(run_dir: Path, settings: bytes) -> Path:
     """Bind the folder to one estimate, and refuse a second writer."""
     run_dir.mkdir(parents=True, exist_ok=True)
-    path = run_dir / SETTINGS
-    if path.exists():
-        if path.read_bytes() != settings:
-            raise AnalysisError(f"{run_dir} holds a run of another estimate or approval")
-    elif (run_dir / JUDGMENTS).exists():
-        raise AnalysisError(f"{run_dir} holds judgments with no {SETTINGS}")
-    else:
-        write_atomic(path, settings)
     lock = run_dir / "run.lock"
+    # The lock comes first, so that a second command cannot replace the settings of a run.
     try:
         os.close(os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
     except FileExistsError:
         raise AnalysisError(
             f"{lock} exists. Another run uses this folder. If no run is active, delete the file."
         ) from None
+    try:
+        path = run_dir / SETTINGS
+        if path.exists():
+            if path.read_bytes() != settings:
+                raise AnalysisError(f"{run_dir} holds a run of another estimate or approval")
+        elif (run_dir / JUDGMENTS).exists():
+            raise AnalysisError(f"{run_dir} holds judgments with no {SETTINGS}")
+        else:
+            write_atomic(path, settings)
+    except BaseException:
+        lock.unlink(missing_ok=True)
+        raise
     return lock
 
 
@@ -452,6 +460,7 @@ def run_judge(
     check_approval(estimate, approval_url, key)
     if workers < 1 or (max_new_requests is not None and max_new_requests < 1):
         raise AnalysisError("--workers and --max-requests must be 1 or more")
+    inputs = inputs.for_variant(estimate.variant)
     if inputs.prompts_sha256 != estimate.prompts_sha256:
         raise AnalysisError("The prompts differ from the prompts of the estimate")
     lock = _claim(run_dir, _settings(estimate, approval_url))

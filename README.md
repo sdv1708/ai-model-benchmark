@@ -280,9 +280,10 @@ Errors include source paths and line numbers.
 | `experiments.py`, `transfer.py`                                 | Evaluate held-out models and independently held-out model pairs.                                                                |
 | `uncertainty.py`, `study_metrics.py`                            | Compute intervals, ordering evidence, and threshold outcomes.                                                                   |
 | `judge_noise.py`                                                | Report sensitivity to hypothetical changed judgments.                                                                           |
-| `judge_items.py`, `judge_prompt.py`                             | Load the saved AA-LCR answers and build the EvalScope judge prompt.                                                             |
+| `judge_items.py`, `judge_prompt.py`                             | Load the saved AA-LCR answers and build the two EvalScope judge prompts.                                                        |
 | `judge_estimate.py`, `judge_run.py`                             | Write the cost estimate and collect judgments under an approved estimate.                                                       |
 | `judge_report.py`, `judge_statement.py`, `judge_cli.py`         | Measure the judge noise and give it to the threshold report.                                                                    |
+| `judge_compare.py`                                              | Compare the old one-word judge prompt with the JSON prompt and the saved grades (#88).                                          |
 | `operating_points.py`                                           | Apply score, ordering, uncertainty, and decision gates.                                                                         |
 | `threshold_policy.py`, `threshold_protocol.py`                  | Load a policy file, check the protocol of a frozen policy, record its hash, and enforce the frozen lock.                        |
 | `threshold_rules.py`, `threshold_freeze.py`                     | Apply the fixed rules to a simulated run and write a new frozen policy version.                                                 |

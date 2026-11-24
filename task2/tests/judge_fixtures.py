@@ -42,14 +42,20 @@ class Data:
         ]
 
 
-def write_data(folder: Path, *, judge: str | None = SAVED_JUDGE) -> Data:
-    """A panel, saved reviews, and reference answers with consistent hashes."""
+def write_data(
+    folder: Path, *, judge: str | None = SAVED_JUDGE, references: Mapping[int, str] | None = None
+) -> Data:
+    """A panel, saved reviews, and reference answers with consistent hashes.
+
+    ``references`` replaces the reference answer of some questions.
+    """
+    answers = {i: f"Reference {i}" for i in range(QUESTIONS)} | dict(references or {})
     questions = [f"What is the value of item {i}, with {{braces}}?" for i in range(QUESTIONS)]
     buffer = io.StringIO(newline="")
     writer = csv.writer(buffer)
     writer.writerow(("question", "answer"))
     # The file order differs from the panel order, so the join cannot use the position.
-    writer.writerows((q, f"Reference {i}") for i, q in reversed(list(enumerate(questions))))
+    writer.writerows((q, answers[i]) for i, q in reversed(list(enumerate(questions))))
     csv_path = folder / "AA-LCR_Dataset.csv"
     csv_path.write_bytes(buffer.getvalue().encode("utf-8"))
     root = folder / "Evals"
@@ -113,6 +119,8 @@ class Scripted:
     raw: bytes | None = None
     model: str | None = None
     identity: str | None = None
+    finish_reason: str = "stop"
+    error: Any = None
     usage: Mapping[str, int] | None = field(
         default_factory=lambda: {"prompt_tokens": 300, "completion_tokens": 20}
     )
@@ -150,11 +158,13 @@ def scripted_judge(script: Script) -> Iterator[Judge]:
                 "choices": [
                     {
                         "index": 0,
-                        "finish_reason": "stop",
+                        "finish_reason": reply.finish_reason,
                         "message": {"role": "assistant", "content": reply.content},
                     }
                 ],
             }
+            if reply.error is not None:
+                document["error"] = reply.error
             if reply.usage is not None:
                 document["usage"] = dict(reply.usage)
             data = reply.raw if reply.raw is not None else json.dumps(document).encode("utf-8")

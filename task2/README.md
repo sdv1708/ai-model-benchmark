@@ -612,6 +612,7 @@ It obeys these rules:
 - Each judgment is one request with one user message. The text is the judge prompt of the EvalScope AA-LCR adapter, with no change.
 - The settings are the EvalScope judge defaults: temperature `0.0` and at most `4096` output tokens. The run sends no seed.
 - A reply outside the output contract is not a verdict. One run of the command sends at most 3 requests for it, and keeps every attempt.
+- A reply that carries an error of the endpoint is not a verdict.
 - A reply of another model, or a reply with a repeated response identifier, is not a verdict. It stops the run.
 - The run stops before the next request could pass the cost limit. It counts a lost reply, a server fault, and a reply with no token count at the highest possible cost of the request.
 - If the process stops during a request, the record does not hold the cost of that request. After such a stop, compare the account balance with the report.
@@ -630,7 +631,57 @@ A loopback judge gets no key and needs no approval. The tests use a scripted loo
 | `report.md`       | The result, the judge and its settings, the cost, and the limits.                    |
 | `run.json`        | The estimate and the approval comment.                                               |
 
-The report compares the score range across passes with the stage-1 interval width of policy v1 (60 probes: 3 models and 20 seeds).
+### Test the old judge prompt
+
+Issue [#88](https://github.com/sdv1708/ai-model-benchmark/issues/88) tests the [likely cause](#likely-cause-of-the-score-shift).
+The control run sends the same 300 saved answers to the same judge, at the same endpoint, 5 times each.
+It uses the old one-word prompt of EvalScope `v1.4.2`.
+No paid run of this prompt is recorded yet.
+
+| Item                  | JSON prompt (#76)                     | One-word prompt (#88)                                                                   |
+| --------------------- | ------------------------------------- | --------------------------------------------------------------------------------------- |
+| Prompt                | Base prompt and JSON contract         | Base prompt only                                                                        |
+| Verdict               | The `verdict` of the JSON object      | CORRECT when the reply matches `\bCORRECT\b` in any case, else INCORRECT                |
+| No verdict            | A reply outside the contract          | An empty reply. EvalScope grades it as INCORRECT, and this run sends the request again  |
+| Maximum output tokens | `4096`                                | `1024`                                                                                  |
+
+The issue fixed the decision rule before the run.
+The rule covers the 13 answers that changed in #76:
+
+| Answers of the 13 that are INCORRECT again | Conclusion                             |
+| ------------------------------------------ | -------------------------------------- |
+| 10 to 13                                   | The prompt explains most of the shift  |
+| 4 to 9                                     | The prompt explains a part of the shift |
+| 0 to 3                                     | The prompt does not explain the shift  |
+
+The commands are the same, with these differences:
+
+1. Compare the old prompt and the old parser with the EvalScope source. Put the two files of `v1.4.2` in one folder, with their repository paths. The tool checks the SHA-256 of each file.
+
+   ```powershell
+   uv run python tools/audit_old_judge_prompt.py --evalscope <folder> --data-root ../Evals --panel data/aa-lcr-reference-panel.json --source-csv output/aa-lcr-source/AA-LCR_Dataset.csv
+   ```
+
+2. Add `--prompt one-word` to `estimate`. `estimate` and `run` refuse another judge or another endpoint than the run of #76. The owner approves the estimate in a comment on issue #88. The `run` command checks only the form of the comment address.
+
+   ```powershell
+   uv run aa-lcr-judge estimate --prompt one-word --source-csv output/aa-lcr-source/AA-LCR_Dataset.csv --base-url https://api.deepinfra.com/v1/openai --judge-model Qwen/Qwen3-235B-A22B-Instruct-2507 --input-price <USD for 1M tokens> --output-price <USD for 1M tokens> --price-source <URL> --limit-usd <USD> --output ../docs/data/task2-aa-lcr-judge-one-word-estimate.json
+   ```
+
+3. Use `run` with the new estimate and a new run folder, `output/judge-one-word-run`.
+4. Use `compare` in place of `report`.
+
+   ```powershell
+   uv run aa-lcr-judge compare --source-csv output/aa-lcr-source/AA-LCR_Dataset.csv --run-dir output/judge-one-word-run --output-dir ../docs/data/task2-aa-lcr-judge-one-word
+   ```
+
+`compare` reads the JSON run from `docs/data/task2-aa-lcr-judge-rerun` and changes no file of it.
+It applies the rule and compares the three sets of grades for each model and for each form of the reference answer.
+One run on another day does not separate the prompt from the endpoint, the precision, and the date of the saved judgments.
+
+### Judge noise and the interval of policy v1
+
+The report of #76 compares the score range across passes with the stage-1 interval width of policy v1 (60 probes: 3 models and 20 seeds).
 Policy v1 does not change. Its interval excludes judge noise.
 
 ## Public LiveCodeBench results
@@ -747,6 +798,7 @@ The following integration records remain available:
 `tools/audit_evalscope_lcb.py` and `tools/audit_evalscope_aa_lcr.py` require an appropriate native checkout.
 Their optional tokenizer integration requires the `integration` dependency extra.
 `tools/audit_judge_prompt.py` requires the same checkout. It compares the judge prompt and the reply parser of this package with the adapter, on all 300 saved answers.
+`tools/audit_old_judge_prompt.py` does the same for the [old one-word prompt](#test-the-old-judge-prompt). It needs two source files of EvalScope `v1.4.2`, and no installation of EvalScope.
 The local reference, subset, and image commands work independently of that checkout.
 
 ## Image-pair prototype
