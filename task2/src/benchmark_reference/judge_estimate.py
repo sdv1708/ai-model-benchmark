@@ -2,13 +2,14 @@
 
 The owner approves one estimate file. ``aa-lcr-judge run`` reads the endpoint, the
 judge model, the prices, and the cost limit from that file only. A run can therefore
-not use a setting that the owner did not approve.
+not use a setting that the owner did not approve. The file also names the prompt
+variant. An estimate with no such field is an estimate of #76, which used the JSON prompt.
 
 The token counts are estimates, because the project does not hold the judge tokenizer:
 
 - Expected input: one token for each digit, and one for each 4 other characters.
 - High input: one token for each digit, and one for each 2.5 other characters.
-- Expected and high output: a fixed count for each reply.
+- Expected and high output: a fixed count for each reply of the prompt variant.
 """
 
 import hashlib
@@ -23,19 +24,15 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from benchmark_reference.judge_items import JudgeInputs
-from benchmark_reference.judge_prompt import SOURCE, SOURCE_COMMIT, SOURCE_FILES
+from benchmark_reference.judge_prompt import JSON_CONTRACT, VARIANTS, PromptVariant
 from benchmark_reference.long_context_reporting import encode_json
 from benchmark_reference.models import AnalysisError
 
 SCHEMA_VERSION = 1
-ISSUE = "https://github.com/sdv1708/ai-model-benchmark/issues/76"
 PASSES = 5
 MAX_ATTEMPTS = 3
-EXPECTED_OUTPUT_TOKENS = 120
-HIGH_OUTPUT_TOKENS = 300
-# The defaults of the EvalScope judge. The saved reviews do not record the settings.
+# The default of the EvalScope judge. The saved reviews do not record the settings.
 TEMPERATURE = 0.0
-MAX_TOKENS = 4096
 _LOOPBACK = ("127.0.0.1", "localhost", "::1")
 
 
@@ -67,6 +64,7 @@ class Estimate:
     limit_usd: Fraction
     max_requests: int
     prompts_sha256: str
+    variant: PromptVariant
 
     @property
     def loopback(self) -> bool:
@@ -118,6 +116,16 @@ def _usd(value: Fraction) -> float:
     return round(float(value), 4)
 
 
+def _prompt_fields(variant: PromptVariant) -> dict[str, Any]:
+    """The source of a prompt. Only the one-word prompt comes from a tag."""
+    return {
+        "source": variant.source,
+        "commit": variant.commit,
+        **({"tag": variant.tag} if variant.tag else {}),
+        "files": list(variant.files),
+    }
+
+
 def build_estimate(
     inputs: JudgeInputs,
     *,
@@ -126,13 +134,15 @@ def build_estimate(
     prices: Prices,
     limit_usd: Fraction,
     allow_different_judge: bool = False,
+    variant: PromptVariant = JSON_CONTRACT,
 ) -> bytes:
     """The estimate document. It stops when the judge is not the judge of the saved reviews."""
+    inputs = inputs.for_variant(variant)
     original = inputs.original_judge
     same = same_model(original, judge_model)
     if same is False and not allow_different_judge:
         raise AnalysisError(
-            f"The saved reviews name the judge {original!r}, not {judge_model!r}. Issue #76 "
+            f"The saved reviews name the judge {original!r}, not {judge_model!r}. {variant.issue} "
             "requires the original judge. Use --allow-different-judge only when the owner "
             "approves another judge."
         )
@@ -140,24 +150,23 @@ def build_estimate(
     calls = len(prompts) * PASSES
     expected_input = PASSES * sum(_tokens(p, 4) for p in prompts)
     high_input = PASSES * sum(_tokens(p, 2.5) for p in prompts)
-    expected_output = calls * EXPECTED_OUTPUT_TOKENS
-    high_output = calls * HIGH_OUTPUT_TOKENS
+    expected_output = calls * variant.expected_output_tokens
+    high_output = calls * variant.high_output_tokens
     document = {
         "schema_version": SCHEMA_VERSION,
         "command": "aa-lcr-judge estimate",
-        "issue": ISSUE,
+        "issue": variant.issue,
         "judge": {
             "model": judge_model,
             "original_model": original,
             "same_judge": same,
             "base_url": check_url(base_url),
             "temperature": TEMPERATURE,
-            "max_tokens": MAX_TOKENS,
+            "max_tokens": variant.max_tokens,
         },
         "prompt": {
-            "source": SOURCE,
-            "commit": SOURCE_COMMIT,
-            "files": list(SOURCE_FILES),
+            "variant": variant.name,
+            **_prompt_fields(variant),
             "prompts_sha256": inputs.prompts_sha256,
         },
         "inputs": dict(inputs.files),
@@ -209,6 +218,25 @@ def load_estimate(data: bytes) -> Estimate:
         )
         if document["schema_version"] != SCHEMA_VERSION:
             raise AnalysisError("The estimate has an unknown schema")
+        name = document["prompt"].get("variant", JSON_CONTRACT.name)
+        if name not in VARIANTS:
+            raise AnalysisError(f"The estimate has an unknown judge prompt, {name!r}")
+        variant = VARIANTS[name]
+        if document["issue"] != variant.issue:
+            raise AnalysisError(
+                f"The estimate names the issue {document['issue']!r}. Its prompt belongs to "
+                f"{variant.issue}"
+            )
+        # A changed setting would make the paid run useless for the comparison of the prompts.
+        recorded = {
+            k: v for k, v in document["prompt"].items() if k not in ("variant", "prompts_sha256")
+        }
+        if (
+            judge["temperature"] != TEMPERATURE
+            or judge["max_tokens"] != variant.max_tokens
+            or recorded != _prompt_fields(variant)
+        ):
+            raise AnalysisError("The estimate does not have the settings of its prompt")
         # The report hashes the document again, so the file must have the same bytes.
         if encode_json(document) != data:
             raise AnalysisError(
@@ -238,6 +266,7 @@ def load_estimate(data: bytes) -> Estimate:
             limit_usd=limit,
             max_requests=int(calls["max_requests"]),
             prompts_sha256=str(document["prompt"]["prompts_sha256"]),
+            variant=variant,
         )
     except AnalysisError:
         raise
@@ -251,6 +280,7 @@ def console_lines(estimate: Estimate) -> list[str]:
     return [
         f"Judge: {estimate.judge_model} at {estimate.base_url} "
         f"(judge of the saved reviews: {estimate.original_judge or 'not recorded'})",
+        f"Judge prompt: {estimate.variant.name} ({estimate.variant.issue})",
         f"Judgments: {calls['judgments']:,}; at most {calls['max_requests']:,} requests",
         f"Expected: {tokens['expected']['input']:,} input and "
         f"{tokens['expected']['output']:,} output tokens, ${cost['expected']:.2f}",

@@ -21,7 +21,7 @@ from typing import Any
 
 from benchmark_reference.judge_estimate import PASSES, Estimate, load_estimate, model_key
 from benchmark_reference.judge_items import JudgeInputs
-from benchmark_reference.judge_prompt import parse_reply, prompt_sha256
+from benchmark_reference.judge_prompt import JSON_CONTRACT, prompt_sha256
 from benchmark_reference.judge_run import (
     JUDGMENTS,
     PARSE_ERROR,
@@ -83,8 +83,8 @@ class JudgeRecord:
     verdicts: Verdicts
 
 
-def load_run(run_dir: Path, inputs: JudgeInputs) -> JudgeRecord:
-    """Read a run folder. It stops when a judgment is missing, repeated, or not consistent."""
+def load_settings(run_dir: Path) -> tuple[Estimate, str | None, bytes]:
+    """The estimate, the approval, and the exact bytes of the settings of a run folder."""
     settings_path = run_dir / SETTINGS
     settings_bytes = settings_path.read_bytes()
     try:
@@ -99,7 +99,14 @@ def load_run(run_dir: Path, inputs: JudgeInputs) -> JudgeRecord:
     if estimate.sha256 != recorded:
         raise AnalysisError(f"{settings_path} does not hold the estimate that it names")
     if not estimate.loopback:
-        check_approval_url(approval)
+        check_approval_url(approval, estimate.variant.issue)
+    return estimate, approval, settings_bytes
+
+
+def load_run(run_dir: Path, inputs: JudgeInputs) -> JudgeRecord:
+    """Read a run folder. It stops when a judgment is missing, repeated, or not consistent."""
+    estimate, approval, settings_bytes = load_settings(run_dir)
+    inputs = inputs.for_variant(estimate.variant)
     if estimate.prompts_sha256 != inputs.prompts_sha256:
         raise AnalysisError(f"{run_dir} used other prompts")
     prompts = {item.key: prompt_sha256(item.prompt) for item in inputs.items}
@@ -128,7 +135,7 @@ def load_run(run_dir: Path, inputs: JudgeInputs) -> JudgeRecord:
             identities.add(identity)
         if returned is not None and model_key(returned) != model_key(estimate.judge_model):
             raise AnalysisError(f"The judgment of {slot} comes from model {returned!r}")
-        verdict = parse_reply(attempt["reply"] or "").verdict
+        verdict = estimate.variant.parse(attempt["reply"] or "").verdict
         if verdict is None or verdict != attempt["verdict"]:
             raise AnalysisError(f"The verdict of {slot} differs from its reply")
         found[slot] = int(verdict == "CORRECT")
@@ -186,7 +193,7 @@ def interval_widths(panel: ReferencePanel, policy: ThresholdPolicy) -> dict[str,
     return widths
 
 
-def _round(value: float | Fraction) -> float:
+def rounded(value: float | Fraction) -> float:
     return round(float(value), 6)
 
 
@@ -201,7 +208,7 @@ def _agreement(verdicts: Verdicts, inputs: JudgeInputs) -> dict[str, Any]:
     return {
         "answers": len(verdicts),
         "agree": agree,
-        "share": _round(Fraction(agree, len(verdicts))),
+        "share": rounded(Fraction(agree, len(verdicts))),
         "saved_correct_majority_incorrect": table[1, 0],
         "saved_incorrect_majority_correct": table[0, 1],
     }
@@ -226,25 +233,25 @@ def _models(
                 "answers": size,
                 "not_unanimous": sum(len(set(g)) > 1 for g in grades.values()),
                 "pass_correct": list(counts),
-                "pass_scores": [_round(Fraction(c, size)) for c in counts],
-                "lowest_score": _round(Fraction(min(counts), size)),
-                "highest_score": _round(Fraction(max(counts), size)),
-                "score_range": _round(Fraction(max(counts) - min(counts), size)),
-                "score_standard_deviation": _round(statistics.stdev(c / size for c in counts)),
-                "saved_score": _round(Fraction(saved, size)),
-                "majority_score": _round(Fraction(voted, size)),
-                "majority_shift": _round(Fraction(voted - saved, size)),
+                "pass_scores": [rounded(Fraction(c, size)) for c in counts],
+                "lowest_score": rounded(Fraction(min(counts), size)),
+                "highest_score": rounded(Fraction(max(counts), size)),
+                "score_range": rounded(Fraction(max(counts) - min(counts), size)),
+                "score_standard_deviation": rounded(statistics.stdev(c / size for c in counts)),
+                "saved_score": rounded(Fraction(saved, size)),
+                "majority_score": rounded(Fraction(voted, size)),
+                "majority_shift": rounded(Fraction(voted - saved, size)),
                 "saved_decision": full_set_decision(saved, size, threshold),
                 "pass_decisions": decisions,
                 "decision_changes": len(set(decisions)) > 1,
                 "pass_pairs_that_differ": sum(a != b for a, b in combinations(decisions, 2)),
-                "mean_stage1_interval_width": _round(_mean(widths[model])),
+                "mean_stage1_interval_width": rounded(_mean(widths[model])),
             }
         )
     return rows
 
 
-def _usage(record: JudgeRecord) -> dict[str, Any]:
+def usage_summary(record: JudgeRecord) -> dict[str, Any]:
     attempts = record.attempts
     status = Counter(a["status"] for a in attempts)
     return {
@@ -258,19 +265,48 @@ def _usage(record: JudgeRecord) -> dict[str, Any]:
         "requests_with_no_token_count": sum(
             a["input_tokens"] is None or a["output_tokens"] is None for a in attempts
         ),
-        "cost_bound_usd": _round(sum(Fraction(a["cost_bound_usd"]) for a in attempts)),
-        "limit_usd": _round(record.estimate.limit_usd),
+        "cost_bound_usd": rounded(sum(Fraction(a["cost_bound_usd"]) for a in attempts)),
+        "limit_usd": rounded(record.estimate.limit_usd),
     }
 
 
-def _values(record: JudgeRecord, name: str) -> list[str]:
-    return sorted({a[name] for a in record.attempts if a[name] is not None})
+def judge_settings(record: JudgeRecord) -> dict[str, Any]:
+    """The settings of the estimate, and what the endpoint returned."""
+
+    def values(name: str) -> list[str]:
+        return sorted({a[name] for a in record.attempts if a[name] is not None})
+
+    return {
+        **record.estimate.document["judge"],
+        "response_models": values("response_model"),
+        "providers": values("provider"),
+        "system_fingerprints": values("system_fingerprint"),
+        "run_dates_utc": sorted({a["started_at"][:10] for a in record.attempts}),
+    }
+
+
+def judgment_lines(record: JudgeRecord) -> bytes:
+    """Every attempt of the run, in slot order."""
+    return "".join(json.dumps(a, sort_keys=True) + "\n" for a in record.attempts).encode("utf-8")
+
+
+def code_hashes(names: Sequence[str]) -> dict[str, str]:
+    """The SHA-256 of each source file, with one line end on every computer."""
+    code = Path(__file__).parent
+    return {
+        name: hashlib.sha256((code / name).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+        for name in names
+    }
 
 
 def summary_document(
     record: JudgeRecord, inputs: JudgeInputs, panel: ReferencePanel, loaded: LoadedPolicy
 ) -> dict[str, Any]:
     """Every measured value of the report."""
+    if record.estimate.variant is not JSON_CONTRACT:
+        raise AnalysisError(
+            f"The run used the {record.estimate.variant.name} prompt. Use 'aa-lcr-judge compare'."
+        )
     if panel.sha256 != inputs.panel_sha256:
         raise AnalysisError("The panel differs from the panel of the saved answers")
     policy = loaded.benchmarks[AA_LCR]
@@ -286,13 +322,7 @@ def summary_document(
         "schema_version": 1,
         "command": "aa-lcr-judge report",
         "loopback_test": estimate.loopback,
-        "judge": {
-            **estimate.document["judge"],
-            "response_models": _values(record, "response_model"),
-            "providers": _values(record, "provider"),
-            "system_fingerprints": _values(record, "system_fingerprint"),
-            "run_dates_utc": sorted({a["started_at"][:10] for a in record.attempts}),
-        },
+        "judge": judge_settings(record),
         "prompt": estimate.document["prompt"],
         "estimate_sha256": estimate.sha256,
         "approval_url": record.approval_url,
@@ -300,7 +330,7 @@ def summary_document(
         "disagreement": {
             "answers": len(record.verdicts),
             "not_unanimous": split,
-            "share": _round(Fraction(split, len(record.verdicts))),
+            "share": rounded(Fraction(split, len(record.verdicts))),
             "correct_votes": {
                 str(votes): count
                 for votes, count in sorted(
@@ -310,7 +340,7 @@ def summary_document(
         },
         "agreement_with_saved_judgment": _agreement(record.verdicts, inputs),
         "models": models,
-        "full_set_score": {"largest_range": _round(largest)},
+        "full_set_score": {"largest_range": rounded(largest)},
         "decisions": {
             "threshold": policy.threshold,
             "models": len(models),
@@ -325,13 +355,13 @@ def summary_document(
             "stratifier": policy.stratifier,
             "stage1_size": policy.stage1_size,
             "seeds": len(policy.seeds),
-            "mean_width": _round(_mean(all_widths)),
-            "lowest_width": _round(min(all_widths)),
-            "highest_width": _round(max(all_widths)),
-            "largest_score_range_to_mean_width": _round(largest / _mean(all_widths)),
+            "mean_width": rounded(_mean(all_widths)),
+            "lowest_width": rounded(min(all_widths)),
+            "highest_width": rounded(max(all_widths)),
+            "largest_score_range_to_mean_width": rounded(largest / _mean(all_widths)),
             "includes_judge_noise": False,
         },
-        "usage": _usage(record),
+        "usage": usage_summary(record),
     }
 
 
@@ -363,7 +393,7 @@ def noise_record(summary: Mapping[str, Any], *, panel_sha256: str) -> dict[str, 
     }
 
 
-def _csv(columns: Sequence[str], rows: Sequence[Sequence[object]]) -> bytes:
+def csv_table(columns: Sequence[str], rows: Sequence[Sequence[object]]) -> bytes:
     buffer = io.StringIO(newline="")
     writer = csv.writer(buffer, lineterminator="\n")
     writer.writerow(columns)
@@ -371,7 +401,7 @@ def _csv(columns: Sequence[str], rows: Sequence[Sequence[object]]) -> bytes:
     return buffer.getvalue().encode("utf-8")
 
 
-def _table(head: Sequence[str], rows: Sequence[Sequence[object]]) -> str:
+def markdown_table(head: Sequence[str], rows: Sequence[Sequence[object]]) -> str:
     lines = ["| " + " | ".join(head) + " |", "|" + " --- |" * len(head)]
     return "\n".join([*lines, *("| " + " | ".join(str(c) for c in row) + " |" for row in rows)])
 
@@ -405,7 +435,7 @@ def _judge_sentences(summary: Mapping[str, Any]) -> list[str]:
 
 def _settings_table(summary: Mapping[str, Any]) -> str:
     judge, prompt = summary["judge"], summary["prompt"]
-    return _table(
+    return markdown_table(
         ("Setting", "Value"),
         (
             ("Judge model, requested", f"`{judge['model']}`"),
@@ -425,7 +455,7 @@ def _settings_table(summary: Mapping[str, Any]) -> str:
 
 
 def _score_table(summary: Mapping[str, Any]) -> str:
-    return _table(
+    return markdown_table(
         (
             "Model",
             "Answers with unequal judgments",
@@ -464,7 +494,7 @@ def markdown_report(summary: Mapping[str, Any]) -> bytes:
         if summary["loopback_test"]
         else ""
     )
-    widths = _table(
+    widths = markdown_table(
         ("Model", "Score range across the passes", "Mean stage-1 interval width"),
         [
             (m["model"], f"{m['score_range']:.2f}", f"{m['mean_stage1_interval_width']:.3f}")
@@ -524,7 +554,7 @@ The interval describes sampling error on fixed grades. It excludes judge noise.
 def _answers_table(record: JudgeRecord, inputs: JudgeInputs) -> bytes:
     saved = {item.key: item.saved_grade for item in inputs.items}
     columns = ("model", "index", "saved_grade", *(f"pass_{n}" for n in range(1, PASSES + 1)))
-    return _csv(
+    return csv_table(
         (*columns, "correct_votes", "majority", "unanimous", "agrees_with_saved"),
         [
             (
@@ -549,7 +579,7 @@ def _scores_table(summary: Mapping[str, Any]) -> bytes:
             zip(m["pass_correct"], m["pass_scores"], m["pass_decisions"], strict=True), start=1
         )
     ]
-    return _csv(("model", "pass", "correct", "answers", "score", "decision"), rows)
+    return csv_table(("model", "pass", "correct", "answers", "score", "decision"), rows)
 
 
 def build_outputs(
@@ -559,9 +589,8 @@ def build_outputs(
     summary = summary_document(record, inputs, panel, loaded)
     noise = noise_record(summary, panel_sha256=panel.sha256)
     statement_and_cell(noise)
-    lines = [json.dumps(a, sort_keys=True) + "\n" for a in record.attempts]
     outputs = {
-        JUDGMENTS: "".join(lines).encode("utf-8"),
+        JUDGMENTS: judgment_lines(record),
         SETTINGS: record.settings_bytes,
         "answers.csv": _answers_table(record, inputs),
         "scores.csv": _scores_table(summary),
@@ -569,7 +598,6 @@ def build_outputs(
         RECORD_FILE: encode_json(noise),
         "report.md": markdown_report(summary),
     }
-    code = Path(__file__).parent
     outputs["manifest.json"] = encode_json(
         {
             "schema_version": 1,
@@ -578,10 +606,7 @@ def build_outputs(
             "inputs": dict(inputs.files),
             "policy": {"key": loaded.key, "sha256": loaded.sha256},
             "implementation_hash_policy": "SHA256 of source bytes after CRLF-to-LF normalization",
-            "implementation_sha256": {
-                name: hashlib.sha256((code / name).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
-                for name in IMPLEMENTATION_FILES
-            },
+            "implementation_sha256": code_hashes(IMPLEMENTATION_FILES),
             "output_sha256": {n: hashlib.sha256(d).hexdigest() for n, d in outputs.items()},
         }
     )

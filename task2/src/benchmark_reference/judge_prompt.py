@@ -1,16 +1,20 @@
-"""The AA-LCR judge prompt and reply parser of the EvalScope pruning repository.
+"""The two AA-LCR judge prompts, each with its reply parser and its settings.
 
-This module copies two parts of that repository with no change in behavior. The
-parts are the prompt of the AA-LCR adapter and the output contract.
-``tools/audit_judge_prompt.py`` compares this copy with a checkout of the
-repository: it compares every rendered prompt and the result of every test reply.
+``JSON_CONTRACT`` is the prompt of the EvalScope pruning repository (#76). This module
+copies two parts of that repository with no change in behavior: the prompt of the
+AA-LCR adapter and the output contract. The adapter prompt ends with "Reply only with
+CORRECT or INCORRECT." The contract then asks for a JSON object. The adapter sends
+both, so this module sends both. ``tools/audit_judge_prompt.py`` compares the copy with
+a checkout of the repository.
 
-The adapter prompt ends with "Reply only with CORRECT or INCORRECT." The contract
-then asks for a JSON object. The adapter sends both, so this module sends both.
+``ONE_WORD`` is the prompt of EvalScope v1.4.2 (#88): the same adapter prompt with no
+contract. ``tools/audit_old_judge_prompt.py`` compares it with the source at that tag.
 """
 
 import hashlib
 import json
+import re
+from collections.abc import Callable
 from dataclasses import dataclass
 
 SOURCE = "https://github.com/sdv1708/evalscope-pruning"
@@ -37,14 +41,6 @@ CONTRACT_INSTRUCTION = (
     '- "verdict": exactly one of "CORRECT" or "INCORRECT"'
 )
 VERDICTS = ("CORRECT", "INCORRECT")
-
-
-def render_prompt(*, question: str, reference: str, answer: str) -> str:
-    """The exact text of the one user message of a judge call."""
-    return (
-        JUDGE_PROMPT.format(question=question, correct_answer=reference, response=answer)
-        + CONTRACT_INSTRUCTION
-    )
 
 
 def prompt_sha256(prompt: str) -> str:
@@ -78,6 +74,19 @@ def parse_reply(reply: str) -> ParsedReply:
     return ParsedReply(verdict)
 
 
+def parse_one_word_reply(reply: str) -> ParsedReply:
+    """Read the verdict with the rule of EvalScope v1.4.2: is the word CORRECT in the reply?
+
+    EvalScope also grades an empty reply and a transport error as INCORRECT. Here an
+    empty reply is an error, and the run never gives the parser a transport error.
+    """
+    if not reply.strip():
+        return ParsedReply(None, "empty response")
+    return ParsedReply(
+        "CORRECT" if re.search(r"\bCORRECT\b", reply, re.IGNORECASE) else "INCORRECT"
+    )
+
+
 def _payloads(text: str) -> list[str]:
     """Every top-level JSON object of the reply, with the scan of the contract."""
     found: list[str] = []
@@ -102,3 +111,68 @@ def _payloads(text: str) -> list[str]:
             if depth == 0:
                 found.append(text[start : position + 1])
     return found
+
+
+@dataclass(frozen=True, slots=True)
+class PromptVariant:
+    """One judge prompt: its parser, its source, its settings, and the issue of its run.
+
+    The output tokens are the expected and the high count of one reply, for the estimate.
+    """
+
+    name: str
+    title: str
+    issue: str
+    source: str
+    commit: str
+    tag: str | None
+    files: tuple[str, ...]
+    suffix: str
+    parse: Callable[[str], ParsedReply]
+    max_tokens: int
+    expected_output_tokens: int
+    high_output_tokens: int
+
+    def render(self, *, question: str, reference: str, answer: str) -> str:
+        """The exact text of the one user message of a judge call."""
+        return (
+            JUDGE_PROMPT.format(question=question, correct_answer=reference, response=answer)
+            + self.suffix
+        )
+
+
+_ISSUES = "https://github.com/sdv1708/ai-model-benchmark/issues/"
+JSON_CONTRACT = PromptVariant(
+    name="json-contract",
+    title="JSON prompt",
+    issue=f"{_ISSUES}76",
+    source=SOURCE,
+    commit=SOURCE_COMMIT,
+    tag=None,
+    files=SOURCE_FILES,
+    suffix=CONTRACT_INSTRUCTION,
+    parse=parse_reply,
+    max_tokens=4096,
+    expected_output_tokens=120,
+    high_output_tokens=300,
+)
+ONE_WORD = PromptVariant(
+    name="one-word",
+    title="One-word prompt",
+    issue=f"{_ISSUES}88",
+    source="https://github.com/modelscope/evalscope",
+    commit="457dc8cbc2539aca173b4a71bcb29e352804d4af",
+    tag="v1.4.2",
+    files=("evalscope/benchmarks/aa_lcr/aa_lcr_adapter.py", "evalscope/metrics/llm_judge.py"),
+    suffix="",
+    parse=parse_one_word_reply,
+    max_tokens=1024,
+    expected_output_tokens=3,
+    high_output_tokens=20,
+)
+VARIANTS = {variant.name: variant for variant in (JSON_CONTRACT, ONE_WORD)}
+
+
+def render_prompt(*, question: str, reference: str, answer: str) -> str:
+    """The JSON prompt of #76."""
+    return JSON_CONTRACT.render(question=question, reference=reference, answer=answer)
