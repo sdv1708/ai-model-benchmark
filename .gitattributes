@@ -11,3 +11,5 @@ docs/data/task2-aa-lcr-judge-rerun/* text eol=lf
 docs/data/task2-aa-lcr-judge-one-word-estimate.json text eol=lf
 docs/data/task2-aa-lcr-judge-one-word/* text eol=lf
 task2/data/aa-lcr-judge-noise.json text eol=lf
+docs/results*.md text eol=lf
+docs/results*.svg text eol=lf

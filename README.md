@@ -1,5 +1,6 @@
 # Performance & Quality Lab
 
+- **Results on one page:** [Two-stage decision on 28 real models](docs/results.md)
 - **Live application:** [Performance Studio](https://ai-model-quality-challenge-rho.vercel.app/)
 - **Benchmark runner:** [EvalScope pruning repository](https://github.com/sdv1708/evalscope-pruning). This repository is public.
 - **Planned work:** [Known gaps and planned work](#known-gaps-and-planned-work)
