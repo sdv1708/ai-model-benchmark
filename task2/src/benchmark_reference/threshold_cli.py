@@ -154,7 +154,7 @@ def _print_run(run: BenchmarkRun) -> None:
         print(f"{title}, d95: {claim['smallest_sentence']}")
 
 
-def _protect_inputs(args: argparse.Namespace, names: Sequence[str]) -> None:
+def protect_inputs(args: argparse.Namespace, names: Sequence[str]) -> None:
     """Stop when an output path would replace an input."""
     validate_output_location(args.output_dir, args.panel_dir, output_names=names)
     validate_output_location(args.output_dir, args.data_root, output_names=names)
@@ -162,7 +162,7 @@ def _protect_inputs(args: argparse.Namespace, names: Sequence[str]) -> None:
         raise AnalysisError(f"An output path would overwrite the policy {args.policy}")
 
 
-def _refuse_overwrite(loaded: LoadedPolicy, output_dir: Path, names: Sequence[str]) -> None:
+def refuse_overwrite(loaded: LoadedPolicy, output_dir: Path, names: Sequence[str]) -> None:
     """This command never overwrites the results of a frozen policy (#62)."""
     existing = [n for n in names if (output_dir / n).exists()]
     if existing:
@@ -173,7 +173,7 @@ def _refuse_overwrite(loaded: LoadedPolicy, output_dir: Path, names: Sequence[st
         )
 
 
-def _write(output_dir: Path, names: Sequence[str], outputs: Mapping[str, bytes]) -> None:
+def write_files(output_dir: Path, names: Sequence[str], outputs: Mapping[str, bytes]) -> None:
     for name in names:
         path = output_dir / name
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -185,8 +185,8 @@ def _replay(
 ) -> dict[str, bytes]:
     """Run the replay on real grades and write its outputs."""
     authorize_real_replay(loaded)
-    _protect_inputs(args, OUTPUT_NAMES)
-    _refuse_overwrite(loaded, args.output_dir, OUTPUT_NAMES)
+    protect_inputs(args, OUTPUT_NAMES)
+    refuse_overwrite(loaded, args.output_dir, OUTPUT_NAMES)
     if args.output_dir.exists() and not args.output_dir.is_dir():
         raise AnalysisError(f"{args.output_dir} is a file, not a folder")
     run = run_real_replay(
@@ -199,7 +199,7 @@ def _replay(
         rerun_reason=args.rerun_reason,
     )
     outputs = build_replay_outputs(run)
-    _write(args.output_dir, OUTPUT_NAMES, outputs)
+    write_files(args.output_dir, OUTPUT_NAMES, outputs)
     return outputs
 
 
@@ -270,9 +270,9 @@ def main(argv: Sequence[str] | None = None) -> None:
             _print_replay(_replay(loaded, args, arguments), args.output_dir)
             return
         names = output_names(loaded.benchmarks)
-        _protect_inputs(args, names)
+        protect_inputs(args, names)
         if loaded.frozen:
-            _refuse_overwrite(loaded, args.output_dir, names)
+            refuse_overwrite(loaded, args.output_dir, names)
         runs = [
             run_benchmark(
                 policy, panel_dir=args.panel_dir, data_root=args.data_root, workers=args.workers
@@ -280,7 +280,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             for policy in loaded.benchmarks.values()
         ]
         outputs = build_outputs(loaded, runs)
-        _write(args.output_dir, names, outputs)
+        write_files(args.output_dir, names, outputs)
     except (AnalysisError, OSError) as exc:
         parser.exit(2, f"threshold-decision: {exc}\n")
     for run in runs:

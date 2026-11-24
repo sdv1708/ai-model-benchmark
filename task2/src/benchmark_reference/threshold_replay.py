@@ -32,6 +32,7 @@ from benchmark_reference.pruning import (
     SelectedSample,
     select_baseline,
     select_strata,
+    validate_references,
 )
 from benchmark_reference.public_lcb import MappedQuestion
 from benchmark_reference.threshold_benchmarks import ReferencePanel
@@ -129,33 +130,52 @@ def _random_probe(
     return selection
 
 
+def _probes(
+    kind: str, method: str, selections: Sequence[tuple[SelectedSample, ...]], costs: CostModel
+) -> Probes:
+    estimates = [costs.tokens(item.index for item in s) for s in selections]
+    denominator = math.lcm(*(v.denominator for e in estimates for v in e.values))
+    tokens = tuple(
+        (int(e.low * denominator), int(e.mean * denominator), int(e.high * denominator))
+        for e in estimates
+    )
+    return Probes(kind, method, tuple(selections), denominator, tokens)
+
+
+def stratified_probes(
+    strata: Mapping[str, list[int]],
+    policy: ThresholdPolicy,
+    settings: ReplaySettings,
+    costs: CostModel,
+) -> Probes:
+    """The stratified probe of each selection seed. No target grade is an input."""
+    selections = [
+        select_strata(strata, budget=policy.stage1_size, seed=seed) for seed in settings.seeds
+    ]
+    return _probes(STRATIFIED, policy.interval_method, selections, costs)
+
+
+def random_probes(
+    references: ReferenceScores,
+    policy: ThresholdPolicy,
+    settings: ReplaySettings,
+    costs: CostModel,
+) -> Probes:
+    """The baseline probe of each selection seed. Only the question indexes have an effect."""
+    population, size = len(validate_references(references)), policy.stage1_size
+    selections = [_random_probe(references, population, size, seed) for seed in settings.seeds]
+    return _probes(RANDOM, settings.baseline_method, selections, costs)
+
+
 def build_probes(
     panel: ReferencePanel, policy: ThresholdPolicy, settings: ReplaySettings, costs: CostModel
 ) -> dict[str, Probes]:
     """Both probe kinds for each selection seed. No target grade is an input."""
     check_benchmark(panel, policy)
-    population, size = len(panel.questions), policy.stage1_size
-    groups = panel.strata(policy.stratifier)
-    chosen = {
-        STRATIFIED: (
-            policy.interval_method,
-            [select_strata(groups, budget=size, seed=seed) for seed in settings.seeds],
-        ),
-        RANDOM: (
-            settings.baseline_method,
-            [_random_probe(panel.references, population, size, seed) for seed in settings.seeds],
-        ),
+    return {
+        STRATIFIED: stratified_probes(panel.strata(policy.stratifier), policy, settings, costs),
+        RANDOM: random_probes(panel.references, policy, settings, costs),
     }
-    probes: dict[str, Probes] = {}
-    for kind, (method, selections) in chosen.items():
-        estimates = [costs.tokens(item.index for item in s) for s in selections]
-        denominator = math.lcm(*(v.denominator for e in estimates for v in e.values))
-        tokens = tuple(
-            (int(e.low * denominator), int(e.mean * denominator), int(e.high * denominator))
-            for e in estimates
-        )
-        probes[kind] = Probes(kind, method, tuple(selections), denominator, tokens)
-    return probes
 
 
 @dataclass(frozen=True, slots=True)
@@ -289,15 +309,25 @@ def cover_model(
     policy: ThresholdPolicy,
     settings: ReplaySettings,
 ) -> CoverageResult:
+    """Coverage over new subsets of the panel strata at the policy stage-1 size."""
+    return cover_strata(model, grades, panel.strata(policy.stratifier), policy, settings)
+
+
+def cover_strata(
+    model: str,
+    grades: Grades,
+    strata: Mapping[str, list[int]],
+    policy: ThresholdPolicy,
+    settings: ReplaySettings,
+) -> CoverageResult:
     """Coverage over new stratified subsets at the policy stage-1 size."""
-    groups = panel.strata(policy.stratifier)
     alpha = Fraction(str(policy.alpha))
     truth = Fraction(int(sum(grades.values())), len(grades))
     covered = below = above = 0
     width = Fraction(0)
     for replicate in range(settings.coverage_subsets):
         selection = select_strata(
-            groups,
+            strata,
             budget=policy.stage1_size,
             seed=_coverage_seed(policy.simulation_seed, model, replicate),
         )
@@ -357,6 +387,25 @@ def mean_cost_fraction(cells: Sequence[ReplayCell], costs: CostModel) -> Estimat
     """Mean expected tokens of the cells as a share of a full run."""
     _need(cells)
     return Estimates.mean_of([c.tokens.ratio(costs.full) for c in cells])
+
+
+def decided_share(cells: Sequence[ReplayCell]) -> Fraction:
+    """The share of all decisions of the cells that the probe makes at stage 1."""
+    return Fraction(sum(c.decided for c in cells), sum(c.draws for c in cells))
+
+
+def distance_ranges(
+    cells: Sequence[ReplayCell], edges: Sequence[str]
+) -> list[tuple[Fraction, Fraction | None, list[ReplayCell]]]:
+    """The cells of each range of distance from the threshold. The last range has no end."""
+    lows = [Fraction(edge) for edge in edges]
+    ranges: list[tuple[Fraction, Fraction | None, list[ReplayCell]]] = []
+    for low, high in zip(lows, [*lows[1:], None], strict=True):
+        members = [
+            c for c in cells if abs(c.distance) >= low and (high is None or abs(c.distance) < high)
+        ]
+        ranges.append((low, high, members))
+    return ranges
 
 
 def at_threshold(cells: Sequence[ReplayCell], label: str) -> list[ReplayCell]:

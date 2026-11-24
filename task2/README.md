@@ -369,6 +369,47 @@ The outputs hold derived values for each model. They hold no grade of one questi
 The recorded replay of v1 is in [`docs/data/task2-real-replay`](../docs/data/task2-real-replay/report.md).
 It passed the 3 pass criteria.
 
+### Reference-panel study
+
+The reference-panel study runs a frozen policy with the public models as the reference panel (#77):
+
+```powershell
+uv run lcb-public fetch
+uv run threshold-panel-study --policy policies/threshold-v1.json --output-dir ../docs/data/task2-panel-study
+```
+
+For each target, the references are the public models outside the developer group of the target.
+The selector reads no grade of the target and no grade of its developer group.
+The strata are the reference pass rate, cut into 4 groups of near-equal size.
+Questions with the same pass rate split by question index, because the policy does not say how to split them.
+The grade rule of the policy applies to the references and to the targets.
+
+The study has two arms:
+
+- The 315 mapped questions with a probe of 63. The result goes next to the record of #63 and next to the random probe.
+- All 1,055 public questions with a probe of 211. The public file has no token counts, so the cost of this arm is in questions.
+
+The command takes every setting from the frozen policy.
+Two secondary results change one value each: 8 groups, and the secondary grade rule.
+The command makes the checks of the [real replay](#real-replay) before it reads a public grade.
+It also needs the record of the real replay of the same policy bytes, so it runs only with v1.
+The study runs one time. A second run needs `--rerun-reason`, and the report states the reason.
+
+[`threshold_panel_study.py`](src/benchmark_reference/threshold_panel_study.py) makes the strata and runs the decisions with the functions of the real replay.
+
+| Output          | Content                                                                                                    |
+| --------------- | ---------------------------------------------------------------------------------------------------------- |
+| `cells.csv`     | Each arm, grade rule, group count, probe, model, and threshold: outcomes, wrong decisions, cost, coverage  |
+| `coverage.csv`  | Coverage of each model for each arm, grade rule, and group count                                           |
+| `models.csv`    | One row for each arm and model: the score, the number of reference models, and the results at 0.70         |
+| `strata.csv`    | The strata of each developer group: sizes, number of reference models, and range of reference passes       |
+| `distance.csv`  | The share decided at stage 1 for each 0.01 of distance from the threshold, for each side and probe         |
+| `summary.json`  | Every number of the report                                                                                 |
+| `report.md`     | The marks, the comparisons, the limits, the disclosures, and the provenance                                |
+| `manifest.json` | The command, the commit, the input hashes, the code hashes, and the output hashes                          |
+
+The outputs hold derived values for each model. They hold no grade of one question.
+
 ### Simulated models
 
 Each question's difficulty is its pass rate among the three reference models.

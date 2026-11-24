@@ -5,9 +5,7 @@ of one question. The report applies the pass criteria of the policy and states
 each failure plainly.
 """
 
-import csv
 import hashlib
-import io
 import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -29,9 +27,18 @@ from benchmark_reference.threshold_replay import (
     RuleResults,
     at_threshold,
     criteria_marks,
+    decided_share,
+    distance_ranges,
     mean_cost_fraction,
     real_distances,
     wrong_outside_zone,
+)
+from benchmark_reference.threshold_tables import (
+    csv_table,
+    markdown_table,
+    optional,
+    percent,
+    rounded,
 )
 
 ANALYSIS_VERSION = "threshold-real-replay-v1"
@@ -64,6 +71,7 @@ IMPLEMENTATION_FILES = (
     "threshold_error_rate.py",
     "two_stage.py",
     "threshold_replay.py",
+    "threshold_tables.py",
     "threshold_replay_report.py",
     "threshold_replay_run.py",
     "threshold_cli.py",
@@ -159,18 +167,6 @@ class ReplayRun:
         return {model: group for group, models in groups.items() for model in models}
 
 
-def _round(value: Fraction | float | None, digits: int = 6) -> float | None:
-    return None if value is None else round(float(value), digits)
-
-
-def _csv(columns: Sequence[str], rows: Sequence[Sequence[object]]) -> bytes:
-    buffer = io.StringIO()
-    writer = csv.writer(buffer, lineterminator="\n")
-    writer.writerow(columns)
-    writer.writerows(rows)
-    return buffer.getvalue().encode("utf-8")
-
-
 def _cells_table(run: ReplayRun) -> bytes:
     columns = (
         "grade_rule",
@@ -200,23 +196,23 @@ def _cells_table(run: ReplayRun) -> bytes:
             c.model,
             c.threshold,
             c.full_passes,
-            _round(c.score),
+            rounded(c.score),
             c.truth,
             c.draws,
             c.go,
             c.no_go,
             c.escalated,
             c.wrong,
-            _round(c.wrong_rate),
-            _round(c.decided_share),
-            _round(c.questions, 3),
-            *(_round(v, 1) for v in c.tokens.values),
-            _round(c.tokens.ratio(run.costs.full).mean),
+            rounded(c.wrong_rate),
+            rounded(c.decided_share),
+            rounded(c.questions, 3),
+            *(rounded(v, 1) for v in c.tokens.values),
+            rounded(c.tokens.ratio(run.costs.full).mean),
         )
         for rule in run.rules.values()
         for c in rule.cells
     ]
-    return _csv(columns, rows)
+    return csv_table(columns, rows)
 
 
 def _coverage_table(run: ReplayRun) -> bytes:
@@ -236,15 +232,15 @@ def _coverage_table(run: ReplayRun) -> bytes:
             r.model,
             r.subsets,
             r.covered,
-            _round(r.coverage),
+            rounded(r.coverage),
             r.truth_below,
             r.truth_above,
-            _round(r.mean_width),
+            rounded(r.mean_width),
         )
         for rule in run.rules.values()
         for r in rule.coverage
     ]
-    return _csv(columns, rows)
+    return csv_table(columns, rows)
 
 
 def _model_rule(run: ReplayRun, rule: RuleResults, model: str) -> dict[str, Any]:
@@ -257,15 +253,15 @@ def _model_rule(run: ReplayRun, rule: RuleResults, model: str) -> dict[str, Any]
     coverage = next(r for r in rule.coverage if r.model == model)
     return {
         "full_passes": stratified[0].full_passes,
-        "full_score": _round(stratified[0].score),
-        "max_wrong_rate": _round(max(c.wrong_rate for c in stratified)),
-        "coverage": _round(coverage.coverage),
-        "stage1_share_at_primary": _round(primary[STRATIFIED].decided_share),
-        "random_stage1_share_at_primary": _round(primary[RANDOM].decided_share),
+        "full_score": rounded(stratified[0].score),
+        "max_wrong_rate": rounded(max(c.wrong_rate for c in stratified)),
+        "coverage": rounded(coverage.coverage),
+        "stage1_share_at_primary": rounded(primary[STRATIFIED].decided_share),
+        "random_stage1_share_at_primary": rounded(primary[RANDOM].decided_share),
         "wrong_at_primary": primary[STRATIFIED].wrong,
-        "cost_fraction_at_primary": _round(primary[STRATIFIED].tokens.ratio(run.costs.full).mean),
-        "questions_at_primary": _round(primary[STRATIFIED].questions, 3),
-        "stage1_share_all_thresholds": _round(
+        "cost_fraction_at_primary": rounded(primary[STRATIFIED].tokens.ratio(run.costs.full).mean),
+        "questions_at_primary": rounded(primary[STRATIFIED].questions, 3),
+        "stage1_share_all_thresholds": rounded(
             Fraction(sum(c.decided for c in stratified), sum(c.draws for c in stratified))
         ),
     }
@@ -301,7 +297,7 @@ def _models_table(records: Sequence[Mapping[str, Any]]) -> bytes:
         )
         for r in records
     ]
-    return _csv(columns, rows)
+    return csv_table(columns, rows)
 
 
 def _hold_out_table(run: ReplayRun) -> bytes:
@@ -330,15 +326,11 @@ def _hold_out_table(run: ReplayRun) -> bytes:
             r.result.decision,
             int(r.wrong),
             r.result.questions_graded,
-            _round(r.tokens.mean, 1),
+            rounded(r.tokens.mean, 1),
         )
         for r in run.hold_out
     ]
-    return _csv(columns, rows)
-
-
-def _share(cells: Sequence[ReplayCell]) -> Fraction:
-    return Fraction(sum(c.decided for c in cells), sum(c.draws for c in cells))
+    return csv_table(columns, rows)
 
 
 def _probe_summary(run: ReplayRun, cells: Sequence[ReplayCell]) -> dict[str, Any]:
@@ -350,11 +342,11 @@ def _probe_summary(run: ReplayRun, cells: Sequence[ReplayCell]) -> dict[str, Any
             "cells": len(members),
             "decisions": sum(c.draws for c in members),
             "stage1_decisions": sum(c.decided for c in members),
-            "stage1_share": _round(_share(members)),
+            "stage1_share": rounded(decided_share(members)),
             "wrong": sum(c.wrong for c in members),
-            "max_wrong_rate": _round(max(c.wrong_rate for c in members)),
+            "max_wrong_rate": rounded(max(c.wrong_rate for c in members)),
             "mean_cost_fraction": mean_cost_fraction(members, run.costs).rounded(6),
-            "mean_question_fraction": _round(
+            "mean_question_fraction": rounded(
                 sum((c.questions / c.population for c in members), Fraction(0)) / len(members)
             ),
         }
@@ -362,26 +354,19 @@ def _probe_summary(run: ReplayRun, cells: Sequence[ReplayCell]) -> dict[str, Any
     return {"primary_threshold": part(primary), "all_thresholds": part(cells)}
 
 
-def _distances(cells: Sequence[ReplayCell]) -> dict[str, float | None]:
+def distance_record(cells: Sequence[ReplayCell]) -> dict[str, float | None]:
     found = real_distances(cells)
     return {
-        "d95": _round(found["both"]),
-        "d95_below": _round(found["below"]),
-        "d95_above": _round(found["above"]),
+        "d95": rounded(found["both"]),
+        "d95_below": rounded(found["below"]),
+        "d95_above": rounded(found["above"]),
     }
 
 
 def _distance_rows(run: ReplayRun, rule: RuleResults) -> list[dict[str, Any]]:
     """The stratified probe by distance from the threshold, over all models and thresholds."""
-    edges = [Fraction(e) for e in DISTANCE_EDGES]
     rows = []
-    for k, low in enumerate(edges):
-        high = edges[k + 1] if k + 1 < len(edges) else None
-        members = [
-            c
-            for c in rule.of(STRATIFIED)
-            if abs(c.distance) >= low and (high is None or abs(c.distance) < high)
-        ]
+    for low, high, members in distance_ranges(rule.of(STRATIFIED), DISTANCE_EDGES):
         if not members:
             continue
         rows.append(
@@ -389,11 +374,11 @@ def _distance_rows(run: ReplayRun, rule: RuleResults) -> list[dict[str, Any]]:
                 "from": float(low),
                 "below": None if high is None else float(high),
                 "cells": len(members),
-                "stage1_share": _round(_share(members)),
+                "stage1_share": rounded(decided_share(members)),
                 "wrong": sum(c.wrong for c in members),
                 "decisions": sum(c.draws for c in members),
-                "max_wrong_rate": _round(max(c.wrong_rate for c in members)),
-                "mean_cost_fraction": _round(mean_cost_fraction(members, run.costs).mean),
+                "max_wrong_rate": rounded(max(c.wrong_rate for c in members)),
+                "mean_cost_fraction": rounded(mean_cost_fraction(members, run.costs).mean),
             }
         )
     return rows
@@ -413,17 +398,17 @@ def _hold_out_summary(run: ReplayRun) -> list[dict[str, Any]]:
                 "model": model,
                 "threshold": run.loaded.benchmarks[benchmark].threshold,
                 "full_passes": rows[0].full_passes,
-                "full_score": _round(Fraction(rows[0].full_passes, rows[0].population)),
+                "full_score": rounded(Fraction(rows[0].full_passes, rows[0].population)),
                 "truth": rows[0].truth,
                 "decisions": len(rows),
                 "stage1_go": outcomes.count("GO"),
                 "stage1_no_go": outcomes.count("NO GO"),
                 "escalate": outcomes.count("ESCALATE"),
                 "wrong": sum(r.wrong for r in rows),
-                "mean_questions": _round(
+                "mean_questions": rounded(
                     Fraction(sum(r.result.questions_graded for r in rows), len(rows)), 3
                 ),
-                "mean_cost_fraction": _round(
+                "mean_cost_fraction": rounded(
                     Estimates.mean_of([r.tokens for r in rows]).ratio(full).mean
                 ),
             }
@@ -431,11 +416,11 @@ def _hold_out_summary(run: ReplayRun) -> list[dict[str, Any]]:
     return records
 
 
-def _mark_record(mark: Mark, statement: str) -> dict[str, Any]:
+def mark_record(mark: Mark, statement: str) -> dict[str, Any]:
     return {
         "statement": statement,
         "passed": mark.passed,
-        "value": _round(mark.value),
+        "value": rounded(mark.value),
         "limit": float(mark.limit),
         "checked": mark.checked,
         "failed": mark.failed,
@@ -456,10 +441,10 @@ def summary_document(run: ReplayRun) -> dict[str, Any]:
         rules[name] = {
             "min_pass_at_1": rule.minimum,
             "probes": {kind: _probe_summary(run, rule.of(kind)) for kind in (STRATIFIED, RANDOM)},
-            "min_coverage": _round(min(r.coverage for r in rule.coverage)),
+            "min_coverage": rounded(min(r.coverage for r in rule.coverage)),
             "results_outside_limits": {key: mark.failed for key, mark in limits.items()},
-            "real_d95_at_primary_threshold": _distances(primary),
-            "real_d95_all_thresholds": _distances(stratified),
+            "real_d95_at_primary_threshold": distance_record(primary),
+            "real_d95_all_thresholds": distance_record(stratified),
             "wrong_outside_indifference_zone": {
                 kind: {"zone": value, "wrong": wrong_outside_zone(stratified, Fraction(str(value)))}
                 for kind, value in zone.items()
@@ -482,7 +467,7 @@ def summary_document(run: ReplayRun) -> dict[str, Any]:
         "questions": replay["questions"],
         "developer_groups": len(protocol["reference_panel_study"]["developer_groups"]),
         "criteria": {
-            key: _mark_record(mark, replay["pass_criteria"][key]["statement"])
+            key: mark_record(mark, replay["pass_criteria"][key]["statement"])
             for key, mark in marks.items()
         },
         "all_criteria_pass": all(mark.passed for mark in marks.values()),
@@ -496,24 +481,6 @@ def summary_document(run: ReplayRun) -> dict[str, Any]:
         },
         "rerun_reason": run.provenance.rerun_reason,
     }
-
-
-def _table(head: Sequence[str], rows: Sequence[Sequence[object]], *, text: int = 1) -> str:
-    """A Markdown table. The first ``text`` columns align left, the others right."""
-    lines = [
-        "| " + " | ".join(head) + " |",
-        "| " + " | ".join("---" if i < text else "---:" for i in range(len(head))) + " |",
-    ]
-    lines.extend("| " + " | ".join(str(v) for v in row) + " |" for row in rows)
-    return "\n".join(lines)
-
-
-def _percent(value: float) -> str:
-    return f"{100 * value:.1f}%"
-
-
-def _optional(value: float | None) -> str:
-    return "none" if value is None else f"{value:.3f}"
 
 
 def result_section(doc: Mapping[str, Any]) -> str:
@@ -531,11 +498,11 @@ def result_section(doc: Mapping[str, Any]) -> str:
     claim = (
         f"At the primary threshold {doc['primary_threshold']}, a probe of "
         f"{doc['stage1_size']} of {doc['questions']} questions made "
-        f"{_percent(at['stage1_share'])} of {at['decisions']:,} decisions on "
+        f"{percent(at['stage1_share'])} of {at['decisions']:,} decisions on "
         f"{doc['models']} unseen models. The other decisions graded the full set. "
         f"Wrong decisions: {at['wrong']:,} of {at['decisions']:,}. The mean expected cost was "
         f"{at['mean_cost_fraction']['mean']:.3f} of a full run, as the mean token estimate. "
-        f"Across all thresholds, the probe made {_percent(every['stage1_share'])} of "
+        f"Across all thresholds, the probe made {percent(every['stage1_share'])} of "
         f"{every['decisions']:,} decisions. Wrong decisions: {every['wrong']:,} of "
         f"{every['decisions']:,}. The mean expected cost was "
         f"{every['mean_cost_fraction']['mean']:.3f} of a full run."
@@ -553,7 +520,7 @@ def result_section(doc: Mapping[str, Any]) -> str:
         )
         for key, c in doc["criteria"].items()
     ]
-    table = _table(
+    table = markdown_table(
         ("Criterion", "Rule", "Worst or mean value", "Limit", "Outside the limit", "Mark"),
         rows,
         text=2,
@@ -578,14 +545,14 @@ def _comparison_section(doc: Mapping[str, Any]) -> str:
                 (
                     title,
                     kind,
-                    _percent(p["stage1_share"]),
+                    percent(p["stage1_share"]),
                     f"{p['wrong']:,} of {p['decisions']:,}",
                     f"{p['max_wrong_rate']:.4f}",
                     f"{p['mean_question_fraction']:.3f}",
                     f"{p['mean_cost_fraction']['mean']:.3f}",
                 )
             )
-    probes = _table(
+    probes = markdown_table(
         (
             "Scope",
             "Probe",
@@ -601,14 +568,14 @@ def _comparison_section(doc: Mapping[str, Any]) -> str:
     simulated = doc["simulated_d95"]
     at = primary["real_d95_at_primary_threshold"]
     every = primary["real_d95_all_thresholds"]
-    distances = _table(
+    distances = markdown_table(
         ("d95", "Below the threshold", "At or above the threshold", "Both sides"),
         [
             (
                 label,
-                _optional(d["d95_below"]),
-                _optional(d["d95_above"]),
-                _optional(d["d95"]),
+                optional(d["d95_below"]),
+                optional(d["d95_above"]),
+                optional(d["d95"]),
             )
             for label, d in (
                 ("Simulated (#60)", simulated),
@@ -637,14 +604,14 @@ def _distance_section(doc: Mapping[str, Any]) -> str:
             if r["below"] is not None
             else f"{r['from']:.2f} or more",
             r["cells"],
-            _percent(r["stage1_share"]),
+            percent(r["stage1_share"]),
             f"{r['wrong']:,} of {r['decisions']:,}",
             f"{r['max_wrong_rate']:.4f}",
             f"{r['mean_cost_fraction']:.3f}",
         )
         for r in doc["grade_rules"][PRIMARY]["by_distance"]
     ]
-    table = _table(
+    table = markdown_table(
         (
             "Distance from the threshold",
             "Cells",
@@ -673,17 +640,17 @@ def _model_section(doc: Mapping[str, Any]) -> str:
                 f"{p['full_score']:.3f}",
                 f"{m['mean_pass_at_1']:.2f}",
                 m["neither_0_nor_100"],
-                _percent(p["stage1_share_at_primary"]),
+                percent(p["stage1_share_at_primary"]),
                 f"{p['max_wrong_rate']:.3f}",
                 f"{p['coverage']:.4f}",
                 f"{p['cost_fraction_at_primary']:.3f}",
                 f"{s['full_score']:.3f}",
-                _percent(s["stage1_share_at_primary"]),
+                percent(s["stage1_share_at_primary"]),
                 f"{s['max_wrong_rate']:.3f}",
                 f"{s['coverage']:.4f}",
             )
         )
-    table = _table(
+    table = markdown_table(
         (
             "Model",
             "Developer",
@@ -722,7 +689,7 @@ def _secondary_section(doc: Mapping[str, Any]) -> str:
         f"Under the secondary grade rule (pass@1 of {second['min_pass_at_1']:g}), "
         f"{outside['wrong_decision_rate']} cells are above the wrong-rate limit and "
         f"{outside['coverage']} models are below the coverage limit. At the primary threshold, "
-        f"the probe made {_percent(probe['stage1_share'])} of the decisions, with "
+        f"the probe made {percent(probe['stage1_share'])} of the decisions, with "
         f"{probe['wrong']:,} wrong decisions, at {probe['mean_cost_fraction']['mean']:.3f} of "
         "the cost of a full run. These values have no pass or fail mark."
     )
@@ -747,7 +714,7 @@ def _secondary_section(doc: Mapping[str, Any]) -> str:
         )
         for r in doc["reference_holdout"]
     ]
-    table = _table(
+    table = markdown_table(
         (
             "Benchmark",
             "Held-out model",
