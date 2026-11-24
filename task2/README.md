@@ -353,7 +353,7 @@ Use it only for a code fault or to reproduce the result.
 The report gives the cost as tokens and as questions.
 The cost mark uses the mean token estimate.
 The indifference zone forgives a wrong decision only when the full-set score is closer to the threshold than the zone.
-Each public model gets new subsets for its coverage check. Their seeds differ from the seeds of every other study.
+Each public model gets new subsets for its coverage check. Their seeds differ from the seeds of every simulated study. The reference-panel study uses the same seeds with other strata.
 
 | Output                  | Content                                                                                |
 | ----------------------- | -------------------------------------------------------------------------------------- |
@@ -368,6 +368,51 @@ Each public model gets new subsets for its coverage check. Their seeds differ fr
 The outputs hold derived values for each model. They hold no grade of one question.
 The recorded replay of v1 is in [`docs/data/task2-real-replay`](../docs/data/task2-real-replay/report.md).
 It passed the 3 pass criteria.
+
+### Reference-panel study
+
+The reference-panel study runs a frozen policy with the public models as the reference panel (#77):
+
+```powershell
+uv run lcb-public fetch
+uv run threshold-panel-study --policy policies/threshold-v1.json --output-dir ../docs/data/task2-panel-study
+```
+
+For each target, the references are the public models outside the developer group of the target.
+The selector reads no grade of the target and no grade of its developer group.
+The strata are the reference pass rate, cut into 4 groups of near-equal size.
+Policy v1 leaves two points open, and the code chooses them:
+
+- Questions with the same pass rate split by question index. The index is the panel index for 315 questions and the position in identifier order for 1,055 questions.
+- The grade rule applies to the references and to the targets. This also holds for the secondary grade rule.
+
+The study has two arms:
+
+- The 315 mapped questions with a probe of 63. The result goes next to the record of #63 and next to the random probe.
+- All 1,055 public questions with a probe of 211. The public file has no token counts, so the cost of this arm is in questions.
+
+The command takes every setting from the frozen policy.
+Two secondary results change one value each: 8 groups, and the secondary grade rule.
+The command makes the checks of the [real replay](#real-replay) before it reads a public grade.
+It also needs the record of the real replay of the same policy bytes, so it runs only with v1.
+The study runs one time. A second run needs `--rerun-reason`, and the report states the reason.
+
+[`threshold_panel_study.py`](src/benchmark_reference/threshold_panel_study.py) makes the strata and runs the decisions with the functions of the real replay.
+
+| Output          | Content                                                                                                    |
+| --------------- | ---------------------------------------------------------------------------------------------------------- |
+| `cells.csv`     | Each arm, grade rule, group count, probe, model, and threshold: outcomes, wrong decisions, cost, coverage  |
+| `coverage.csv`  | Coverage of each model for each arm, grade rule, and group count                                           |
+| `models.csv`    | One row for each arm and model: the score, the number of reference models, and the results at 0.70         |
+| `strata.csv`    | The strata of each developer group: sizes, number of reference models, and range of reference passes       |
+| `distance.csv`  | The share decided at stage 1 for each 0.01 of distance from the threshold, for each side and probe         |
+| `summary.json`  | Every number of the report                                                                                 |
+| `report.md`     | The marks, the comparisons, the limits, the disclosures, and the provenance                                |
+| `manifest.json` | The command, the commit, the input hashes, the code hashes, and the output hashes                          |
+
+The outputs hold derived values for each model. They hold no grade of one question.
+The recorded study of v1 is in [`docs/data/task2-panel-study`](../docs/data/task2-panel-study/report.md).
+Each arm passed the 3 pass criteria.
 
 ### Simulated models
 

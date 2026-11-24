@@ -553,6 +553,43 @@ The [replay report](docs/data/task2-real-replay/report.md) gives each model, eac
 The [manifest](docs/data/task2-real-replay/manifest.json) has SHA-256 `ed3c5bacb4b6b62695ee3b5e87d0b3f44e1b4deb4204f4f76da831b7fdc808d0`.
 It records the command and commit `9a7ce058d0c98d02b2d347b457b7ba1bdb188a5b`.
 
+### Reference panel and benchmark size on real models
+
+[#77](https://github.com/sdv1708/ai-model-benchmark/issues/77) ran frozen policy v1 one time with the public models as the reference panel.
+For each target, the selector reads no grade of the target or of its developer group.
+The strata are the reference pass rate of the other public models (18 to 27 models), cut into 4 groups.
+
+| Pass criterion of v1                                 | Limit | 315 questions | 1,055 questions | Mark |
+| ---------------------------------------------------- | ----: | ------------: | --------------: | ---- |
+| Highest wrong-decision rate of 1,708 cells           | 0.071 |         0.008 |           0.008 | Pass |
+| Lowest coverage of 28 models                         | 0.935 |         0.974 |          0.9795 | Pass |
+| Mean expected cost at 0.70, as a share of a full run |   1.0 |         0.676 |           0.338 | Pass |
+
+The cost of the 315-question arm is the mean token estimate.
+The public file has no token counts, so the cost of the 1,055-question arm is in questions.
+
+| Result                             | 315: 3-model strata (#63) | 315: public-panel strata | 315: random probe | 1,055: public-panel strata | 1,055: random probe |
+| ---------------------------------- | ------------------------: | -----------------------: | ----------------: | -------------------------: | ------------------: |
+| Decided at stage 1, threshold 0.70 |                     40.6% |                    40.3% |             42.3% |                      82.7% |               81.1% |
+| Wrong of 28,000, threshold 0.70    |                        28 |                       10 |                84 |                          1 |                  25 |
+| Decided at stage 1, all thresholds |                     70.8% |                    70.7% |             69.2% |                      84.1% |               83.6% |
+| Wrong of 1,708,000, all thresholds |                       601 |                      130 |             1,645 |                        103 |               1,070 |
+| Cost in questions, all thresholds  |                     0.434 |                    0.434 |             0.447 |                      0.327 |               0.331 |
+| d95, all thresholds                |                     0.195 |                    0.175 |             0.208 |                      0.096 |               0.116 |
+
+- A larger reference panel does not make the probe cheaper. The decided share and the cost in questions stay almost the same. Wrong decisions fall from 601 to 130. The mean interval width is 0.196 for both panels, and the lowest coverage rises from 0.950 to 0.974. The larger panel therefore gives a more conservative interval, not a narrower one.
+- A larger benchmark makes the probe decide more at the same distance. At 0.05 to below 0.10 from the threshold, the public-panel probe makes 25.4% of the decisions with 63 of 315 questions. With 211 of 1,055 questions, it makes 82.0%.
+- The random probe decides more at 0.70 on 315 questions: 42.3%, against 40.3% for the public-panel strata and 40.6% for the 3-model strata. It also makes 84 wrong decisions, against 10 and 28. In each arm, it decides more at less than 0.05 from the threshold, and on 315 questions at less than 0.10.
+- The public-panel strata make no wrong decision at 0.10 or more from the threshold, in each arm.
+- The two arms are not a pure test of size. They differ in the questions, the probe size, and the scores. On 315 questions, 19 of 28 models have a full score within 0.10 of 0.70. On 1,055 questions, 10 models do. The comparison by distance corrects for the scores only.
+- The code chose two points that v1 leaves open: the split of equal pass rates, and one grade rule for the references and the targets.
+
+The 28 models are not independent, and the 1,000 decisions of one model reuse the same grades.
+A new benchmark has no public grades for the strata before someone runs a panel of models on it.
+The [study report](docs/data/task2-panel-study/report.md) gives each model, each secondary result, and each limit.
+The [manifest](docs/data/task2-panel-study/manifest.json) has SHA-256 `69aee8990afd626b2ba3af7d849ef38d0e5787746492d6d598fb5651b1b49f0f`.
+It records the command and commit `b7df36b2c7ba78e3c0e857608fa023f9462b1482`.
+
 ## EvalScope integration
 
 ### What EvalScope is
@@ -690,7 +727,6 @@ All issues are in the [issue tracker](https://github.com/sdv1708/ai-model-benchm
 
 | Gap                                                                       | Planned work                                                                                                                                         |
 | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The effect of the reference panel and of the benchmark size is not known. | [#77](https://github.com/sdv1708/ai-model-benchmark/issues/77) holds out one developer group at a time, on 315 and on 1,055 questions.               |
 | No fixed pruned list is validated as a score estimator.                   | [#80](https://github.com/sdv1708/ai-model-benchmark/issues/80) tests fixed lists of 95 and 158 LiveCodeBench questions on the 28 models.             |
 | The EvalScope adapters run one stage only.                                | [#65](https://github.com/sdv1708/ai-model-benchmark/issues/65) adds the two-stage mode to both adapters and to `compare_runs`.                       |
 | The project measured no live inference saving.                            | [#78](https://github.com/sdv1708/ai-model-benchmark/issues/78) runs the two-stage mode on live model endpoints and measures tokens, time, and cost.  |
@@ -712,7 +748,7 @@ flowchart LR
     I75["#75 Public panel import (done)"] --> I62
     I62 --> I63["#63 Replay on 28 real models (done)"]
     I62 --> I65["#65 EvalScope two-stage"]
-    I63 --> I77["#77 Panel and size study"]
+    I63 --> I77["#77 Panel and size study (done)"]
     I63 --> I80["#80 Pruned list test"]
     I77 --> I80
     I65 --> I78["#78 Live endpoint run"]
@@ -725,7 +761,7 @@ flowchart LR
     I76["#76 Judge noise (done)"] --> I88["#88 Old judge prompt (done)"]
 ```
 
-Issues #56 to #60, #62, #63, #74 to #76, and #88 are complete.
+Issues #56 to #60, #62, #63, #74 to #77, and #88 are complete.
 Issue #78 needs a model endpoint key and an approved cost estimate.
 
 ### Limits with no planned work

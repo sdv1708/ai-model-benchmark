@@ -5,132 +5,36 @@ copies. The model names are real, because the policy names them, but every
 grade is made up. No test opens the downloaded public file.
 """
 
-import csv
-import hashlib
 import json
-import random
 import shutil
 import subprocess
 import tempfile
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import pytest
-from policy_fixtures import TASK2, draft_value, frozen_value, write_policy
+from replay_fixtures import (
+    SEEDS,
+    SUBSETS,
+    THRESHOLDS,
+    World,
+    build_world,
+    public_models,
+    read_rows,
+    sha,
+)
 
 from benchmark_reference import threshold_policy, threshold_replay_run
 from benchmark_reference.models import AnalysisError
-from benchmark_reference.threshold_benchmarks import AA_LCR, BENCHMARKS, LIVE_CODE_BENCH
+from benchmark_reference.threshold_benchmarks import AA_LCR, LIVE_CODE_BENCH
 from benchmark_reference.threshold_cli import main
 from benchmark_reference.threshold_replay_report import OUTPUT_NAMES, result_section
 from benchmark_reference.threshold_replay_run import clean_commit, recorded_replay
 
-DATA = TASK2 / "data"
-SEEDS, SUBSETS = 10, 20
-THRESHOLDS = ("0.50", "0.60", "0.70", "0.80", "0.90")
-VALUES = (0.0, 10.0, 50.0, 90.0, 100.0)
-
-
-def _sha(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def _rows(path: Path) -> list[dict[str, str]]:
-    with path.open(encoding="utf-8", newline="") as handle:
-        return list(csv.DictReader(handle))
-
-
-def _synthetic_panels(folder: Path) -> None:
-    """Copies of the committed panels with made-up grades."""
-    rng = random.Random(63)
-    for benchmark in BENCHMARKS.values():
-        panel = json.loads((DATA / benchmark.panel_file).read_text(encoding="utf-8"))
-        for task in panel["tasks"]:
-            hard = rng.random()
-            task["scores"] = {m: int(rng.random() > hard) for m in sorted(task["scores"])}
-        (folder / benchmark.panel_file).write_text(json.dumps(panel), encoding="utf-8")
-
-
-def _synthetic_mapping(folder: Path) -> tuple[Path, list[str]]:
-    """The committed mapping, bound to the synthetic panel."""
-    document = json.loads((DATA / "lcb-public-mapping.json").read_text(encoding="utf-8"))
-    document["panel_sha256"] = _sha(folder / BENCHMARKS[LIVE_CODE_BENCH].panel_file)
-    path = folder / "lcb-public-mapping.json"
-    path.write_text(json.dumps(document), encoding="utf-8")
-    return path, [entry["question_id"] for entry in document["questions"]]
-
-
-def _synthetic_public(path: Path, models: list[str], mapped: list[str]) -> None:
-    """A file of the public schema and shape with made-up ``pass@1`` values."""
-    rng = random.Random(85)
-    questions = [*mapped, *(f"other-{k}" for k in range(1055 - len(mapped)))]
-    rows = []
-    for rank, model in enumerate(models):
-        skill = 0.15 + 0.8 * rank / (len(models) - 1)
-        for question in questions:
-            good = rng.random() < skill
-            rows.append(
-                {
-                    "question_id": question,
-                    "model": model,
-                    "date": 1719705600000,
-                    "difficulty": "easy",
-                    "pass@1": rng.choice(VALUES[2:] if good else VALUES[:2]),
-                    "platform": "synthetic",
-                }
-            )
-    listed = [{"model_repr": m} for m in models]
-    path.write_text(json.dumps({"performances": rows, "models": listed}), encoding="utf-8")
-
-
-@dataclass(frozen=True)
-class World:
-    folder: Path
-    policy: Path
-    public: Path
-    mapping: Path
-    lock: str
-
-    def argv(self, output: Path, *extra: str) -> list[str]:
-        return [
-            *("--policy", str(self.policy), "--real-grades"),
-            *("--panel-dir", str(self.folder), "--public-file", str(self.public)),
-            *("--mapping", str(self.mapping), "--output-dir", str(output), *extra),
-        ]
-
-
-def _policy_value(folder: Path, public: Path, mapping: Path) -> dict[str, Any]:
-    base = draft_value()
-    for section in base["benchmarks"].values():
-        section["seeds"] = [0, 1, 2]
-    value = frozen_value(base)
-    protocol = value["protocol"]
-    protocol["public_panel"]["sha256"] = _sha(public)
-    protocol["public_panel"]["mapping_sha256"] = _sha(mapping)
-    replay = protocol["unseen_model_replay"]
-    replay["reference_panel_sha256"] = _sha(folder / BENCHMARKS[LIVE_CODE_BENCH].panel_file)
-    replay["selection_seeds"] = {"first": 0, "last": SEEDS - 1}
-    replay["coverage_subsets"] = SUBSETS
-    replay["thresholds"] = {"start": 0.5, "stop": 0.9, "step": 0.1}
-    return value
-
-
-def _models() -> list[str]:
-    groups = frozen_value()["protocol"]["reference_panel_study"]["developer_groups"]
-    return sorted(model for models in groups.values() for model in models)
-
 
 @pytest.fixture(scope="module")
 def world(tmp_path_factory: pytest.TempPathFactory) -> World:
-    folder = tmp_path_factory.mktemp("world")
-    _synthetic_panels(folder)
-    mapping, questions = _synthetic_mapping(folder)
-    public = folder / "public.json"
-    _synthetic_public(public, _models(), questions)
-    policy = write_policy(folder / "policy.json", _policy_value(folder, public, mapping))
-    lock = json.dumps({"schema_version": 1, "policies": {"threshold-policy@v1": _sha(policy)}})
-    return World(folder, policy, public, mapping, lock)
+    return build_world(tmp_path_factory.mktemp("world"))
 
 
 def _open_gates(monkeypatch: pytest.MonkeyPatch, lock: str, recorded: str | None = None) -> None:
@@ -160,18 +64,18 @@ def test_the_run_writes_every_output_and_its_hash(output: Path, world: World) ->
     assert {p.name for p in output.iterdir()} == set(OUTPUT_NAMES)
     manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
     for name in set(OUTPUT_NAMES) - {"manifest.json"}:
-        assert manifest["output_sha256"][name] == _sha(output / name)
+        assert manifest["output_sha256"][name] == sha(output / name)
     assert (manifest["mode"], manifest["real_grades_used"]) == ("real", True)
     assert manifest["commit"] == "c" * 40
-    assert manifest["policy"]["sha256"] == _sha(world.policy)
-    assert manifest["inputs"][world.public.name] == _sha(world.public)
-    assert manifest["inputs"][world.mapping.name] == _sha(world.mapping)
+    assert manifest["policy"]["sha256"] == sha(world.policy)
+    assert manifest["inputs"][world.public.name] == sha(world.public)
+    assert manifest["inputs"][world.mapping.name] == sha(world.mapping)
     assert manifest["command_line"].startswith("threshold-decision --policy")
     assert manifest["public_source"]["committed"] is False
 
 
 def test_each_model_and_threshold_has_one_decision_for_each_seed(output: Path) -> None:
-    rows = _rows(output / "cells.csv")
+    rows = read_rows(output / "cells.csv")
     keys = {(r["grade_rule"], r["probe"], r["model"], r["threshold"]) for r in rows}
     assert len(keys) == len(rows) == 2 * 2 * 28 * len(THRESHOLDS)
     assert {r["threshold"] for r in rows} == set(THRESHOLDS)
@@ -184,7 +88,7 @@ def test_each_model_and_threshold_has_one_decision_for_each_seed(output: Path) -
 
 
 def test_each_model_has_one_coverage_row_for_each_grade_rule(output: Path) -> None:
-    rows = _rows(output / "coverage.csv")
+    rows = read_rows(output / "coverage.csv")
     assert len(rows) == 2 * 28
     assert {int(r["subsets"]) for r in rows} == {SUBSETS}
 
@@ -193,7 +97,7 @@ def test_the_model_table_matches_the_public_values(output: Path, world: World) -
     public = json.loads(world.public.read_text(encoding="utf-8"))["performances"]
     mapping = json.loads(world.mapping.read_text(encoding="utf-8"))["questions"]
     mapped = {entry["question_id"] for entry in mapping}
-    rows = {r["model"]: r for r in _rows(output / "models.csv")}
+    rows = {r["model"]: r for r in read_rows(output / "models.csv")}
     assert len(rows) == 28
     for model, row in rows.items():
         values = [r["pass@1"] for r in public if r["model"] == model and r["question_id"] in mapped]
@@ -214,7 +118,7 @@ def test_no_output_holds_a_question_identifier(output: Path, world: World) -> No
 
 
 def test_the_hold_out_replays_both_benchmarks_at_the_primary_threshold(output: Path) -> None:
-    rows = _rows(output / "reference_holdout.csv")
+    rows = read_rows(output / "reference_holdout.csv")
     assert {r["benchmark"] for r in rows} == {LIVE_CODE_BENCH, AA_LCR}
     # 2 benchmarks x 3 models x 3 seeds.
     assert len(rows) == 18
@@ -224,10 +128,10 @@ def test_the_marks_agree_with_the_tables(output: Path) -> None:
     doc = _summary(output)
     cells = [
         r
-        for r in _rows(output / "cells.csv")
+        for r in read_rows(output / "cells.csv")
         if (r["grade_rule"], r["probe"]) == ("primary", "stratified")
     ]
-    coverage = [r for r in _rows(output / "coverage.csv") if r["grade_rule"] == "primary"]
+    coverage = [r for r in read_rows(output / "coverage.csv") if r["grade_rule"] == "primary"]
     criteria = doc["criteria"]
     worst = max(float(r["wrong_rate"]) for r in cells)
     assert criteria["wrong_decision_rate"]["value"] == pytest.approx(worst)
@@ -268,7 +172,7 @@ def test_the_report_states_each_mark_each_limit_and_each_disclosure(output: Path
     for disclosure in doc["disclosures"].values():
         assert disclosure["policy_text"] in report
         assert disclosure["note"] in report
-    for model in _models():
+    for model in public_models():
         assert f"| {model} |" in report
     table = report.split("## Stated comparisons")[1].split("## Results by distance")[0]
     assert "PASS" not in table
@@ -392,9 +296,9 @@ def test_existing_results_are_never_overwritten(
     output: Path, world: World, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _open_gates(monkeypatch, world.lock)
-    before = _sha(output / "manifest.json")
+    before = sha(output / "manifest.json")
     assert "never overwrites" in _stop(world, output, capsys)
-    assert _sha(output / "manifest.json") == before
+    assert sha(output / "manifest.json") == before
 
 
 @pytest.mark.parametrize(

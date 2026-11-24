@@ -317,7 +317,8 @@ Open `report.html` directly from the file system.
 The report makes no network requests.
 Without `--real-grades`, the command uses simulated models only.
 It refuses `--real-grades` unless the policy is frozen and its hash is committed.
-The [real replay](task2/README.md#real-replay) of policy v1 is recorded, and a second run needs a reason.
+The [real replay](task2/README.md#real-replay) and the [reference-panel study](task2/README.md#reference-panel-study) of policy v1 each run one time.
+A second run needs a reason.
 
 Run frozen policy v1 on simulated models in the same way:
 

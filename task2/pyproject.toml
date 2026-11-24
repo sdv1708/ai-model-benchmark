@@ -21,6 +21,7 @@ part-a-operating-points = "benchmark_reference.operating_cli:main"
 mmmu-pairs = "benchmark_reference.mmmu_cli:main"
 threshold-decision = "benchmark_reference.threshold_cli:main"
 threshold-freeze = "benchmark_reference.threshold_freeze:main"
+threshold-panel-study = "benchmark_reference.threshold_panel_study_cli:main"
 lcb-public = "benchmark_reference.public_lcb_cli:main"
 aa-lcr-judge = "benchmark_reference.judge_cli:main"
 
