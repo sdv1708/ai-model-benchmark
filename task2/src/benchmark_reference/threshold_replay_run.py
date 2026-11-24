@@ -33,6 +33,8 @@ from benchmark_reference.threshold_benchmarks import (
 from benchmark_reference.threshold_cost import CostModel
 from benchmark_reference.threshold_policy import LoadedPolicy, authorize_real_replay
 from benchmark_reference.threshold_replay import (
+    PRIMARY,
+    SECONDARY,
     HoldOutDecision,
     build_probes,
     hold_out_references,
@@ -41,8 +43,6 @@ from benchmark_reference.threshold_replay import (
     replay_settings,
 )
 from benchmark_reference.threshold_replay_report import (
-    PRIMARY,
-    SECONDARY,
     Provenance,
     ReplayRun,
 )
@@ -70,13 +70,13 @@ def clean_commit(folder: Path = TASK2) -> str:
     if status.stdout.strip():
         raise AnalysisError(
             f"{folder} has uncommitted changes. Commit them first, so that the recorded commit "
-            "is the code that ran."
+            "holds the files that the run used."
         )
     return head.stdout.decode("ascii").strip()
 
 
 def recorded_replay(record: Path = RECORD) -> str | None:
-    """The policy key of the replay that git HEAD records, or None without a record."""
+    """The policy key of the run that git HEAD records in the manifest, or None without one."""
     folder = next(p for p in record.parents if p.is_dir())
     shown = _git("show", f"HEAD:./{record.relative_to(folder).as_posix()}", cwd=folder)
     if shown.returncode:
@@ -84,7 +84,7 @@ def recorded_replay(record: Path = RECORD) -> str | None:
     try:
         return str(json.loads(shown.stdout.decode("utf-8"))["policy"]["key"])
     except (UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError) as exc:
-        raise AnalysisError(f"The recorded replay manifest {record} is invalid") from exc
+        raise AnalysisError(f"The recorded manifest {record} is invalid") from exc
 
 
 def _marker(loaded: LoadedPolicy) -> Path:
@@ -132,7 +132,10 @@ def _pinned(name: str, actual: object, expected: object) -> None:
 
 
 def token_costs(panel: ReferencePanel, data_root: Path, inputs: dict[str, str]) -> CostModel:
-    """Token estimates from the saved answers of the reference models."""
+    """Token estimates from the saved answers of the reference models.
+
+    The function adds the hash of each prediction file to ``inputs``.
+    """
     tokens = load_token_counts(
         data_root,
         benchmark=panel.benchmark,
@@ -155,7 +158,10 @@ def check_panel(loaded: LoadedPolicy, panel: ReferencePanel) -> None:
 def pinned_mapping(
     loaded: LoadedPolicy, mapping_file: Path, panel_path: Path, inputs: dict[str, str]
 ) -> tuple[MappedQuestion, ...]:
-    """The question mapping. Stop when it differs from its pin in the policy."""
+    """The question mapping. Stop when it differs from its pin in the policy.
+
+    The function adds the hash of the mapping to ``inputs``.
+    """
     assert loaded.protocol is not None
     public = loaded.protocol["public_panel"]
     try:
@@ -172,7 +178,9 @@ def check_public_models(
 ) -> PublicShape:
     """The pinned shape of the public file. Stop when its models differ from the policy.
 
-    The check reads model names and question metadata only.
+    The function also stops when a public model is in the reference panel. The loader
+    range-checks every ``pass@1`` value, but it gives only model names and question
+    metadata. The function adds the hash of the public file to ``inputs``.
     """
     assert loaded.protocol is not None
     public = loaded.protocol["public_panel"]
@@ -231,8 +239,8 @@ def run_real_replay(
     for name, reference_panel in panels.items():
         hold_out.extend(hold_out_references(reference_panel, loaded.benchmarks[name], costs[name]))
 
-    # A fault up to here uses no run.
     shape = check_public_models(loaded, public_file, panel, inputs)
+    # A fault up to here uses no run.
     mark_start(
         _marker(loaded), {"commit": commit, "command": command, "rerun_reason": rerun_reason}
     )

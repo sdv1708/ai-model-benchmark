@@ -18,7 +18,9 @@ from benchmark_reference.threshold_benchmarks import BENCHMARKS
 from benchmark_reference.threshold_cost import CostModel, Estimates
 from benchmark_reference.threshold_policy import LoadedPolicy
 from benchmark_reference.threshold_replay import (
+    PRIMARY,
     RANDOM,
+    SECONDARY,
     STRATIFIED,
     HoldOutDecision,
     Mark,
@@ -42,8 +44,6 @@ from benchmark_reference.threshold_tables import (
 )
 
 ANALYSIS_VERSION = "threshold-real-replay-v1"
-PRIMARY = "primary"
-SECONDARY = "secondary"
 OUTPUT_NAMES = (
     "cells.csv",
     "coverage.csv",
@@ -261,9 +261,7 @@ def _model_rule(run: ReplayRun, rule: RuleResults, model: str) -> dict[str, Any]
         "wrong_at_primary": primary[STRATIFIED].wrong,
         "cost_fraction_at_primary": rounded(primary[STRATIFIED].tokens.ratio(run.costs.full).mean),
         "questions_at_primary": rounded(primary[STRATIFIED].questions, 3),
-        "stage1_share_all_thresholds": rounded(
-            Fraction(sum(c.decided for c in stratified), sum(c.draws for c in stratified))
-        ),
+        "stage1_share_all_thresholds": rounded(decided_share(stratified)),
     }
 
 

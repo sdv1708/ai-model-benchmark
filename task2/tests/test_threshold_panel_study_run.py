@@ -29,8 +29,11 @@ from benchmark_reference.threshold_panel_study import (
 from benchmark_reference.threshold_panel_study_cli import main
 from benchmark_reference.threshold_panel_study_report import (
     OUTPUT_NAMES,
+    panel_text,
     random_comparisons,
+    random_distance_text,
     random_text,
+    variant_text,
     verdict_text,
 )
 from benchmark_reference.threshold_policy import load_policy
@@ -288,15 +291,18 @@ def test_the_report_states_each_mark_each_arm_and_each_limit(output: Path) -> No
     assert len(marks) == 6
     for arm in doc["arms"].values():
         assert verdict_text(arm) in report
-        for line in random_text(doc, arm).splitlines():
-            assert line in report
+        for text in (random_text(doc, arm), variant_text(doc, arm), random_distance_text(arm)):
+            for line in text.splitlines():
+                assert line in report
     for text in (
         "The public file has no token counts, so the cost of this arm is in questions.",
         "3-model strata (#63)",
         "outside the developer group of the target",
         "come from 9 developer groups, and they are not independent",
         "reuse the same grades",
-        "It does not say how to split questions with the same reference pass rate.",
+        "The policy leaves two points open, and this code chooses them.",
+        "Simulated (#60), 315 questions, threshold 0.70",
+        "315 questions, public-panel strata, threshold 0.70",
         "states no license",
         "git HEAD and the start marker recorded no earlier run of this study.",
     ):
@@ -556,3 +562,51 @@ def test_the_study_never_writes_into_the_replay_record(
     before = {p.name: sha(p) for p in record.iterdir()}
     assert "inside the input data" in _stop(world, record, record / "study", capsys)
     assert {p.name: sha(p) for p in record.iterdir()} == before
+
+
+@pytest.mark.parametrize("workers", ["0", "62"])
+def test_a_worker_count_that_no_pool_can_have_stops_before_the_run(
+    world: World,
+    record: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    workers: str,
+) -> None:
+    _open_gates(monkeypatch, world.lock)
+    error = _stop(world, record, tmp_path / "out", capsys, "--workers", workers)
+    assert "--workers must be from 1 to 61" in error
+    assert not list(threshold_panel_study_run.MARKER_DIR.iterdir())
+
+
+def test_the_distance_text_names_the_ranges_in_which_the_random_probe_decides_as_much() -> None:
+    def row(low: float, below: float | None, cells: int, share: float | None) -> dict[str, Any]:
+        return {"from": low, "below": below, "cells": cells, "stage1_share": share}
+
+    arm = {
+        "questions": 1055,
+        "by_distance": {
+            "public_panel": [row(0.0, 0.1, 2, 0.5), row(0.1, 0.2, 0, None), row(0.2, None, 2, 1.0)],
+            "random": [row(0.0, 0.1, 2, 0.4), row(0.1, 0.2, 0, None), row(0.2, None, 2, 1.0)],
+        },
+    }
+    expected = "- 1,055 questions, against the public-panel strata: 0.20 or more."
+    assert random_distance_text(arm) == expected
+
+
+@pytest.mark.parametrize(
+    ("new", "text"),
+    [
+        (0.40, "the same to 0.1 percentage points"),
+        (0.3999, "the same to 0.1 percentage points"),
+        (0.42, "2.0 percentage points higher"),
+        (0.39, "1.0 percentage points lower"),
+    ],
+)
+def test_the_panel_text_gives_the_change_of_the_decided_share(new: float, text: str) -> None:
+    def scope(share: float) -> dict[str, Any]:
+        part = {"stage1_share": share, "wrong": 1, "decisions": 9, "mean_question_fraction": 0.5}
+        return {"primary_threshold": part, "all_thresholds": part}
+
+    arm = {"probes": {"three_model": scope(0.40), "public_panel": scope(new)}}
+    assert panel_text({"primary_threshold": "0.70"}, arm).count(text) == 2

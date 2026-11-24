@@ -26,6 +26,8 @@ from benchmark_reference.pruning import ReferenceScores, validate_references
 from benchmark_reference.threshold_cost import CostModel
 from benchmark_reference.threshold_policy import LoadedPolicy, ThresholdPolicy
 from benchmark_reference.threshold_replay import (
+    PRIMARY,
+    SECONDARY,
     CoverageResult,
     Grades,
     ReplayCell,
@@ -37,10 +39,11 @@ from benchmark_reference.threshold_replay import (
     replay_model,
     stratified_probes,
 )
-from benchmark_reference.threshold_replay_report import PRIMARY, SECONDARY
 from benchmark_reference.threshold_tokens import QuestionCost
 
 type DeveloperGroups = Mapping[str, Sequence[str]]
+# The largest process pool on Windows.
+MAX_WORKERS = 61
 
 
 def pass_rate_strata(references: ReferenceScores, *, groups: int) -> dict[str, list[int]]:
@@ -108,7 +111,8 @@ class Arm:
     """One question set: its policy with the probe size of the arm, its grades, and its costs.
 
     ``raw`` holds the raw ``pass@1`` values of each public model. ``token_costs`` is
-    false when the arm has no token count. ``costs`` then holds unit costs.
+    false when the arm has no token count. ``costs`` then holds unit costs, and each
+    token amount of a cell is a question count.
     """
 
     name: str
@@ -204,6 +208,12 @@ def _strata_rows(developer: str, references: ReferenceScores, groups: int) -> li
         )
         for stratum, members in pass_rate_strata(references, groups=groups).items()
     ]
+
+
+def check_workers(workers: int) -> None:
+    """Stop before the run when a process pool cannot have this number of workers."""
+    if not 1 <= workers <= MAX_WORKERS:
+        raise AnalysisError(f"--workers must be from 1 to {MAX_WORKERS}, not {workers}")
 
 
 def run_variant(

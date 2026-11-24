@@ -353,7 +353,7 @@ Use it only for a code fault or to reproduce the result.
 The report gives the cost as tokens and as questions.
 The cost mark uses the mean token estimate.
 The indifference zone forgives a wrong decision only when the full-set score is closer to the threshold than the zone.
-Each public model gets new subsets for its coverage check. Their seeds differ from the seeds of every other study.
+Each public model gets new subsets for its coverage check. Their seeds differ from the seeds of every simulated study. The reference-panel study uses the same seeds with other strata.
 
 | Output                  | Content                                                                                |
 | ----------------------- | -------------------------------------------------------------------------------------- |
@@ -381,8 +381,10 @@ uv run threshold-panel-study --policy policies/threshold-v1.json --output-dir ..
 For each target, the references are the public models outside the developer group of the target.
 The selector reads no grade of the target and no grade of its developer group.
 The strata are the reference pass rate, cut into 4 groups of near-equal size.
-Questions with the same pass rate split by question index, because the policy does not say how to split them.
-The grade rule of the policy applies to the references and to the targets.
+Policy v1 leaves two points open, and the code chooses them:
+
+- Questions with the same pass rate split by question index. The index is the panel index for 315 questions and the position in identifier order for 1,055 questions.
+- The grade rule applies to the references and to the targets. This also holds for the secondary grade rule.
 
 The study has two arms:
 

@@ -17,6 +17,7 @@ from benchmark_reference.long_context_reporting import encode_json
 from benchmark_reference.threshold_panel_study import Arm, StrataRow, Variant
 from benchmark_reference.threshold_policy import LoadedPolicy
 from benchmark_reference.threshold_replay import (
+    PRIMARY,
     RANDOM,
     STRATIFIED,
     CoverageResult,
@@ -35,7 +36,6 @@ from benchmark_reference.threshold_replay_report import (
     CRITERION_TITLES,
     DISCLOSURE_NOTES,
     DISTANCE_EDGES,
-    PRIMARY,
     Provenance,
     distance_record,
     mark_record,
@@ -87,11 +87,15 @@ LIMITS = (
     "from outputs of another developer.",
     "The {seeds:,} decisions of one model at one threshold reuse the same grades. They measure "
     "the question selection only. They do not measure a new answer from the model.",
-    "Policy v1 fixed every setting before anyone read a public grade. The result of #63 on the "
-    "same models was known before the code of this study was written.",
-    "The policy says that the groups have near-equal size. It does not say how to split questions "
-    "with the same reference pass rate. This code splits them by question index. It uses no grade "
-    "of a target for the split.",
+    "Policy v1 fixed the developer groups, the group counts, the probe sizes, the grade rules, the "
+    "thresholds, and the seeds. Nobody had computed a score or a decision of a public model then. "
+    "The authors knew the result of #63 on the same models before they wrote the code of this "
+    "study.",
+    "The policy leaves two points open, and this code chooses them. The first point is the split "
+    "of questions with the same reference pass rate. This code splits them by question index: the "
+    "panel index for the mapped questions, and the position in identifier order for the full "
+    "question set. The second point is the grade rule of the references. This code uses one rule "
+    "for the references and for the targets. Neither choice uses a grade of a target.",
     "The public-panel strata differ from the 3-model strata in more than the number of models. "
     "The public grades of the references come from the same harness as the grades of the targets. "
     "The 3-model strata come from the EvalScope grades, and they have unequal sizes.",
@@ -111,9 +115,10 @@ LIMITS = (
 class ArmResult:
     """Every result of one arm.
 
-    ``variants`` holds the first variant of the policy first: the primary grade rule
-    with the policy group count. ``random`` holds the random-probe cells of each grade
-    rule. ``recorded`` holds the recorded #63 results, or None for another question set.
+    The first of the ``variants`` is the main result: the primary grade rule with the
+    policy group count. The other variants are secondary results. ``random`` holds the
+    random-probe cells of each grade rule. ``recorded`` holds the recorded #63 results,
+    or None for another question set.
     """
 
     arm: Arm
@@ -437,6 +442,7 @@ def _probe_summary(
         "min_coverage": rounded(min(r.coverage for r in coverage)) if coverage else None,
         "mean_interval_width": rounded(sum(widths) / len(widths)) if widths else None,
         "d95": distance_record(cells),
+        "d95_at_primary": distance_record(at_threshold(cells, run.settings.primary_threshold)),
     }
 
 
@@ -514,15 +520,19 @@ def _arm_document(run: PanelStudyRun, result: ArmResult) -> dict[str, Any]:
     zone = protocol["decision"]["indifference_zone"]
     variants = []
     for variant, (results, _) in result.variants.items():
-        outside = criteria_marks(results, protocol, run.settings, arm.costs)
+        limits = criteria_marks(results, protocol, run.settings, arm.costs)
         variants.append(
             {
                 "grade_rule": variant.rule,
                 "min_pass_at_1": variant.minimum,
                 "groups": variant.groups,
-                "results_outside_limits": {key: mark.failed for key, mark in outside.items()},
+                "results_outside_limits": {key: mark.failed for key, mark in limits.items()},
                 **_probe_summary(run, result, results.cells, results.coverage),
                 "random": _probe_summary(run, result, result.random[variant.rule], ()),
+                "random_comparisons": random_comparisons(
+                    {PUBLIC_PANEL: results.cells, RANDOM: result.random[variant.rule]},
+                    run.settings.primary_threshold,
+                ),
             }
         )
     document: dict[str, Any] = {
@@ -727,6 +737,27 @@ def _probe_table(doc: Mapping[str, Any], arm: Mapping[str, Any]) -> str:
     )
 
 
+def _random_better(comparison: Mapping[str, Any]) -> list[str]:
+    """The measures on which the random probe is equal or better."""
+    measures = (
+        ("decided share", "stage1_share_verdict"),
+        ("wrong decisions", "wrong_verdict"),
+    )
+    return [measure for measure, key in measures if comparison[key] != "worse"]
+
+
+def _random_flag(better: Sequence[str]) -> str:
+    if not better:
+        return "The random probe is worse on both measures."
+    return f"**The random probe is equal or better on {' and '.join(better)}.**"
+
+
+def _range_title(row: Mapping[str, Any]) -> str:
+    if row["below"] is None:
+        return f"{row['from']:.2f} or more"
+    return f"{row['from']:.2f} to below {row['below']:.2f}"
+
+
 def random_text(doc: Mapping[str, Any], arm: Mapping[str, Any]) -> str:
     """Say where the random probe is equal to a stratified probe or better."""
     verbs = {"better": "more", "equal": "the same share", "worse": "fewer"}
@@ -734,19 +765,7 @@ def random_text(doc: Mapping[str, Any], arm: Mapping[str, Any]) -> str:
     lines = []
     for c in arm["random_comparisons"]:
         title = PROBE_TITLES[c["against"]]
-        better = [
-            measure
-            for measure, key in (
-                ("decided share", "stage1_share_verdict"),
-                ("wrong decisions", "wrong_verdict"),
-            )
-            if c[key] != "worse"
-        ]
-        flag = (
-            f"**The random probe is equal or better on {' and '.join(better)}.**"
-            if better
-            else "The random probe is worse on both measures."
-        )
+        flag = _random_flag(_random_better(c))
         lines.append(
             f"- {_scope_title(doc, c['scope'])}, against the {title}: the random probe decides "
             f"{percent(c['random_stage1_share'])} at stage 1, against "
@@ -757,8 +776,48 @@ def random_text(doc: Mapping[str, Any], arm: Mapping[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def random_distance_text(arm: Mapping[str, Any]) -> str:
+    """Name the distance ranges in which the random probe decides as much or more."""
+    rows = arm["by_distance"]
+    lines = []
+    for probe in rows:
+        if probe == RANDOM:
+            continue
+        found = [
+            _range_title(other)
+            for random, other in zip(rows[RANDOM], rows[probe], strict=True)
+            if random["cells"]
+            and other["cells"]
+            and random["stage1_share"] >= other["stage1_share"]
+        ]
+        lines.append(
+            f"- {arm['questions']:,} questions, against the {PROBE_TITLES[probe]}: "
+            + (f"{', '.join(found)}." if found else "no range.")
+        )
+    return "\n".join(lines)
+
+
+def variant_text(doc: Mapping[str, Any], arm: Mapping[str, Any]) -> str:
+    """Say where the random probe is equal to a secondary variant or better."""
+    lines = []
+    for v in arm["variants"][1:]:
+        for c in v["random_comparisons"]:
+            better = _random_better(c)
+            lines.append(
+                f"- {arm['questions']:,} questions, {v['grade_rule']} grade rule, "
+                f"{v['groups']} groups, {_scope_title(doc, c['scope']).lower()}: the random probe "
+                f"decides {percent(c['random_stage1_share'])} against "
+                f"{percent(c['other_stage1_share'])}, with {c['random_wrong']:,} wrong decisions "
+                f"against {c['other_wrong']:,}. {_random_flag(better)}"
+            )
+    return "\n".join(lines)
+
+
 def _points(value: float) -> str:
-    return f"{abs(100 * value):.1f} percentage points {'higher' if value >= 0 else 'lower'}"
+    size = f"{abs(100 * value):.1f}"
+    if size == "0.0":
+        return "the same to 0.1 percentage points"
+    return f"{size} percentage points {'higher' if value > 0 else 'lower'}"
 
 
 def panel_text(doc: Mapping[str, Any], arm: Mapping[str, Any]) -> str:
@@ -782,19 +841,23 @@ def _arm_sections(doc: Mapping[str, Any]) -> str:
     for arm in doc["arms"].values():
         head = f"## The {arm['questions']:,}-question arm"
         if THREE_MODEL in arm["probes"]:
-            same = (
-                "The random probe of this run makes the same decisions as the random probe in the "
-                "record of #63, for each model, threshold, and grade rule. The two runs "
-                "therefore used the same targets and the same questions."
-                if arm["random_probe_equals_record"]
-                else "**The random probe of this run does not make the same decisions as the "
-                "random probe in the record of #63. The results are not comparable.**"
-            )
+            if arm["random_probe_equals_record"]:
+                same = (
+                    "The random probe makes the decisions of the recorded random probe again, for "
+                    "each model, threshold, and grade rule. The two runs therefore used the same "
+                    "targets and the same questions."
+                )
+                panel = panel_text(doc, arm)
+            else:
+                same = (
+                    "**The random probe does not make the decisions of the recorded random probe "
+                    "again. The 3-model result is not comparable with the other results.**"
+                )
+                panel = "The report makes no comparison, because the results are not comparable."
             parts.append(
-                f"{head}\n\nThe table puts three results side by side, on the same questions and "
-                f"the same targets. The 3-model result is the record of #63; this study read it "
-                f"and did not run it again. {same}\n\n{_probe_table(doc, arm)}\n\n"
-                f"### The larger reference panel\n\n{panel_text(doc, arm)}\n\n"
+                f"{head}\n\nThe table puts three results side by side. The 3-model result is the "
+                f"record of #63. This study did not run it again. {same}\n\n"
+                f"{_probe_table(doc, arm)}\n\n### The larger reference panel\n\n{panel}\n\n"
                 f"### The random probe\n\n{random_text(doc, arm)}"
             )
         else:
@@ -814,12 +877,7 @@ def _distance_section(doc: Mapping[str, Any]) -> str:
     first = next(iter(next(iter(arms.values()))["by_distance"].values()))
     rows: list[tuple[object, ...]] = []
     for k, edge in enumerate(first):
-        label = (
-            f"{edge['from']:.2f} or more"
-            if edge["below"] is None
-            else f"{edge['from']:.2f} to below {edge['below']:.2f}"
-        )
-        values: list[object] = [label]
+        values: list[object] = [_range_title(edge)]
         for name, arm in arms.items():
             members = [arm["by_distance"][probe][k] for n, probe in columns if n == name]
             values.append(members[0]["cells"])
@@ -833,11 +891,13 @@ def _distance_section(doc: Mapping[str, Any]) -> str:
         head.extend(
             f"{arm['questions']:,}: {PROBE_TITLES[probe]}" for n, probe in columns if n == name
         )
-    distances = [("Simulated (#60), 315 questions", doc["simulated_d95"])] + [
-        (f"{arm['questions']:,} questions, {PROBE_TITLES[probe]}", p["d95"])
-        for arm in arms.values()
-        for probe, p in arm["probes"].items()
-    ]
+    primary = f"threshold {doc['primary_threshold']}"
+    distances = [(f"Simulated (#60), 315 questions, {primary}", doc["simulated_d95"])]
+    for arm in arms.values():
+        for probe, p in arm["probes"].items():
+            title = f"{arm['questions']:,} questions, {PROBE_TITLES[probe]}"
+            distances.append((f"{title}, {primary}", p["d95_at_primary"]))
+            distances.append((f"{title}, all thresholds", p["d95"]))
     d95 = markdown_table(
         ("d95", "Below the threshold", "At or above the threshold", "Both sides"),
         [
@@ -853,9 +913,13 @@ def _distance_section(doc: Mapping[str, Any]) -> str:
         "side of the threshold. The distance ranges are a layout choice, and no mark uses them.\n\n"
         f"{markdown_table(head, rows)}\n\n"
         "d95 is a distance from the threshold. At d95 and at every larger distance, the probe "
-        "makes at least 95% of the decisions. d95 is the smallest such distance. Each real row "
-        'uses every combination of model and threshold. The value "none" means that the farthest '
-        f"model does not reach 95%.\n\n{d95}"
+        "makes at least 95% of the decisions. d95 is the smallest such distance. The simulated row "
+        "uses the 3-model strata at one threshold. A real row at one threshold has one point for "
+        'each model, so it is coarse. The value "none" means that the side has no model, or that '
+        f"its farthest model does not reach 95%.\n\n{d95}\n\n"
+        "### Where the random probe decides as much or more\n\nEach line names the ranges in which "
+        "the share of the random probe is equal or larger.\n\n"
+        + "\n".join(random_distance_text(arm) for arm in arms.values())
     )
 
 
@@ -901,6 +965,7 @@ def _secondary_section(doc: Mapping[str, Any]) -> str:
         rows,
         text=2,
     )
+    random = "\n".join(variant_text(doc, arm) for arm in doc["arms"].values())
     zones = "\n".join(
         f"- {arm['questions']:,} questions: "
         + ", ".join(
@@ -914,7 +979,8 @@ def _secondary_section(doc: Mapping[str, Any]) -> str:
         f"## Secondary results\n\n### {doc['secondary_groups']} groups and the secondary grade "
         "rule\n\nThe first row of each arm is the result above. Each other row changes one value. "
         "The grade rule applies to the reference models and to the targets. The secondary rows "
-        f"have no pass or fail mark.\n\n{table}\n\n### Indifference zone\n\nA wrong decision "
+        f"have no pass or fail mark.\n\n{table}\n\nThe random probe against each secondary row:\n\n"
+        f"{random}\n\n### Indifference zone\n\nA wrong decision "
         "counts only when the full-set score is the zone or more from the threshold. The counts "
         f"use the public-panel strata and all thresholds.\n\n{zones}"
     )
@@ -975,7 +1041,7 @@ def _provenance_section(run: PanelStudyRun) -> str:
     rerun = (
         "git HEAD and the start marker recorded no earlier run of this study."
         if run.provenance.rerun_reason is None
-        else f"The caller gave a reason for a second run: {run.provenance.rerun_reason}"
+        else f"The caller gave this rerun reason: {run.provenance.rerun_reason}"
     )
     inputs = "\n".join(f"- `{name}`: `{sha}`" for name, sha in run.provenance.inputs.items())
     return (

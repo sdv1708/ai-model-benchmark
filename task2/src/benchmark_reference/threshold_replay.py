@@ -53,6 +53,9 @@ from benchmark_reference.two_stage import (
 STRATIFIED = "stratified"
 RANDOM = "random"
 PROBE_KINDS = (STRATIFIED, RANDOM)
+# The grade rules of the policy.
+PRIMARY = "primary"
+SECONDARY = "secondary"
 type Grades = Mapping[int, float]
 
 
@@ -161,7 +164,7 @@ def random_probes(
     settings: ReplaySettings,
     costs: CostModel,
 ) -> Probes:
-    """The baseline probe of each selection seed. Only the question indexes have an effect."""
+    """The random probe of each selection seed. Only the question indexes have an effect."""
     population, size = len(validate_references(references)), policy.stage1_size
     selections = [_random_probe(references, population, size, seed) for seed in settings.seeds]
     return _probes(RANDOM, settings.baseline_method, selections, costs)
@@ -297,7 +300,10 @@ class CoverageResult:
 
 
 def _coverage_seed(simulation_seed: int, model: str, replicate: int) -> int:
-    """New subsets for each model. The text differs from the text of every other study."""
+    """New subsets for each model. The text differs from the text of every simulated study.
+
+    The reference-panel study (#77) uses the same seeds with other strata.
+    """
     text = f"threshold-replay-coverage-v1:{simulation_seed}:{model}:{replicate}"
     return int.from_bytes(hashlib.sha256(text.encode("utf-8")).digest()[:8], "big")
 
