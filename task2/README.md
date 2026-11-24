@@ -553,8 +553,32 @@ It made 1,500 requests. Each request gave a valid verdict, and the cost was $0.1
 - The judgments are not all equal for 8 of 300 answers (2.7%).
 - No full-set decision at threshold 0.60 changes between passes. The largest score range is 0.02, which is 0.067 of the mean interval width (0.297).
 - The majority agrees with the saved judgment for 287 of 300 answers (95.7%). All 13 changes are from INCORRECT to CORRECT, and each model score rises by 0.02 to 0.07.
-- That shift is larger than the noise between passes. The run cannot give its cause: the saved reviews record no endpoint, no precision, no settings, and no prompt. The saved decisions at 0.60 do not change.
+- That shift is larger than the noise between passes. The run cannot give its cause: the saved reviews record no endpoint, no precision, no settings, and no prompt. The saved decisions at 0.60 do not change. The [likely cause](#likely-cause-of-the-score-shift) is the judge prompt.
 - The measured values hold for temperature `0.0` and one endpoint on one day.
+
+### Likely cause of the score shift
+
+The likely cause is the judge prompt, not the judge model. Nobody tested this. Issue [#88](https://github.com/sdv1708/ai-model-benchmark/issues/88) tests it.
+
+- EvalScope v1.1.1 to v1.5.0 (7 releases read) send the same base prompt as the current adapter, with no JSON contract. They ask for one word and store `LLM judge: <raw reply>`.
+- All 300 saved explanations are exactly `LLM judge: CORRECT` or `LLM judge: INCORRECT`. This fits those releases.
+- The current adapter asks for `reasoning` before `verdict`. The judge can then find that `0.1` and 10% are equal.
+
+An agent read the 13 changed answers. No human checked this reading.
+
+| Reference answer                  | Answers | Changed | Unequal judgments |
+| --------------------------------- | ------: | ------: | ----------------: |
+| Decimal, for example `0.1` for 10% |      27 |       5 |                 4 |
+| Excel date number, `45444`        |       3 |       1 |                 0 |
+| List with a literal `\n`          |      24 |       4 |                 1 |
+| Other                             |     246 |       3 |                 3 |
+
+- In 12 of the 13 changed answers, the answer matches the reference. The other one (kimi-k2.5, question 23) gives $205 million, and the reference is $204 million.
+- The new judge also makes errors. Seven answers equal the reference, but their majority is INCORRECT: question 59 (all 3 models), question 85 (gpt-oss-120b and kimi-k2.5), and question 93 (gpt-oss-120b and minimax-m2.5). Each one has a decimal reference.
+- With those 7 answers as CORRECT, the decisions at 0.60 stay the same. The score of gpt-oss-120b is then 0.55.
+- A consistent judge can repeat one error in every pass. Low judge noise does not show that the judge is correct.
+
+### Run the judge again
 
 The saved reviews name the judge `qwen-3-235b-a22b-instruct-2507`.
 `estimate` refuses another judge unless `--allow-different-judge` is set.
